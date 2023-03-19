@@ -31,7 +31,7 @@ clean:
 .PHONY: test verilog help compile bsp reformat checkformat clean
 
 sim:
-	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
-	@echo "Write this Makefile by yourself."
+	##$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
+	##@echo "Write this Makefile by yourself."
 
-include ../Makefile
+##include ../Makefile
