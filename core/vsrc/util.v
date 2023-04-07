@@ -33,3 +33,22 @@ generate
     end    
 endgenerate
 endmodule
+
+module mux_1_32(
+    input wire [31:0]data_in1,
+    input wire [31:0]data_in2,
+    input wire select,
+    output wire [31:0]data_out
+);
+assign data_out = (select)? data_in1:data_in2;
+endmodule
+
+
+module bypass (
+    
+);
+
+
+
+
+endmodule //bypass

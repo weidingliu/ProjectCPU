@@ -1,4 +1,8 @@
 `include "defines.sv"
+/*
+* decoder inst and produce ctrl signal for backend
+*
+*/
 module ID (
     input wire clk,//clock
     input wire reset,//global reset
@@ -17,9 +21,7 @@ module ID (
     output wire left_ready,//ID stage is allowin
     output wire right_valid,//ID stage's data is ready
     input wire right_ready//EXE stage is allowin
-    // output [7:0] InstOP,
-    // output [3:0] InstType,
-    // output [2:0] ALUop
+
 );
 
 reg [`ctrl_width-1:0] bus_temp;//reg for ctrl flower
@@ -67,7 +69,7 @@ assign inst_or = ;
 
 
 
-//sequential 
+//sequential block
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         bus_temp <= `ctrl_width'h0;
