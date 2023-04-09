@@ -44,6 +44,16 @@ assign data_out = (select)? data_in1:data_in2;
 endmodule
 
 
+// module mux_n_32 #(
+//     parameter n = 1
+// )(
+//     input wire []
+// );
+
+// endmodule //
+
+
+
 module bypass (
     
 );
