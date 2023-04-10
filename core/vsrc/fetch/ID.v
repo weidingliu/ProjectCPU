@@ -53,6 +53,7 @@ wire [1:0]select_src2;//select src2
 
 //inst is sign compute
 wire is_sign;
+wire is_sign_extend;
 
 //inst valid
 wire inst_valid;
@@ -62,6 +63,8 @@ wire inst_or;
 
 //aluop
 assign alu_op[0] = inst_add;
+//is signextend or zero extend
+assign is_sign_extend = 1'b0;
 
 //split inst
 assign op_31_26  = Inst[31:26];
@@ -74,10 +77,10 @@ assign rj   = Inst[ 9: 5];
 assign rk   = Inst[14:10];
 
 //decoder split inst
-decoder_2_4(.in(op_21_20),.out(decoder_op_21_20));
-decoder_4_16(.in(op_25_22),.out(decoder_op_25_22));
-decoder_5_32(.in(op_31_26),.out(decoder_op_31_26));
-decoder_5_32(.in(op_19_15),.out(decoder_op_19_15));
+decoder_2_4 decoder_2_4(.in(op_21_20),.out(decoder_op_21_20));
+decoder_4_16 decoder_4_16(.in(op_25_22),.out(decoder_op_25_22));
+decoder_5_32 decoder_5_32(.in(op_31_26),.out(decoder_op_31_26));
+decoder_5_32 decoder_5_32(.in(op_19_15),.out(decoder_op_19_15));
 
 //produce select_src 2'b00 for reg, 2'b01 for Imm , 2'b10 for PC
 assign select_src1[0] = ~inst_add;

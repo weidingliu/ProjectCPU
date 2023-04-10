@@ -2,6 +2,9 @@ module WB (
     input wire clk,//clock
     input wire reset,//global reset
 
+    input wire [`mem_ctrl_width-1:0] mem_ctrl_bus,
+    output wire [`mem_ctrl_width-1:0] wb_ctrl_bus,
+
     //shark hand
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
@@ -11,14 +14,14 @@ module WB (
 
 wire right_fire;
 reg valid;
+reg [`mem_ctrl_width-1:0]bus_temp;
+
+
+
+
+
+
 assign right_fire=right_ready & right_valid;//data submit finish
-
-
-
-
-
-
-
 //shark hands
 always @(posedge clk) begin
     if(reset == `RestEn) begin
@@ -40,28 +43,18 @@ end
 //data block
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
-        bus_temp <= `ctrl_width'h0;
+        bus_temp <= `mem_ctrl_width'h0;
     end
     else begin 
         if(left_valid & right_ready) begin 
-            bus_temp <= {
-                    PC,//134:165
-                    Inst,//102:133
-                    wreg_index,//97:101
-                    wreg_en,//96:96
-                    src2,// 64:95
-                    src1,// 32:63
-                    Imm// 0:31
-                    };
+            bus_temp <= mem_ctrl_bus;
         end
     end
 end
 // output logic
 assign right_valid=valid;
 assign lift_ready=right_ready;
-
-
-
+assign wb_ctrl_bus=bus_temp;
 
 
 endmodule //WB

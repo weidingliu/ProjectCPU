@@ -1,8 +1,14 @@
 
 
-COMMIT_PATH=$(path) 
+COMMIT_PATH=$(path)
 COMMIT_MESSAGE=$(m)
 
+ifeq ($(COMMIT_PATH),)
+COMMIT_PATH:=.
+endif
+ifeq ($(COMMIT_MESSAGE),)
+COMMIT_MESSAGE:="default commit"
+endif
 gitcommit:
 	git add $(COMMIT_PATH)
 	git commit -m "$(COMMIT_MESSAGE)"
@@ -11,4 +17,4 @@ gitcommit:
 
 
 
-.PHONY: git_commit
+.PHONY: gitcommit
