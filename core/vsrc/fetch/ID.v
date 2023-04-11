@@ -105,6 +105,8 @@ assign ctrl_bus= bus_temp;
 assign reg_index1=rj;
 assign reg_index2=rk;
 assign wreg_index=rd;
+assign wreg_en = inst_add;
+
 //op number decoder
 assign src1 = (select_src1[1])? PC:
               (select_src1[0])? Imm:

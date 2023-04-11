@@ -7,7 +7,7 @@ module Regfile (
     output wire [31:0]data1,//data out
     output wire [31:0]data2,//data out
     input wire wreg_en,//write enable
-    input wire [31:0]wdata//write data
+    input wire [31:0]wdata,//write data
     input wire [4:0]wreg_index//write addr
 );
 reg [31:0]rf[31:0];

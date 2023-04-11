@@ -4,12 +4,12 @@ module EXE (
     input wire reset,//global reset
     input wire [`ctrl_width-1:0]id_ctrl_bus, //ctrl flower
 
-    output wire [`ex_ctrl_width-1:0] ex_ctrl_bus
+    output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
     //shark hand
-    input wire left_valid,//IF stage's data is ready
-    output wire left_ready,//ID stage is allowin
-    output wire right_valid,//ID stage's data is ready
-    input wire right_ready//EXE stage is allowin
+    input wire left_valid,//ID stage's data is ready
+    output wire left_ready,//EX stage is allowin
+    output wire right_valid,//EX stage's data is ready
+    input wire right_ready//MEM stage is allowin
 );
 wire right_fire;
 reg valid;

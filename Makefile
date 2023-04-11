@@ -7,7 +7,7 @@ ifeq ($(COMMIT_PATH),)
 COMMIT_PATH:=.
 endif
 ifeq ($(COMMIT_MESSAGE),)
-COMMIT_MESSAGE:="default commit"
+COMMIT_MESSAGE:=default meassage
 endif
 gitcommit:
 	git add $(COMMIT_PATH)

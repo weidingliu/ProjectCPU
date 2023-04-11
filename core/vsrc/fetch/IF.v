@@ -54,6 +54,6 @@ always @(posedge clk) begin
 end
 assign right_valid=valid;
 assign pc_valid=right_ready;
-
+assign data_bus=bus_temp;
 
 endmodule
