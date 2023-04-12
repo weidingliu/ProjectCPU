@@ -53,7 +53,7 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign lift_ready=right_ready;
+assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
 
 

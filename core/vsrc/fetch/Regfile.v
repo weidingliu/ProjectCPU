@@ -3,7 +3,7 @@ module Regfile (
     input wire clk,// clock
     input wire reset,
     input wire [4:0]reg_index1,//reg addr1
-    input wire [4:0]reg_inedx2,//reg addr2
+    input wire [4:0]reg_index2,//reg addr2
     output wire [31:0]data1,//data out
     output wire [31:0]data2,//data out
     input wire wreg_en,//write enable

@@ -1,4 +1,4 @@
-#`include "defines.v"
+`include "defines.sv"
 /*
 * inst addr for ID,handle branch and jump 
 *
@@ -20,7 +20,7 @@ module IF (
 reg [31:0]temp;
 reg valid;
 reg [63:0]bus_temp;
-
+wire right_fire;
 assign right_fire=right_ready & right_valid;//data submit finish
 
 always @(posedge clk) begin

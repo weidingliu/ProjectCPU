@@ -35,18 +35,17 @@ wire [31:0]src1;
 wire [31:0]src2;
 wire [31:0]alu_result;
 
-    {
-    alu_op,//199:212
-    inst_valid,//198:198
-    Imm,//166:197
-    PC,//134:165
-    Inst,//102:133
-    wreg_index,//97:101
-    wreg_en,//96:96
-    src2,// 64:95
-    src1,// 32:63
-    alu_result// 0:31
-    }=mem_ctrl_bus;
+assign {alu_op,//199:212
+inst_valid,//198:198
+Imm,//166:197
+PC,//134:165
+Inst,//102:133
+wreg_index,//97:101
+wreg_en,//96:96
+src2,// 64:95
+src1,// 32:63
+alu_result// 0:31
+}=mem_ctrl_bus;
 
 //mux mem result
 assign mem_result=alu_result;
@@ -90,7 +89,7 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign lift_ready=right_ready;
+assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
 
 endmodule //MEM

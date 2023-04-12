@@ -6,8 +6,8 @@ module Top (
     //inst interface
     input wire [31:0]inst,
     output wire [31:0]PC,
-    output wire pc_valid;
-    input wire inst_ready;
+    output wire pc_valid,
+    input wire inst_ready,
     //data interface
     input wire [31:0]rdata,
     output wire [31:0]addr,
@@ -24,17 +24,17 @@ wire if_right_valid;
 wire if_right_ready;
 
 //ID stage signal
- wire [`ctrl_width-1:0] id_bus;
- wire [4:0] reg_index1;
- wire [4:0] reg_index2;
- wire [31:0] reg_data1;
- wire [31:0] reg_data2;
- wire id_right_valid;
+wire [`ctrl_width-1:0] id_bus;
+wire [4:0] reg_index1;
+wire [4:0] reg_index2;
+wire [31:0] reg_data1;
+wire [31:0] reg_data2;
+wire id_right_valid;
 wire id_right_ready;
 
 //EXE stage signal
 wire [`ex_ctrl_width-1:0] ex_bus;
- wire ex_right_valid;
+wire ex_right_valid;
 wire ex_right_ready;
 
 //MEM stage signal
@@ -48,7 +48,7 @@ wire [`mem_ctrl_width-1:0] wb_bus;
 //difftest
 reg [`mem_ctrl_width-1:0] difftest_bus;
 wire difftest_inst_valid;
-wire [4:0] difftest_reg_index;
+wire [4:0] difftest_wreg_index;
 wire difftest_wreg_en;
 wire [31:0] difftest_Inst;
 wire [31:0] difftest_PC;
@@ -72,7 +72,7 @@ IF if_stage(
 ID id_stage(
     .clk(clk),//clock
     .reset(reset),//global reset
-    .Inst(if_bus[31:0])//inst from inst ram
+    .Inst(if_bus[31:0]),//inst from inst ram
     .PC(if_bus[63:32]),//inst addr
     //for regfile
     .reg_index1(reg_index1),//read REG index1
@@ -92,12 +92,12 @@ Regfile Regfile(
     .clk(clk),// clock
     .reset(reset),
     .reg_index1(reg_index1),//reg addr1
-    .reg_inedx2(reg_index2),//reg addr2
+    .reg_index2(reg_index2),//reg addr2
     .data1(reg_data1),//data out
     .data2(reg_data2),//data out
     .wreg_en(wb_bus[96:96]),//write enable
     .wdata(wb_bus[31:0]),//write data
-    .wreg_index(wb_bus[97:101])//write addr
+    .wreg_index(wb_bus[101:97])//write addr
 );
 
 EXE exe_stage(
@@ -146,6 +146,7 @@ WB wb_syage(
     .right_ready(1'b1)//EXE stage is allowin
 );
 
+//delay one cycle for difftest
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         difftest_bus <= `mem_ctrl_width'h0;
@@ -154,14 +155,14 @@ always @(posedge clk) begin
         difftest_bus <= wb_bus;
     end
 end
-{     
+assign {     
     difftest_inst_valid,//102:102
     difftest_wreg_index,//97:101
     difftest_wreg_en,//96:96
     difftest_Inst,// 64:95
     difftest_PC,// 32:63
     difftest_result// 0:31
-}=difftest_bus;
+    }=difftest_bus;
     
 endmodule
 

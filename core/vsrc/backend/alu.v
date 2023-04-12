@@ -7,7 +7,7 @@ module alu (
 wire op_add;
 
 // control code decomposition
-assign op_add = aluop[0];
+assign op_add = alu_op[0];
 
 wire [31:0] add_result;
 //adder 

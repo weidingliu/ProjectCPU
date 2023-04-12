@@ -6,7 +6,7 @@
 module ID (
     input wire clk,//clock
     input wire reset,//global reset
-    input wire[31:0] Inst//inst from inst ram
+    input wire[31:0] Inst,//inst from inst ram
     input wire[31:0] PC,//inst addr
     //for regfile
     output wire [4:0]reg_index1,//read REG index1
@@ -79,8 +79,8 @@ assign rk   = Inst[14:10];
 //decoder split inst
 decoder_2_4 decoder_2_4(.in(op_21_20),.out(decoder_op_21_20));
 decoder_4_16 decoder_4_16(.in(op_25_22),.out(decoder_op_25_22));
-decoder_5_32 decoder_5_32(.in(op_31_26),.out(decoder_op_31_26));
-decoder_5_32 decoder_5_32(.in(op_19_15),.out(decoder_op_19_15));
+decoder_5_32 decoder_5_32_0(.in(op_31_26),.out(decoder_op_31_26));
+decoder_5_32 decoder_5_32_1(.in(op_19_15),.out(decoder_op_19_15));
 
 //produce select_src 2'b00 for reg, 2'b01 for Imm , 2'b10 for PC
 assign select_src1[0] = ~inst_add;
@@ -89,7 +89,7 @@ assign select_src2[0] = ~inst_add;
 assign select_src2[1] = ~inst_add;
 
 //produce inst decoder result
-assign inst_add = op_31_26_d[5'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h00];
+assign inst_add = decoder_op_31_26[5'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h00];
 // assign inst_or = ;
 
 //next stage's data was consumed
@@ -158,6 +158,6 @@ always @(posedge clk) begin
 end
 // shark hands output logic
 assign right_valid=valid;
-assign lift_ready=right_ready;
+assign left_ready=right_ready;
 
 endmodule //ID

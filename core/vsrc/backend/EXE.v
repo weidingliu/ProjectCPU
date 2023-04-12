@@ -13,7 +13,7 @@ module EXE (
 );
 wire right_fire;
 reg valid;
-reg [`ex_ctrl_width-1:0] ctrl_temp_bus//exe ctrl bus
+reg [`ex_ctrl_width-1:0] ctrl_temp_bus;//exe ctrl bus
 
 wire is_sign;
 wire [13:0]alu_op;
@@ -25,7 +25,7 @@ wire [31:0]PC;
 wire wreg_en;
 wire [4:0]wreg_index;
 wire [31:0]Inst;
-{
+assign {
     is_sign,//181:181
     alu_op,//167:180
     inst_valid,//166:166
@@ -91,6 +91,6 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign lift_ready=right_ready;
+assign left_ready=right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
 endmodule //EXE

@@ -1,5 +1,6 @@
 
 
+
 COMMIT_PATH=$(path)
 COMMIT_MESSAGE=$(m)
 
