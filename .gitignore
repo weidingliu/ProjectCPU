@@ -1,2 +1,4 @@
-chiplab/toolchains/
-testbench/build/
+/chiplab/toolchains/
+/testbench/build/
+.idea
+.vscode
