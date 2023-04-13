@@ -14,9 +14,9 @@ VM_PARALLEL_BUILDS = 0
 # Threaded output mode?  0/1/N threads (from --threads)
 VM_THREADS = 0
 # Tracing output mode?  0/1 (from --trace/--trace-fst)
-VM_TRACE = 1
+VM_TRACE = 0
 # Tracing output mode in VCD format?  0/1 (from --trace)
-VM_TRACE_VCD = 1
+VM_TRACE_VCD = 0
 # Tracing output mode in FST format?  0/1 (from --trace-fst)
 VM_TRACE_FST = 0
 
@@ -33,17 +33,14 @@ VM_CLASSES_SLOW += \
 
 # Generated support classes, fast-path, compile with highest optimization
 VM_SUPPORT_FAST += \
-	VTop__Trace__0 \
 
 # Generated support classes, non-fast-path, compile with low/medium optimization
 VM_SUPPORT_SLOW += \
 	VTop__Syms \
-	VTop__Trace__0__Slow \
 
 # Global classes, need linked once per executable, fast-path, compile with highest optimization
 VM_GLOBAL_FAST += \
 	verilated \
-	verilated_vcd_c \
 
 # Global classes, need linked once per executable, non-fast-path, compile with low/medium optimization
 VM_GLOBAL_SLOW += \

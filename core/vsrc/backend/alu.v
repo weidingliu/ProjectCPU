@@ -19,6 +19,6 @@ wire adder_cout;
 
 assign {adder_cout,adder_result} = adder_a + adder_b + adder_cin;
 
-assign alu_result = ({32{op_add}} && adder_result);
+assign alu_result = ({32{op_add}} & adder_result);
 
 endmodule //alu

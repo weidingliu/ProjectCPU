@@ -36,7 +36,6 @@ VM_MODPREFIX = VTop
 # User CFLAGS (from -CFLAGS on Verilator command line)
 VM_USER_CFLAGS = \
 	-I /home/liuweiding/ProjectCPU/testbench/include \
-	-D WTRACE \
 
 # User LDLIBS (from -LDFLAGS on Verilator command line)
 VM_USER_LDLIBS = \
