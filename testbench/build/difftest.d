@@ -1,0 +1,1 @@
+difftest.o: ../difftest.cpp

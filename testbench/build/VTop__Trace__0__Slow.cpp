@@ -370,12 +370,11 @@ VL_ATTR_COLD void VTop___024root__trace_full_sub_0(VTop___024root* vlSelf, Veril
     bufp->fullIData(oldp+86,(((vlSelf->Top__DOT__id_stage__DOT__bus_temp[4U] 
                                << 0x1aU) | (vlSelf->Top__DOT__id_stage__DOT__bus_temp[3U] 
                                             >> 6U))),32);
-    bufp->fullIData(oldp+87,(((0U != (- (IData)((1U 
-                                                 & (vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
-                                                    >> 7U))))) 
-                              & (0U != ((vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_a 
-                                         + vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_b) 
-                                        + (IData)((QData)((IData)(vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_cin))))))),32);
+    bufp->fullIData(oldp+87,(((- (IData)((1U & (vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
+                                                >> 7U)))) 
+                              & ((vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_a 
+                                  + vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_b) 
+                                 + (IData)((QData)((IData)(vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_cin)))))),32);
     bufp->fullBit(oldp+88,((1U & (vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
                                   >> 7U))));
     bufp->fullIData(oldp+89,((IData)(vlSelf->Top__DOT__if_stage__DOT__bus_temp)),32);

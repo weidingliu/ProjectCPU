@@ -132,13 +132,12 @@ void VTop___024root__trace_chg_sub_0(VTop___024root* vlSelf, VerilatedVcd::Buffe
         bufp->chgIData(oldp+85,(((vlSelf->Top__DOT__id_stage__DOT__bus_temp[4U] 
                                   << 0x1aU) | (vlSelf->Top__DOT__id_stage__DOT__bus_temp[3U] 
                                                >> 6U))),32);
-        bufp->chgIData(oldp+86,(((0U != (- (IData)(
-                                                   (1U 
-                                                    & (vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
-                                                       >> 7U))))) 
-                                 & (0U != ((vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_a 
-                                            + vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_b) 
-                                           + (IData)((QData)((IData)(vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_cin))))))),32);
+        bufp->chgIData(oldp+86,(((- (IData)((1U & (
+                                                   vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
+                                                   >> 7U)))) 
+                                 & ((vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_a 
+                                     + vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_b) 
+                                    + (IData)((QData)((IData)(vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_cin)))))),32);
         bufp->chgBit(oldp+87,((1U & (vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
                                      >> 7U))));
         bufp->chgIData(oldp+88,((IData)(vlSelf->Top__DOT__if_stage__DOT__bus_temp)),32);

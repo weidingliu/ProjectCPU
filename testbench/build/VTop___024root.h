@@ -8,13 +8,9 @@
 #include "verilated.h"
 
 class VTop__Syms;
-class VTop___024unit;
-
 
 class VTop___024root final : public VerilatedModule {
   public:
-    // CELLS
-    VTop___024unit* __PVT____024unit;
 
     // DESIGN SPECIFIC STATE
     VL_IN8(clk,0,0);

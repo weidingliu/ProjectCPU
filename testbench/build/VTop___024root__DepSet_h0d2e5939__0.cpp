@@ -3,7 +3,6 @@
 // See VTop.h for the primary calling header
 
 #include "verilated.h"
-#include "verilated_dpi.h"
 
 #include "VTop___024root.h"
 
@@ -635,11 +634,10 @@ VL_INLINE_OPT void VTop___024root___sequent__TOP__0(VTop___024root* vlSelf) {
     } else {
         if (vlSelf->Top__DOT__id_stage__DOT__valid) {
             vlSelf->Top__DOT__exe_stage__DOT__ctrl_temp_bus[0U] 
-                = ((0U != (- (IData)((1U & (vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
-                                            >> 7U))))) 
-                   & (0U != ((vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_a 
-                              + vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_b) 
-                             + (IData)((QData)((IData)(vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_cin))))));
+                = ((- (IData)((1U & (vlSelf->Top__DOT__id_stage__DOT__bus_temp[5U] 
+                                     >> 7U)))) & ((vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_a 
+                                                   + vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_b) 
+                                                  + (IData)((QData)((IData)(vlSelf->Top__DOT__exe_stage__DOT__alu__DOT__adder_cin)))));
             vlSelf->Top__DOT__exe_stage__DOT__ctrl_temp_bus[1U] 
                 = (IData)((((QData)((IData)(vlSelf->Top__DOT__id_stage__DOT__bus_temp[2U])) 
                             << 0x20U) | (QData)((IData)(

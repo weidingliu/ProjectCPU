@@ -36,6 +36,7 @@ VM_MODPREFIX = VTop
 # User CFLAGS (from -CFLAGS on Verilator command line)
 VM_USER_CFLAGS = \
 	-I /home/liuweiding/ProjectCPU/testbench/include \
+	-D WTRACE \
 
 # User LDLIBS (from -LDFLAGS on Verilator command line)
 VM_USER_LDLIBS = \
@@ -44,24 +45,12 @@ VM_USER_LDLIBS = \
 VM_USER_CLASSES = \
 	difftest \
 	memory \
-	VTop \
-	VTop__Dpi \
-	VTop__Syms \
-	VTop__Trace__0 \
-	VTop__Trace__0__Slow \
-	VTop___024root__DepSet_h0d2e5939__0 \
-	VTop___024root__DepSet_h0d2e5939__0__Slow \
-	VTop___024root__Slow \
-	VTop___024unit__DepSet_h1b4533a7__0__Slow \
-	VTop___024unit__DepSet_hd7ebdb33__0 \
-	VTop___024unit__Slow \
 	sim_main \
 	testbench \
 
 # User .cpp directories (from .cpp's on Verilator command line)
 VM_USER_DIR = \
 	. \
-	./obj_dir \
 
 
 ### Default rules...
@@ -73,35 +62,13 @@ include $(VERILATOR_ROOT)/include/verilated.mk
 ### Executable rules... (from --exe)
 VPATH += $(VM_USER_DIR)
 
-difftest.o: ./difftest.cpp
+difftest.o: difftest.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-memory.o: ./memory.cpp
+memory.o: memory.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop.o: ./obj_dir/VTop.cpp
+sim_main.o: sim_main.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop__Dpi.o: ./obj_dir/VTop__Dpi.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop__Syms.o: ./obj_dir/VTop__Syms.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop__Trace__0.o: ./obj_dir/VTop__Trace__0.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop__Trace__0__Slow.o: ./obj_dir/VTop__Trace__0__Slow.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop___024root__DepSet_h0d2e5939__0.o: ./obj_dir/VTop___024root__DepSet_h0d2e5939__0.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop___024root__DepSet_h0d2e5939__0__Slow.o: ./obj_dir/VTop___024root__DepSet_h0d2e5939__0__Slow.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop___024root__Slow.o: ./obj_dir/VTop___024root__Slow.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop___024unit__DepSet_h1b4533a7__0__Slow.o: ./obj_dir/VTop___024unit__DepSet_h1b4533a7__0__Slow.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop___024unit__DepSet_hd7ebdb33__0.o: ./obj_dir/VTop___024unit__DepSet_hd7ebdb33__0.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-VTop___024unit__Slow.o: ./obj_dir/VTop___024unit__Slow.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-sim_main.o: ./sim_main.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-testbench.o: ./testbench.cpp
+testbench.o: testbench.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 
 ### Link rules... (from --exe)

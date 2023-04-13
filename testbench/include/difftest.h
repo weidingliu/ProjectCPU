@@ -1,5 +1,10 @@
 #include <common.h>
 
+// #include "VTop___024root.h"
+// #include "VTop__Dpi.h"
+// #include <svdpi.h>
+// #include "verilated_dpi.h"
+
 #ifdef DIFFTEST
 
 class DiffTest{
