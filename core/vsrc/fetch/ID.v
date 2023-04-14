@@ -124,12 +124,13 @@ always @(posedge clk) begin
         if(left_valid & right_ready) begin
             valid <= `true;
         end
+        else if(~right_fire)begin 
+            valid <= `false;
+        end
         else begin 
             valid <= `false;
         end
-        if(~right_fire)begin 
-            valid <= `false;
-        end
+        
         
     end
 end

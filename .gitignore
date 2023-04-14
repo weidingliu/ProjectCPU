@@ -2,3 +2,4 @@
 /testbench/build/
 .idea
 .vscode
+.vcd
