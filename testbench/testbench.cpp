@@ -1,6 +1,7 @@
 
 #include <testbench.h>
 
+char *difftest_ref_so;
 
 void CpuTestBench :: init_testbench(int argc, char** argv){
     contextp = new VerilatedContext;
@@ -15,7 +16,9 @@ void CpuTestBench :: init_testbench(int argc, char** argv){
     #endif
     ram->init_mem(NULL);
     #ifdef DIFFTEST
-    
+    difftest_ref_so=argv[1];
+    //printf("%s\n",difftest_ref_so);
+    ref = new DiffTest();
     #endif
 
 }
@@ -66,4 +69,20 @@ void CpuTestBench :: end_testbench(){
     delete dut;
     delete contextp;
     exit(EXIT_SUCCESS);
+}
+
+
+CpuTestBench:: CpuTestBench(){
+    
+    ram = new Memory();
+}
+
+CpuTestBench::~CpuTestBench(){
+    delete ref;
+    delete ram;
+    ref = NULL;
+    #ifdef DIFFTEST
+    ram = NULL;
+    #endif
+
 }

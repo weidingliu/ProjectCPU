@@ -21,15 +21,20 @@ class CpuTestBench {
     #endif
     
     #ifdef DIFFTEST
-    DiffTest ref;
+    DiffTest *ref = NULL;
     #endif
 
-    Memory *ram = new Memory;
+    Memory *ram = NULL;
 
     void init_testbench(int argc, char** argv);
     void reset_rtl();
     void eval();
     void end_testbench();
+    
+    CpuTestBench();
+    ~CpuTestBench();
+
+
 };
 
 

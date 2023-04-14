@@ -5,9 +5,10 @@ DIR = $(join $(dir $(CUR_DIR)),core)
 
 VSRC += $(wildcard *.v)
 CSRC += $(wildcard *.cpp)
-CFLAGS=-CFLAGS "-I $(CUR_DIR)/include" #-CFLAGS -Wstack-usage=4096
+CFLAGS=-CFLAGS "-I $(CUR_DIR)/include" ##-CFLAGS "-D SO_PATH="$(SO_PATH)"" #-CFLAGS -Wstack-usage=4096
 VLIB += -y $(DIR)/vsrc/include
-BUILD_DIR = ./build
+BUILD_DIR := ./build
+##CDEFINE := 
 
 include ../core/Makefile
 
@@ -18,7 +19,7 @@ simulate:
 	@echo "======================================================"
 	@echo "compile finish start simulate"
 	@echo "======================================================"
-	$(BUILD_DIR)/VTop
+	$(BUILD_DIR)/VTop $(SO_PATH)
 	@echo "======================================================"
 	@echo "END"
 	@echo "======================================================"
@@ -27,7 +28,7 @@ simulate_vcd:
 	verilator -Wno-fatal --trace  --Mdir $(BUILD_DIR) -j $(nproc) -compiler clang -cc  $(VSRC) --top-module Top --exe $(CSRC) $(VLIB) $(LDFLAGS) $(CFLAGS) \
     -CFLAGS "-D WTRACE"
 	$(MAKE) -C $(BUILD_DIR) -f VTop.mk VTop
-	$(BUILD_DIR)/VTop
+	$(BUILD_DIR)/VTop $(SO_PATH)
 	gtkwave waveform.vcd
 
 

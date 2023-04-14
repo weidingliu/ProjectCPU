@@ -60,3 +60,10 @@ void Memory :: pmem_write(uint32_t addr, uint32_t wdata, char wmask){
       loop=loop>>1;
   }
 }
+
+Memory ::Memory(){
+
+}
+Memory::~Memory(){
+    
+}
