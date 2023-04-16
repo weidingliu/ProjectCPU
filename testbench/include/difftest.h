@@ -1,9 +1,9 @@
 #include <common.h>
 
-// #include "VTop___024root.h"
-// #include "VTop__Dpi.h"
-// #include <svdpi.h>
-// #include "verilated_dpi.h"
+#include "VTop___024root.h"
+#include "VTop__Dpi.h"
+#include <svdpi.h>
+#include "verilated_dpi.h"
 
 #ifdef DIFFTEST
 
@@ -122,7 +122,113 @@ class DiffTest{
         }                                     \
     } while (0);
 
+
+
+
+//for difftest's DPI-C
+
+#define DPIC_ARG_BIT  uint8_t
+#define DPIC_ARG_BYTE char
+#define DPIC_ARG_INT  int
+#define DPIC_ARG_LONG long long
+
+// v_difftest_InstrCommit
+#define INTERFACE_INSTR_COMMIT           \
+  DIFFTEST_DPIC_FUNC_DECL(InstrCommit) ( \
+    DPIC_ARG_BYTE coreid,                \
+    DPIC_ARG_BYTE index,                 \
+    DPIC_ARG_BIT  valid,                 \
+    DPIC_ARG_LONG pc,                    \
+    DPIC_ARG_INT  instr,                 \
+    DPIC_ARG_BIT  skip,                  \
+    DPIC_ARG_BIT  is_TLBFILL,            \
+    DPIC_ARG_BYTE TLBFILL_index,         \
+    DPIC_ARG_BIT  is_CNTinst,            \
+    DPIC_ARG_LONG timer_64_value,        \
+    DPIC_ARG_BIT  wen,                   \
+    DPIC_ARG_BYTE wdest,                 \
+    DPIC_ARG_LONG wdata,                 \
+    DPIC_ARG_BIT  csr_rstat,             \
+    DPIC_ARG_INT  csr_data               \
+  )
+
+
+// v_difftest_CSRState
+#define INTERFACE_CSRREG_STATE           \
+  DIFFTEST_DPIC_FUNC_DECL(CSRRegState) ( \
+    DPIC_ARG_BYTE coreid,               \
+    DPIC_ARG_LONG crmd,                 \
+    DPIC_ARG_LONG prmd,                 \
+    DPIC_ARG_LONG euen,                 \
+    DPIC_ARG_LONG ecfg,                 \
+    DPIC_ARG_LONG estat,                \
+    DPIC_ARG_LONG era,                  \
+    DPIC_ARG_LONG badv,                 \
+    DPIC_ARG_LONG eentry,               \
+    DPIC_ARG_LONG tlbidx,               \
+    DPIC_ARG_LONG tlbehi,               \
+    DPIC_ARG_LONG tlbelo0,              \
+    DPIC_ARG_LONG tlbelo1,              \
+    DPIC_ARG_LONG asid,                 \
+    DPIC_ARG_LONG pgdl,                 \
+    DPIC_ARG_LONG pgdh,                 \
+    DPIC_ARG_LONG save0,                \
+    DPIC_ARG_LONG save1,                \
+    DPIC_ARG_LONG save2,                \
+    DPIC_ARG_LONG save3,                \
+    DPIC_ARG_LONG tid,                  \
+    DPIC_ARG_LONG tcfg,                 \
+    DPIC_ARG_LONG tval,                 \
+    DPIC_ARG_LONG ticlr,                \
+    DPIC_ARG_LONG llbctl,               \
+    DPIC_ARG_LONG tlbrentry,            \
+    DPIC_ARG_LONG dmw0,                 \
+    DPIC_ARG_LONG dmw1                  \
+  )
+
+  // v_difftest_GRegState
+#define INTERFACE_GREG_STATE \
+    DIFFTEST_DPIC_FUNC_DECL(GRegState) (     \
+        DPIC_ARG_BYTE coreid,                \
+        DPIC_ARG_LONG gpr_0,                 \
+        DPIC_ARG_LONG gpr_1,                 \
+        DPIC_ARG_LONG gpr_2,                 \
+        DPIC_ARG_LONG gpr_3,                 \
+        DPIC_ARG_LONG gpr_4,                 \
+        DPIC_ARG_LONG gpr_5,                 \
+        DPIC_ARG_LONG gpr_6,                 \
+        DPIC_ARG_LONG gpr_7,                 \
+        DPIC_ARG_LONG gpr_8,                 \
+        DPIC_ARG_LONG gpr_9,                 \
+        DPIC_ARG_LONG gpr_10,                \
+        DPIC_ARG_LONG gpr_11,                \
+        DPIC_ARG_LONG gpr_12,                \
+        DPIC_ARG_LONG gpr_13,                \
+        DPIC_ARG_LONG gpr_14,                \
+        DPIC_ARG_LONG gpr_15,                \
+        DPIC_ARG_LONG gpr_16,                \
+        DPIC_ARG_LONG gpr_17,                \
+        DPIC_ARG_LONG gpr_18,                \
+        DPIC_ARG_LONG gpr_19,                \
+        DPIC_ARG_LONG gpr_20,                \
+        DPIC_ARG_LONG gpr_21,                \
+        DPIC_ARG_LONG gpr_22,                \
+        DPIC_ARG_LONG gpr_23,                \
+        DPIC_ARG_LONG gpr_24,                \
+        DPIC_ARG_LONG gpr_25,                \
+        DPIC_ARG_LONG gpr_26,                \
+        DPIC_ARG_LONG gpr_27,                \
+        DPIC_ARG_LONG gpr_28,                \
+        DPIC_ARG_LONG gpr_29,                \
+        DPIC_ARG_LONG gpr_30,                \
+        DPIC_ARG_LONG gpr_31                 \
+    )
+
+
+
 #endif
+
+
 
 
 
