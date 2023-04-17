@@ -66,7 +66,7 @@
     input        csr_rstat,
     input [31:0] csr_data
 );
-    `DIFFTEST_MOD_DPIC_CALL_BEGIN_WITH_EN(valid, InstrCommit) (
+    `DIFFTEST_MOD_DPIC_CALL_BEGIN_WITH_EN (valid, InstrCommit) (
         coreid, index,
         valid, pc, instr, skip, is_TLBFILL, TLBFILL_index, is_CNTinst, timer_64_value, wen, wdest, wdata, csr_rstat, csr_data
         ) `DIFFTEST_MOD_DPIC_CALL_END_WITH_EN(InstrCommit)

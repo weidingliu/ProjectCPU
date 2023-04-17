@@ -1,5 +1,6 @@
 #include <difftest.h>
-
+#include <debug.h>
+//#include<testbench.h>
 
 // not compare estat
 static const int DIFFTEST_NR_GREG = sizeof(arch_greg_state_t) / sizeof(uint32_t);
@@ -22,22 +23,75 @@ static const char compare_mask[DIFFTEST_NR_CSRREG] = {
     1,  1,  1,  1,  1,  0,  1
 };
 
+bool DiffTest::check_reg(){
+    fflush(NULL);
+    printf("----dut %x ref %x \n",dut.commit[0].pc,ref.commit[0].pc);
+    for (int i=0;i<32;i++){
+        //printf("%x %x\n",dut_regs_ptr[i],ref_regs_ptr[i]);
+        if(dut_regs_ptr[i] != ref_regs_ptr[i]){
+            //
+            printf("====================================\n");
+            printf("=========== REG FAIL ===============\n");
+            display();
+            printf("====================================\n");
+            fflush(NULL);
+            return false;
+        }
+    }
+    if(dut.commit[0].pc != ref.commit[0].pc){
+        
+        printf("===================================\n");
+        printf("=========== PC FAIL ===============\n");
+        printf("ref PC is %08x dut PC is %08x\n",ref.commit->pc,dut.commit->pc);
+        printf("===================================\n");
+        display();
+        printf("===================================\n");
+        fflush(NULL);
+        return false;
+    }
+    //display();
+    
+    return true;
+}
+extern int mem_size;
 int DiffTest :: step(vluint64_t& main_time){
+    if(sim_over) {
+        // printf("==========================================\n");
+        // printf("==========================================\n");
+        printf("==========================================\n");
+        printf("================ DIFFTEST END ============\n");
+        printf("==========================================\n");
+        printf("\n");
+        return STATE_END;
+    }
+    do_first_instr_commit();
+
+    if(dut.commit[0].valid){
+        do_instr_commit(0);
+        commit_count++;
+    }
+    if(dut.commit[0].valid && !check_reg()){
+        
+        return STATE_ABORT;
+    }
+    if(commit_count == mem_size) sim_over = true;
 
     
+
     return STATE_RUNNING;
 }
 
-// extern void *get_img_start();
-// void Difftest::do_first_instr_commit() {
-//     if (dut.commit[0].valid && dut.commit[0].pc == FIRST_INST_ADDRESS) {
-//         printf("The first instruction of core %d has commited. Difftest enabled.\n", coreid);
-
-//         proxy->memcpy(0x0, get_img_start(), EMU_RAM_SIZE, DIFFTEST_TO_REF);
-//         munmap(get_img_start(), EMU_RAM_SIZE);
-//         proxy->regcpy(dut_regs_ptr, DIFFTEST_TO_REF, DIFF_TO_REF_ALL);
-//     }
-// }
+extern void *get_img_start();
+extern int get_img_size();
+void DiffTest::do_first_instr_commit() {
+    if (dut.commit[0].valid && commit_count==0) {
+        printf("The first instruction of core has commited. Difftest enabled.\n");
+       if(get_img_start()==NULL) panic("img_start fail!");
+        proxy->memcpy(0x0, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
+        // munmap(get_img_start(), EMU_RAM_SIZE);
+        proxy->regcpy(dut_regs_ptr, DIFFTEST_TO_REF, DIFF_TO_REF_ALL);
+    }
+}
 
 void DiffTest::do_instr_commit(int i) {
     // progress = true;
@@ -60,6 +114,7 @@ void DiffTest::do_instr_commit(int i) {
     /* single step exec */
     // auto start = std::chrono::steady_clock::now();
     proxy->exec(1);
+    proxy->regcpy(ref_regs_ptr,REF_TO_DUT,REF_TO_DIFF_ALL);
     // auto end = std::chrono::steady_clock::now();
     // nemu_nano_seconds += std::chrono::nanoseconds(end-start);
 
@@ -105,8 +160,11 @@ void DiffTest::display() {
 }
 
 
+
 DiffTest::DiffTest() {
     proxy = new DIFF_PROXY();
+    sim_over = false;
+    commit_count=0;
 }
 
 DiffTest::~DiffTest() {
@@ -115,8 +173,11 @@ DiffTest::~DiffTest() {
 }
 
 
+#define difftest ref
+
 #define RETURN_NO_NULL \
-  if (difftest == NULL) return;
+  if (ref == NULL) return;
+
 
 extern DiffTest* difftest;
 

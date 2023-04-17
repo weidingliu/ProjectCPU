@@ -1,7 +1,17 @@
 
 #include <testbench.h>
 
+
 char *difftest_ref_so;
+DiffTest *ref = NULL;
+uint8_t* pmem_start = NULL;
+int mem_size=0;
+void *get_img_start(){
+    return pmem_start;
+}
+int get_img_size(){
+    return mem_size;
+}
 
 void CpuTestBench :: init_testbench(int argc, char** argv){
     contextp = new VerilatedContext;
@@ -15,6 +25,9 @@ void CpuTestBench :: init_testbench(int argc, char** argv){
     m_trace->open("waveform.vcd");
     #endif
     ram->init_mem(NULL);
+    pmem_start = ram->mem;
+    mem_size= ram->mem_size;
+    
     #ifdef DIFFTEST
     difftest_ref_so=argv[1];
     //printf("%s\n",difftest_ref_so);
@@ -33,13 +46,20 @@ void CpuTestBench :: eval(){
 
             dut->inst=inst;
         }
-        
+
+
+        #ifdef DIFFTEST
+        if(ref->step(sim_time)==STATE_ABORT || ref->step(sim_time)==STATE_END){
+            
+            break;
+        }
+        #endif
         dut->eval();
 
         #ifdef WTRACE
         m_trace->dump(sim_time);
         #endif
-        if(sim_time > 30) break;
+        if(sim_time > 100) break;
         sim_time++;
     }
 }

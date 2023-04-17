@@ -163,6 +163,27 @@ assign {
     difftest_PC,// 32:63
     difftest_result// 0:31
     }=difftest_bus;
-    
+
+DifftestInstrCommit DifftestInstrCommit(
+    .clock(clk),
+    .coreid(8'h0),
+    .index(8'h0),
+    .valid(difftest_inst_valid),
+    .pc(difftest_PC),
+    .instr(difftest_Inst),
+    .skip(0),
+    .is_TLBFILL(0),
+    .TLBFILL_index(0),
+    .is_CNTinst(0),
+    .timer_64_value(0),
+    .wen(difftest_wreg_en),
+    .wdest(difftest_wreg_index),
+    .wdata(difftest_result),
+    .csr_rstat(0),
+    .csr_data(0)
+);
+
+
+
 endmodule
 

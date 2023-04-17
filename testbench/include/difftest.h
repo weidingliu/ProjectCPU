@@ -11,13 +11,18 @@
 /* max commit width */
 #define DIFFTEST_COMMIT_WIDTH 6
 
-enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 enum {
     STATE_RUNNING = 0,
     STATE_END,
     STATE_TIME_LIMIT,
     STATE_ABORT
 };
+enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
+enum { REF_TO_DUT, DUT_TO_REF };
+enum { REF_TO_DIFFTEST, DUT_TO_DIFFTEST };
+enum { DIFF_TO_REF_GR = 0, DIFF_TO_REF_ALL};
+enum { REF_TO_DIFF_GR = 0, REF_TO_DIFF_ALL};
+
 
 typedef struct {
     uint32_t gpr[32];
@@ -43,6 +48,8 @@ typedef struct {
     uint32_t pc;
     uint32_t inst;
     uint8_t skip;
+    uint8_t is_TLBFILL;
+    uint8_t TLBFILL_index;
     uint8_t is_CNTinst;
     uint64_t timer_64_value;
     uint8_t wen;
@@ -100,14 +107,32 @@ class DiffTest{
 
     /* nemu execute one instruction */
     void do_instr_commit(int index);
+    
+    /*check nemu and dut*/
+    bool check_reg();
+
+    bool sim_over;
+    int commit_count;
 
     public:
-    void init_difftest();
+
     /* Trigger a difftest checking produre */
     int step(vluint64_t& main_time);
 
     /* Print dut core state info */
     void display();
+
+    inline instr_commit_t *get_instr_commit(uint8_t index) {
+        return &(dut.commit[index]);
+    }
+    inline arch_csr_state_t *get_csr_state() {
+        return &(dut.csr);
+    }
+    inline arch_greg_state_t *get_greg_state() {
+        return &(dut.regs);
+    }
+
+
 
     DiffTest();
     ~DiffTest();
@@ -124,6 +149,16 @@ class DiffTest{
 
 
 
+/**
+ * Headers for Verilog DPI-C difftest interface
+ * These hearders are called to copy signals of dut
+ */
+#define DIFFTEST_DPIC_FUNC_NAME(name) \
+    v_difftest_##name
+
+#define DIFFTEST_DPIC_FUNC_DECL(name) \
+    extern "C" void DIFFTEST_DPIC_FUNC_NAME(name)
+
 
 //for difftest's DPI-C
 
@@ -134,7 +169,7 @@ class DiffTest{
 
 // v_difftest_InstrCommit
 #define INTERFACE_INSTR_COMMIT           \
-  DIFFTEST_DPIC_FUNC_DECL(InstrCommit) ( \
+  DIFFTEST_DPIC_FUNC_DECL (InstrCommit) ( \
     DPIC_ARG_BYTE coreid,                \
     DPIC_ARG_BYTE index,                 \
     DPIC_ARG_BIT  valid,                 \
@@ -151,11 +186,12 @@ class DiffTest{
     DPIC_ARG_BIT  csr_rstat,             \
     DPIC_ARG_INT  csr_data               \
   )
+  
 
 
 // v_difftest_CSRState
 #define INTERFACE_CSRREG_STATE           \
-  DIFFTEST_DPIC_FUNC_DECL(CSRRegState) ( \
+  DIFFTEST_DPIC_FUNC_DECL (CSRRegState) ( \
     DPIC_ARG_BYTE coreid,               \
     DPIC_ARG_LONG crmd,                 \
     DPIC_ARG_LONG prmd,                 \
@@ -188,7 +224,7 @@ class DiffTest{
 
   // v_difftest_GRegState
 #define INTERFACE_GREG_STATE \
-    DIFFTEST_DPIC_FUNC_DECL(GRegState) (     \
+    DIFFTEST_DPIC_FUNC_DECL (GRegState) (     \
         DPIC_ARG_BYTE coreid,                \
         DPIC_ARG_LONG gpr_0,                 \
         DPIC_ARG_LONG gpr_1,                 \

@@ -7,7 +7,11 @@
 //     public static testbench=new CpuTestBench();
 //     public static memory = new Memory();
 // }
-
+#ifdef DIFFTEST
+extern   DiffTest *ref;
+#endif
+extern uint8_t *pmem_start; 
+extern int mem_size;
 
 
 class CpuTestBench {
@@ -20,10 +24,7 @@ class CpuTestBench {
     VerilatedVcdC *m_trace;
     #endif
     
-    #ifdef DIFFTEST
-    DiffTest *ref = NULL;
-    #endif
-
+    
     Memory *ram = NULL;
 
     void init_testbench(int argc, char** argv);

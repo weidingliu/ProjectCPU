@@ -10,6 +10,10 @@
 #define DIFFTEST
 
 extern char* difftest_ref_so;
+#ifndef FIRST_INST_ADDRESS
+#define FIRST_INST_ADDRESS 0x1c000000
+#endif
+
 
 #define RESET_VECTOR 0x00000000 //pmem reset address
 #define PMEM_SIZE 0x8000000
