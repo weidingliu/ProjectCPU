@@ -59,7 +59,7 @@ void CpuTestBench :: eval(){
         #ifdef WTRACE
         m_trace->dump(sim_time);
         #endif
-        if(sim_time > 100) break;
+        if(sim_time > 400) break;
         sim_time++;
     }
 }

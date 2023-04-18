@@ -71,13 +71,10 @@ int DiffTest :: step(vluint64_t& main_time){
         commit_count++;
     }
     if(dut.commit[0].valid && !check_reg()){
-        
         return STATE_ABORT;
     }
     if(commit_count == mem_size) sim_over = true;
-
     
-
     return STATE_RUNNING;
 }
 
