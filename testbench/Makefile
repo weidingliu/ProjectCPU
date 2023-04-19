@@ -19,7 +19,7 @@ simulate:
 	@echo "======================================================"
 	@echo "compile finish start simulate"
 	@echo "======================================================"
-	$(BUILD_DIR)/VTop $(SO_PATH)
+	$(BUILD_DIR)/VTop $(SO_PATH) $(IMG)
 	@echo "======================================================"
 	@echo "END"
 	@echo "======================================================"
@@ -28,7 +28,7 @@ simulate_vcd:
 	verilator -Wno-fatal --trace  --Mdir $(BUILD_DIR) -j $(nproc) -compiler clang -cc  $(VSRC) --top-module Top --exe $(CSRC) $(VLIB) $(LDFLAGS) $(CFLAGS) \
     -CFLAGS "-D WTRACE"
 	$(MAKE) -C $(BUILD_DIR) -f VTop.mk VTop
-	$(BUILD_DIR)/VTop $(SO_PATH)
+	$(BUILD_DIR)/VTop $(SO_PATH) $(IMG)
 	gtkwave waveform.vcd
 
 

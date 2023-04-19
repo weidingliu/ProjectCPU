@@ -24,7 +24,8 @@ void CpuTestBench :: init_testbench(int argc, char** argv){
     dut->trace(m_trace,5);
     m_trace->open("waveform.vcd");
     #endif
-    ram->init_mem(NULL);
+    // printf("---%s\n",);
+    ram->init_mem(argv[2]);
     pmem_start = ram->mem;
     mem_size= ram->mem_size;
     
@@ -59,7 +60,7 @@ void CpuTestBench :: eval(){
         #ifdef WTRACE
         m_trace->dump(sim_time);
         #endif
-        if(sim_time > 400) break;
+        if(sim_time > 1000) break;
         sim_time++;
     }
 }

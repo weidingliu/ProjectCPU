@@ -1,5 +1,5 @@
 
-./build/dummy:     file format elf32-loongarch
+./build/dummy.elf:     file format elf32-loongarch
 
 
 Disassembly of section .text:

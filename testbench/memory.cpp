@@ -2,34 +2,35 @@
 #include <debug.h>
 
 void Memory :: init_mem(char *file_path){
-    // FILE *fp;
-    // //printf("%x\n",*(uint32_t *)(mem+0x24c));
-    // if((fp=fopen(file_path,"rb"))==NULL){
-    //     printf("\033[40;31mload mem fail!\033[0m\n");
-    //     exit(-1);
-    // }
-    // fseek(fp,0,SEEK_END);
-    // int size=ftell(fp);
-    // mem_size=size;
-    // printf("\033[40;34mThe image is %s, size = %d\033[0m\n", file_path, size);
-    // if(size>PMEM_SIZE){
-    //     printf("fail load mem file size:%d\n",size);
-    //     exit(-1);
-    // } 
-    // //printf("----------%d\n",size);
-    // //uint8_t *temp=mem;
-    // fseek(fp, 0, SEEK_SET);
-    // size_t o=fread(mem,size,1,fp);
-    // if(o==0){
-    //     printf("fail load mem file \n");
-    //     exit(-1);
-    // }
+    FILE *fp;
+    //printf("%x\n",*(uint32_t *)(mem+0x24c));
+    if((fp=fopen(file_path,"rb"))==NULL){
+        printf("\033[40;31mload mem fail!\033[0m\n");
+        exit(-1);
+    }
+    fseek(fp,0,SEEK_END);
+    int size=ftell(fp);
+    mem_size=size;
+    printf("\033[40;34mThe image is %s, size = %d\033[0m\n", file_path, size);
+    if(size>PMEM_SIZE){
+        printf("fail load mem file size:%d\n",size);
+        exit(-1);
+    } 
+    //printf("----------%d\n",size);
+    //uint8_t *temp=mem;
+    fseek(fp, 0, SEEK_SET);
+    size_t o=fread(mem,size,1,fp);
+    if(o==0){
+        printf("fail load mem file \n");
+        exit(-1);
+    }
     
-    // printf("\033[40;34mload mem finish!\033[0m\n");
-    // fclose(fp);
-    uint32_t inst=0x00100011;
-    mem_size = 2;
-    memcpy(mem,&inst,sizeof(uint32_t));
+    printf("\033[40;34mload mem finish!\033[0m\n");
+    fclose(fp);
+    printf("%x\n",*(uint32_t *)mem);
+    // uint32_t inst=0x00100011;
+    // mem_size = 2;
+    // memcpy(mem,&inst,sizeof(uint32_t));
 }
 
 void Memory :: pmem_read(uint32_t addr, uint32_t *rdata){
