@@ -3,3 +3,4 @@
 .idea
 .vscode
 .vcd
+/cpu-tests/build/

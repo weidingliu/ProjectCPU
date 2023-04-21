@@ -49,7 +49,7 @@ bool DiffTest::check_reg(){
         fflush(NULL);
         return false;
     }
-    //display();
+    display();
     
     return true;
 }

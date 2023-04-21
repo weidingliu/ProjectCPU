@@ -25,7 +25,7 @@ assign right_fire=right_ready & right_valid;//data submit finish
 
 always @(posedge clk) begin
   if(reset == `RestEn)begin 
-      temp <=32'h0;
+      temp <=32'h1C000000;
   end
   else begin 
       if(right_fire) temp<=temp+32'h4;
