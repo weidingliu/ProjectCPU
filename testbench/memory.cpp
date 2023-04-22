@@ -27,7 +27,7 @@ void Memory :: init_mem(char *file_path){
     
     printf("\033[40;34mload mem finish!\033[0m\n");
     fclose(fp);
-    printf("%x\n",*(uint32_t *)mem);
+    //printf("%x\n",*(uint32_t *)mem);
     // uint32_t inst=0x00100011;
     // mem_size = 2;
     // memcpy(mem,&inst,sizeof(uint32_t));
@@ -41,7 +41,7 @@ void Memory :: pmem_read(uint32_t addr, uint32_t *rdata){
     }
     memcpy(&temp,(mem+(addr& ~0x3u)-RESET_VECTOR),sizeof(uint32_t));
    *rdata=temp;
-
+   //printf("%08x\n",temp);
 }
 
 void Memory :: pmem_write(uint32_t addr, uint32_t wdata, char wmask){

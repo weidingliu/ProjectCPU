@@ -15,11 +15,13 @@ wire right_fire;
 reg valid;
 reg [`ex_ctrl_width-1:0] ctrl_temp_bus;//exe ctrl bus
 
+wire [31:0] src1;
+wire [31:0] src2;
 wire is_sign;
 wire [13:0]alu_op;
 wire [31:0]Imm;//bus [0:31]
-wire [31:0]src1;//bus [32:63]
-wire [31:0]src2;//bus [64:95]
+wire [31:0]reg1;//bus [32:63]
+wire [31:0]reg2;//bus [64:95]
 wire inst_valid;
 wire [31:0]PC;
 wire wreg_en;
@@ -33,10 +35,18 @@ assign {
     Inst,//102:133
     wreg_index,//97:101
     wreg_en,//96:96
-    src2,// 64:95
-    src1,// 32:63
+    reg2,// 64:95
+    reg1,// 32:63
     Imm// 0:31
 }=id_ctrl_bus;
+
+assign src1 = (select_src1[1])? PC:
+              (select_src1[0])? Imm:
+              reg_data1;
+assign src2 = (select_src2[1])? PC:
+              (select_src2[0])? Imm:
+              reg_data2;
+
 
 wire [31:0]alu_result;
 

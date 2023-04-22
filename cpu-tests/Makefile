@@ -8,9 +8,9 @@ OBJDUMP := $(CROSS_COMPILE)objdump
 OBJCOPY := $(CROSS_COMPILE)objcopy
 LD := $(CROSS_COMPILE)ld
 
-LIB := $(wildcard $(CHIPLAB_HOME)/toolchains/system_newlib/*.a $(CHIPLAB_HOME)/toolchains/system_newlib/*.o)
+LIB := $(wildcard $(CHIPLAB_HOME)/toolchains/system_newlib/*.a)
 CFLAGS    += -fdata-sections -ffunction-sections -static
-LDFLAGS   +=-T $(CHIPLAB_HOME)/toolchains/system_newlib/pmon.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
+LDFLAGS   +=-T /home/liuweiding/ProjectCPU/cpu-tests/linker.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
 LDFLAGS   += --gc-sections -e _start
 
 LINKAGE := $(LIB)
@@ -24,7 +24,7 @@ $(ALL).elf:
 	@echo $(LIB)
 	$(CC) ./tests/$(ALL).c -o $(BUILD_DIR)/$(ALL).o
 	@echo + LD "->" $(BUILD_DIR)/$(ALL).elf
-	@$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ALL).elf --start-group $(LINKAGE) $(BUILD_DIR)/$(ALL).o--end-group
+	@$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ALL).elf $(LINKAGE) $(BUILD_DIR)/$(ALL).o
 
 image: $(ALL).elf
 	$(OBJDUMP) -d $(BUILD_DIR)/$(ALL).elf > $(BUILD_DIR)/$(ALL).txt

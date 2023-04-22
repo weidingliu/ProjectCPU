@@ -15,7 +15,7 @@ extern char* difftest_ref_so;
 #endif
 
 
-#define RESET_VECTOR 0x00000000 //pmem reset address
+#define RESET_VECTOR 0x1c000000 //pmem reset address
 #define PMEM_SIZE 0x8000000
 
 
