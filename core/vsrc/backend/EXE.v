@@ -27,7 +27,12 @@ wire [31:0]PC;
 wire wreg_en;
 wire [4:0]wreg_index;
 wire [31:0]Inst;
+wire [1:0]select_src1;
+wire [1:0]select_src2;
+
 assign {
+    select_src1,//184:185
+    select_src2,//182:183
     is_sign,//181:181
     alu_op,//167:180
     inst_valid,//166:166
@@ -42,10 +47,10 @@ assign {
 
 assign src1 = (select_src1[1])? PC:
               (select_src1[0])? Imm:
-              reg_data1;
+              reg1;
 assign src2 = (select_src2[1])? PC:
               (select_src2[0])? Imm:
-              reg_data2;
+              reg2;
 
 
 wire [31:0]alu_result;

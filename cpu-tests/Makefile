@@ -1,5 +1,8 @@
 .PHONY:  clean image $(ALL).elf
 
+BUILD_DIR := ./build
+DIR := $(shell pwd)
+
 CROSS_COMPILE := loongarch32r-linux-gnusf-
 ASFLAGS       += -O0
 
@@ -8,23 +11,35 @@ OBJDUMP := $(CROSS_COMPILE)objdump
 OBJCOPY := $(CROSS_COMPILE)objcopy
 LD := $(CROSS_COMPILE)ld
 
+SRC :=  ./tests/$(ALL).c ./trm.c 
+ASRC := ./start.S
+OBJS      = $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(SRC))))
+OBJS += $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(ASRC))))
+
 LIB := $(wildcard $(CHIPLAB_HOME)/toolchains/system_newlib/*.a)
 CFLAGS    += -fdata-sections -ffunction-sections -static
 LDFLAGS   +=-T /home/liuweiding/ProjectCPU/cpu-tests/linker.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
-LDFLAGS   += --gc-sections -e _start
+LDFLAGS   += --gc-sections -e _start -static
 
-LINKAGE := $(LIB)
+LINKAGE := $(LIB) $(OBJS)
+
 
 ##IMAGE := $(BUILD_DIR)/$(ALL).c
-BUILD_DIR := ./build
-DIR := $(shell pwd)
 
-$(ALL).elf:
-	mkdir -p $(BUILD_DIR)
-	@echo $(LIB)
-	$(CC) ./tests/$(ALL).c -o $(BUILD_DIR)/$(ALL).o
+
+$(BUILD_DIR)/%.o: %.c
+	@echo "###########################################"
+	@echo "#############start complier################"
+	@echo "###########################################"
+	mkdir -p $(BUILD_DIR) && echo + CC $<
+	$(CC) -std=gnu11 $(CFLAGS) -c -o $@ $(realpath $<)
+$(BUILD_DIR)/%.o: %.S	
+	mkdir -p $(BUILD_DIR) && echo + CC $<
+	$(CC) $(ASLAGS) -c -o $@ $(realpath $<)
+
+$(ALL).elf: $(OBJS)
 	@echo + LD "->" $(BUILD_DIR)/$(ALL).elf
-	@$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ALL).elf $(LINKAGE) $(BUILD_DIR)/$(ALL).o
+	@$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ALL).elf --start-group $(LINKAGE) --end-group
 
 image: $(ALL).elf
 	$(OBJDUMP) -d $(BUILD_DIR)/$(ALL).elf > $(BUILD_DIR)/$(ALL).txt

@@ -25,7 +25,7 @@ static const char compare_mask[DIFFTEST_NR_CSRREG] = {
 
 bool DiffTest::check_reg(){
     fflush(NULL);
-    printf("----dut %x ref %x \n",dut.commit[0].pc,ref.commit[0].pc);
+    printf("----dut %x ref %x \n",dut.commit[0].pc,ref.csr.this_pc);
     for (int i=0;i<32;i++){
         //printf("%x %x\n",dut_regs_ptr[i],ref_regs_ptr[i]);
         if(dut_regs_ptr[i] != ref_regs_ptr[i]){
@@ -38,18 +38,18 @@ bool DiffTest::check_reg(){
             return false;
         }
     }
-    if(dut.commit[0].pc != ref.commit[0].pc){
+    if(dut.commit[0].pc != ref.csr.this_pc){
         
         printf("===================================\n");
         printf("=========== PC FAIL ===============\n");
-        printf("ref PC is %08x dut PC is %08x\n",ref.commit->pc,dut.commit->pc);
+        printf("ref PC is %08x dut PC is %08x\n",ref.csr.this_pc,dut.commit->pc);
         printf("===================================\n");
         display();
         printf("===================================\n");
         fflush(NULL);
         return false;
     }
-    display();
+    //display();
     
     return true;
 }
@@ -84,9 +84,11 @@ void DiffTest::do_first_instr_commit() {
     if (dut.commit[0].valid && commit_count==0) {
         printf("The first instruction of core has commited. Difftest enabled.\n");
        if(get_img_start()==NULL) panic("img_start fail!");
+        dut.csr.this_pc = dut.commit[0].pc;
         proxy->memcpy(0x0, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
         // munmap(get_img_start(), EMU_RAM_SIZE);
         proxy->regcpy(dut_regs_ptr, DIFFTEST_TO_REF, DIFF_TO_REF_ALL);
+        proxy->csrcpy(ref_regs_ptr,DIFFTEST_TO_REF);
     }
 }
 

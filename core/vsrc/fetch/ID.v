@@ -97,7 +97,7 @@ assign i16  = Inst[25:10];
 assign i26  = {Inst[ 9: 0], Inst[25:10]};
 
 //extend Imm
-asssign Imm20 = {i20,12'h0};
+assign Imm20 = ({i20,12'h0});
 
 assign Imm20_en = inst_pcaddu12i;
 
@@ -116,7 +116,7 @@ assign select_src2[1] = ~inst_add | inst_pcaddu12i;
 
 //produce inst decoder result
 assign inst_add = decoder_op_31_26[5'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h00];
-assign inst_pcaddu12i = op_31_26_d[5'h07] & ~ds_inst[25];
+assign inst_pcaddu12i = decoder_op_31_26[5'h07] & ~Inst[25];
 // assign inst_or = op_31_26_d[5'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0a];
 
 //next stage's data was consumed
@@ -125,7 +125,7 @@ assign right_fire=right_ready & right_valid;//data submit finish
 assign is_sign=1'b0;
 
 //for next stage and difftest
-assign inst_valid = inst_add & inst_pcaddu12i;
+assign inst_valid = inst_add | inst_pcaddu12i;
 
 //output logic
 assign ctrl_bus= bus_temp;
@@ -133,7 +133,7 @@ assign reg_index1=rj;
 assign reg_index2=rk;
 assign wreg_index=rd;
 assign wreg_en = inst_add & inst_pcaddu12i;
-assign Imm = Imm20_en ? Imm20:32'h0;
+assign Imm = ({32{Imm20_en}} & Imm20);
 
 
 //op number decoder
@@ -174,6 +174,8 @@ always @(posedge clk) begin
     else begin 
         if(left_valid & right_ready) begin 
             bus_temp <= {
+                    select_src1,//184:185
+                    select_src2,//182:183
                     is_sign,//181:181
                     alu_op,//167:180
                     inst_valid,//166:166
