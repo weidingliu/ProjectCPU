@@ -47,10 +47,16 @@ void CpuTestBench :: eval(){
 
             dut->inst=inst;
         }
-
+        //printf("%d\n",dut->clk);
 
         #ifdef DIFFTEST
-        if(ref->step(sim_time)==STATE_ABORT || ref->step(sim_time)==STATE_END){
+        
+        int state;
+        if(dut->clk != 0){
+            state =ref->step(sim_time);
+        }
+        // printf("dfgg %ld\n",sim_time);
+        if(state==STATE_ABORT || state==STATE_END){
             
             break;
         }
@@ -63,6 +69,7 @@ void CpuTestBench :: eval(){
         if(sim_time > 1000) break;
         sim_time++;
     }
+    
 }
 
 void CpuTestBench :: reset_rtl(){

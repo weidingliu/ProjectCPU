@@ -72,11 +72,14 @@ wire inst_valid;
 wire inst_add;
 wire inst_or;
 wire inst_pcaddu12i;
+wire inst_lu12i;
 
 wire Imm20_en;
+wire Imm12_en;
 
 //aluop
 assign alu_op[0] = inst_add | inst_pcaddu12i;
+assign alu_op[1] = inst_lu12i;
 //is signextend or zero extend
 assign is_sign_extend = 1'b0;
 
@@ -99,7 +102,9 @@ assign i26  = {Inst[ 9: 0], Inst[25:10]};
 //extend Imm
 assign Imm20 = ({i20,12'h0});
 
-assign Imm20_en = inst_pcaddu12i;
+
+assign Imm20_en = inst_pcaddu12i | inst_lu12i;
+assign Imm12_en = 1'b0;
 
 
 //decoder split inst
@@ -109,14 +114,15 @@ decoder_5_32 decoder_5_32_0(.in(op_31_26),.out(decoder_op_31_26));
 decoder_5_32 decoder_5_32_1(.in(op_19_15),.out(decoder_op_19_15));
 
 //produce select_src 2'b00 for reg, 2'b01 for Imm , 2'b10 for PC
-assign select_src1[0] = ~inst_add | inst_pcaddu12i;
-assign select_src1[1] = ~inst_add;
-assign select_src2[0] = ~inst_add;
-assign select_src2[1] = ~inst_add | inst_pcaddu12i;
+assign select_src1[0] = inst_pcaddu12i | inst_lu12i;
+assign select_src1[1] = 1'b0;
+assign select_src2[0] = 1'b0;
+assign select_src2[1] = inst_pcaddu12i;
 
 //produce inst decoder result
 assign inst_add = decoder_op_31_26[5'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h00];
 assign inst_pcaddu12i = decoder_op_31_26[5'h07] & ~Inst[25];
+assign inst_lu12i    = decoder_op_31_26[5'h05] & ~Inst[25];
 // assign inst_or = op_31_26_d[5'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0a];
 
 //next stage's data was consumed
@@ -125,14 +131,14 @@ assign right_fire=right_ready & right_valid;//data submit finish
 assign is_sign=1'b0;
 
 //for next stage and difftest
-assign inst_valid = inst_add | inst_pcaddu12i;
+assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i;
 
 //output logic
 assign ctrl_bus= bus_temp;
 assign reg_index1=rj;
 assign reg_index2=rk;
 assign wreg_index=rd;
-assign wreg_en = inst_add & inst_pcaddu12i;
+assign wreg_en = inst_add | inst_pcaddu12i | inst_lu12i;
 assign Imm = ({32{Imm20_en}} & Imm20);
 
 

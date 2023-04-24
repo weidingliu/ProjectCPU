@@ -25,11 +25,12 @@ static const char compare_mask[DIFFTEST_NR_CSRREG] = {
 
 bool DiffTest::check_reg(){
     fflush(NULL);
-    printf("----dut %x ref %x \n",dut.commit[0].pc,ref.csr.this_pc);
+    // printf("----dut %x ref %x \n",dut.commit[0].pc,ref.csr.this_pc);
+    // printf("%08x   %08x\n",dut.commit[0].pc,dut.commit[0].inst);
     for (int i=0;i<32;i++){
-        //printf("%x %x\n",dut_regs_ptr[i],ref_regs_ptr[i]);
+        // printf("%x %x\n",dut_regs_ptr[i],ref_regs_ptr[i]);
         if(dut_regs_ptr[i] != ref_regs_ptr[i]){
-            //
+            printf("%d dut: %x ref :%x\n",i,dut_regs_ptr[i],ref_regs_ptr[i]);
             printf("====================================\n");
             printf("=========== REG FAIL ===============\n");
             display();
@@ -38,6 +39,7 @@ bool DiffTest::check_reg(){
             return false;
         }
     }
+
     if(dut.commit[0].pc != ref.csr.this_pc){
         
         printf("===================================\n");
@@ -49,7 +51,8 @@ bool DiffTest::check_reg(){
         fflush(NULL);
         return false;
     }
-    //display();
+
+    // //display();
     
     return true;
 }
@@ -81,14 +84,19 @@ int DiffTest :: step(vluint64_t& main_time){
 extern void *get_img_start();
 extern int get_img_size();
 void DiffTest::do_first_instr_commit() {
+    // uint8_t me[get_img_size()];
     if (dut.commit[0].valid && commit_count==0) {
         printf("The first instruction of core has commited. Difftest enabled.\n");
        if(get_img_start()==NULL) panic("img_start fail!");
         dut.csr.this_pc = dut.commit[0].pc;
-        proxy->memcpy(0x0, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
+        proxy->memcpy(0x1c000000, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
+        // proxy->memcpy(0x0,me , get_img_size(), REF_TO_DUT);
+        // printf("%08x\n",*((uint32_t *)me+1));
+
         // munmap(get_img_start(), EMU_RAM_SIZE);
         proxy->regcpy(dut_regs_ptr, DIFFTEST_TO_REF, DIFF_TO_REF_ALL);
-        proxy->csrcpy(ref_regs_ptr,DIFFTEST_TO_REF);
+        proxy->csrcpy((void *)&dut.csr,DIFFTEST_TO_REF);
+        
     }
 }
 
@@ -112,8 +120,14 @@ void DiffTest::do_instr_commit(int i) {
 
     /* single step exec */
     // auto start = std::chrono::steady_clock::now();
+    // printf("sdfdg\n");
     proxy->exec(1);
     proxy->regcpy(ref_regs_ptr,REF_TO_DUT,REF_TO_DIFF_ALL);
+    // printf("sdaff\n");
+    // printf("df %p\n",(void *)&ref.csr);
+    // proxy->csrcpy((void *)&ref.csr,REF_TO_DUT);
+    // proxy->csrcpy(ref_regs_ptr,DIFFTEST_TO_REF);
+
     // auto end = std::chrono::steady_clock::now();
     // nemu_nano_seconds += std::chrono::nanoseconds(end-start);
 

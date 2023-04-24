@@ -28,7 +28,7 @@ always @(posedge clk) begin
       temp <=32'h1C000000;
   end
   else begin 
-      if(right_fire) temp<=temp+32'h4;
+      if(right_ready) temp<=temp+32'h4;
   end
 end
 
