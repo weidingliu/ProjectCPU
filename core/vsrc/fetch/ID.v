@@ -13,6 +13,9 @@ module ID (
     output wire [4:0]reg_index2,//read REG index2
     input wire [31:0]reg_data1,
     input wire [31:0]reg_data2,
+    //flush
+    input wire flush,
+
     //ctrl flower
     output wire [`ctrl_width-1:0]ctrl_bus,//ctrl bus
     //shark hand
@@ -27,6 +30,7 @@ wire right_fire;
 reg valid;
 
 wire [13:0] alu_op;//alu opcode
+wire [7:0] branch_op;
 
 reg [`ctrl_width-1:0] bus_temp;//reg for ctrl flower
 wire [31:0]Imm;//bus [0:31]
@@ -48,7 +52,7 @@ wire [19:0] i20;
 wire [15:0] i16;
 wire [25:0] i26;
 
-wire [31:0]decoder_op_31_26;
+wire [63:0]decoder_op_31_26;
 wire [15:0]decoder_op_25_22;
 wire [3:0]decoder_op_21_20;
 wire [31:0]decoder_op_19_15;
@@ -58,6 +62,10 @@ wire [31:0] Imm14;
 wire [31:0] Imm20;
 wire [31:0] Imm16;
 wire [31:0] Imm26;
+
+wire Imm20_en;
+wire Imm12_en;
+wire Imm16_en;
 //select src form reg , Imm, PC
 wire [1:0]select_src1;//select src1
 wire [1:0]select_src2;//select src2
@@ -73,15 +81,24 @@ wire inst_add;
 wire inst_or;
 wire inst_pcaddu12i;
 wire inst_lu12i;
+wire inst_ori;
+wire inst_sub;
+wire inst_jirl;
 
-wire Imm20_en;
-wire Imm12_en;
+
 
 //aluop
-assign alu_op[0] = inst_add | inst_pcaddu12i;
+assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl;
 assign alu_op[1] = inst_lu12i;
+assign alu_op[2] = inst_ori;
+assign alu_op[3] = inst_sub;
+
+//branchop
+assign branch_op[0] = inst_jirl;
+
+
 //is signextend or zero extend
-assign is_sign_extend = 1'b0;
+assign is_sign_extend = inst_jirl;
 
 //split inst
 assign op_31_26  = Inst[31:26];
@@ -101,29 +118,37 @@ assign i26  = {Inst[ 9: 0], Inst[25:10]};
 
 //extend Imm
 assign Imm20 = ({i20,12'h0});
+assign Imm12 = {20'h0,i12};
+assign Imm16 = {{14{i16[15]}},i16,2'b00};
 
 
 assign Imm20_en = inst_pcaddu12i | inst_lu12i;
-assign Imm12_en = 1'b0;
+assign Imm12_en = inst_ori;
+assign Imm16_en = inst_jirl;
+
 
 
 //decoder split inst
 decoder_2_4 decoder_2_4(.in(op_21_20),.out(decoder_op_21_20));
 decoder_4_16 decoder_4_16(.in(op_25_22),.out(decoder_op_25_22));
-decoder_5_32 decoder_5_32_0(.in(op_31_26),.out(decoder_op_31_26));
+decoder_6_64 decoder_6_64_0(.in(op_31_26),.out(decoder_op_31_26));
 decoder_5_32 decoder_5_32_1(.in(op_19_15),.out(decoder_op_19_15));
 
 //produce select_src 2'b00 for reg, 2'b01 for Imm , 2'b10 for PC
 assign select_src1[0] = inst_pcaddu12i | inst_lu12i;
 assign select_src1[1] = 1'b0;
-assign select_src2[0] = 1'b0;
+
+assign select_src2[0] = inst_ori | inst_jirl;
 assign select_src2[1] = inst_pcaddu12i;
 
 //produce inst decoder result
-assign inst_add = decoder_op_31_26[5'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h00];
-assign inst_pcaddu12i = decoder_op_31_26[5'h07] & ~Inst[25];
-assign inst_lu12i    = decoder_op_31_26[5'h05] & ~Inst[25];
-// assign inst_or = op_31_26_d[5'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0a];
+assign inst_add       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h00];
+assign inst_sub       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h02];
+assign inst_pcaddu12i = decoder_op_31_26[6'h07] & ~Inst[25];
+assign inst_lu12i     = decoder_op_31_26[6'h05] & ~Inst[25];
+assign inst_ori       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'he];
+assign inst_jirl      = decoder_op_31_26[6'h13];
+assign inst_or        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0a];
 
 //next stage's data was consumed
 assign right_fire=right_ready & right_valid;//data submit finish
@@ -131,15 +156,17 @@ assign right_fire=right_ready & right_valid;//data submit finish
 assign is_sign=1'b0;
 
 //for next stage and difftest
-assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i;
+assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl;
 
 //output logic
 assign ctrl_bus= bus_temp;
 assign reg_index1=rj;
 assign reg_index2=rk;
 assign wreg_index=rd;
-assign wreg_en = inst_add | inst_pcaddu12i | inst_lu12i;
-assign Imm = ({32{Imm20_en}} & Imm20);
+assign wreg_en = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl;
+assign Imm = ({32{Imm20_en}} & Imm20) |
+             ({32{Imm12_en}} & Imm12) |
+             ({32{Imm16_en}} & Imm16);
 
 
 //op number decoder
@@ -177,9 +204,13 @@ always @(posedge clk) begin
     if(reset == `RestEn) begin 
         bus_temp <= `ctrl_width'h0;
     end
+    else if(flush == 1'b1) begin 
+        bus_temp <= `ctrl_width'h0;
+    end
     else begin 
         if(left_valid & right_ready) begin 
             bus_temp <= {
+                    branch_op,//186:193
                     select_src1,//184:185
                     select_src2,//182:183
                     is_sign,//181:181

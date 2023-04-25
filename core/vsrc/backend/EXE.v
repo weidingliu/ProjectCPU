@@ -5,6 +5,14 @@ module EXE (
     input wire [`ctrl_width-1:0]id_ctrl_bus, //ctrl flower
 
     output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
+    //bypass
+    output wire [`bypass_width-1:0]ex_bypass,
+    
+    //branch
+    output wire is_branch,
+    output wire flush,
+    output wire [31:0]dnpc,
+
     //shark hand
     input wire left_valid,//ID stage's data is ready
     output wire left_ready,//EX stage is allowin
@@ -29,8 +37,11 @@ wire [4:0]wreg_index;
 wire [31:0]Inst;
 wire [1:0]select_src1;
 wire [1:0]select_src2;
+wire [7:0]branch_op;
+wire [31:0] write_data;
 
 assign {
+    branch_op,//186:193
     select_src1,//184:185
     select_src2,//182:183
     is_sign,//181:181
@@ -45,13 +56,16 @@ assign {
     Imm// 0:31
 }=id_ctrl_bus;
 
+
 assign src1 = (select_src1[1])? PC:
               (select_src1[0])? Imm:
               reg1;
 assign src2 = (select_src2[1])? PC:
               (select_src2[0])? Imm:
               reg2;
-
+// always @(*) begin 
+//     $display("%h   %h   %h",PC,src1,src2);
+// end
 
 wire [31:0]alu_result;
 
@@ -62,6 +76,7 @@ alu alu(
     .alu_result(alu_result)
 );
 
+assign write_data = branch_op[0] ? PC+32'h4 : alu_result;
 
 assign right_fire=right_ready & right_valid;//data submit finish
 //shark hands
@@ -99,7 +114,7 @@ always @(posedge clk) begin
                     wreg_en,//96:96
                     src2,// 64:95
                     src1,// 32:63
-                    alu_result// 0:31
+                    write_data// 0:31
                     };
         end
     end
@@ -108,4 +123,10 @@ end
 assign right_valid=valid;
 assign left_ready=right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
+assign ex_bypass = {alu_result,wreg_index,wreg_en};
+
+assign is_branch = branch_op[0];
+assign flush = branch_op[0];
+assign dnpc = alu_result;
+
 endmodule //EXE

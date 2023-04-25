@@ -11,6 +11,8 @@ module MEM (
     output wire [3:0]wmask,
     input wire [31:0]rdata,
     output wire [31:0]wdata,
+    //bypass
+    output wire [`bypass_width-1:0]mem_bypass,
     //shark hand
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
@@ -91,5 +93,6 @@ end
 assign right_valid=valid;
 assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
+assign mem_bypass = {alu_result,wreg_index,wreg_en};
 
 endmodule //MEM

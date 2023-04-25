@@ -37,6 +37,8 @@ void Memory :: pmem_read(uint32_t addr, uint32_t *rdata){
     // 总是读取地址为`raddr & ~0x3u`的4字节返回给`rdata`
     uint32_t temp;
     if((((addr & ~0x3u)-RESET_VECTOR)>PMEM_SIZE) ) {
+        printf("%x\n",(addr & ~0x3u));
+        exit(0);
         panic("memory read out of boundary");
     }
     memcpy(&temp,(mem+(addr& ~0x3u)-RESET_VECTOR),sizeof(uint32_t));

@@ -5,6 +5,8 @@ module WB (
     input wire [`mem_ctrl_width-1:0] mem_ctrl_bus,
     output wire [`mem_ctrl_width-1:0] wb_ctrl_bus,
 
+    //bypass
+    output wire [`bypass_width-1:0]wb_bypass,
     //shark hand
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
@@ -55,6 +57,6 @@ end
 assign right_valid=valid;
 assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
-
+assign wb_bypass = {mem_ctrl_bus[31:0],mem_ctrl_bus[101:97],mem_ctrl_bus[96:96]};
 
 endmodule //WB

@@ -27,6 +27,18 @@ bool DiffTest::check_reg(){
     fflush(NULL);
     // printf("----dut %x ref %x \n",dut.commit[0].pc,ref.csr.this_pc);
     // printf("%08x   %08x\n",dut.commit[0].pc,dut.commit[0].inst);
+    if(dut.commit[0].pc != ref.csr.this_pc){
+        
+        printf("===================================\n");
+        printf("=========== PC FAIL ===============\n");
+        printf("ref PC is %08x dut PC is %08x\n",ref.csr.this_pc,dut.commit->pc);
+        printf("===================================\n");
+        display();
+        printf("===================================\n");
+        fflush(NULL);
+        return false;
+    }
+
     for (int i=0;i<32;i++){
         // printf("%x %x\n",dut_regs_ptr[i],ref_regs_ptr[i]);
         if(dut_regs_ptr[i] != ref_regs_ptr[i]){
@@ -40,17 +52,6 @@ bool DiffTest::check_reg(){
         }
     }
 
-    if(dut.commit[0].pc != ref.csr.this_pc){
-        
-        printf("===================================\n");
-        printf("=========== PC FAIL ===============\n");
-        printf("ref PC is %08x dut PC is %08x\n",ref.csr.this_pc,dut.commit->pc);
-        printf("===================================\n");
-        display();
-        printf("===================================\n");
-        fflush(NULL);
-        return false;
-    }
 
     // //display();
     
@@ -70,6 +71,7 @@ int DiffTest :: step(vluint64_t& main_time){
     do_first_instr_commit();
 
     if(dut.commit[0].valid){
+        dut.csr.this_pc = dut.commit[0].pc;
         do_instr_commit(0);
         commit_count++;
     }
@@ -89,7 +91,7 @@ void DiffTest::do_first_instr_commit() {
         printf("The first instruction of core has commited. Difftest enabled.\n");
        if(get_img_start()==NULL) panic("img_start fail!");
         dut.csr.this_pc = dut.commit[0].pc;
-        proxy->memcpy(0x1c000000, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
+        proxy->memcpy(RESET_VECTOR, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
         // proxy->memcpy(0x0,me , get_img_size(), REF_TO_DUT);
         // printf("%08x\n",*((uint32_t *)me+1));
 

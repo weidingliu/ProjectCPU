@@ -36,14 +36,20 @@ wire id_right_ready;
 wire [`ex_ctrl_width-1:0] ex_bus;
 wire ex_right_valid;
 wire ex_right_ready;
+wire [`bypass_width-1:0] ex_bypass;
+wire flush;
+wire is_branch;
+wire [31:0]dnpc;
 
 //MEM stage signal
 wire [`mem_ctrl_width-1:0] mem_bus;
 wire mem_right_valid;
 wire mem_right_ready;
+wire [`bypass_width-1:0] mem_bypass;
 
 //WB stage signal
 wire [`mem_ctrl_width-1:0] wb_bus;
+wire [`bypass_width-1:0] wb_bypass;
 
 //difftest
 reg [`mem_ctrl_width-1:0] difftest_bus;
@@ -56,6 +62,9 @@ wire [31:0]difftest_result;
 
 // from regfile
 wire    [31:0]  regs[31:0];
+//from bypass
+wire [31:0] bypass_reg1;
+wire [31:0] bypass_reg2;
 
 
 //IF stage
@@ -65,6 +74,10 @@ IF if_stage(
     .PC(PC), //inst addr
     .Inst(inst),//inst
     .data_bus(if_bus),
+    //branch 
+    .flush(flush),
+    .is_branch(is_branch),
+    .dnpc(dnpc),
     //shark hand
     .pc_valid(pc_valid),//IF stage's data is ready
     .inst_ready(inst_ready),//ID stage is allowin
@@ -80,8 +93,10 @@ ID id_stage(
     //for regfile
     .reg_index1(reg_index1),//read REG index1
     .reg_index2(reg_index2),//read REG index2
-    .reg_data1(reg_data1),
-    .reg_data2(reg_data2),
+    .reg_data1(bypass_reg1),
+    .reg_data2(bypass_reg1),
+    //flush 
+    .flush(flush),
     //ctrl flower
     .ctrl_bus(id_bus),//ctrl bus
     //shark hand
@@ -91,6 +106,18 @@ ID id_stage(
     .right_valid(id_right_valid),//ID stage's data is ready
     .right_ready(id_right_ready)//EXE stage is allowin
 );
+bypass Bypass(
+    .ex_bypass(ex_bypass),
+    .mem_bypass(mem_bypass),
+    .wb_bypass(wb_bypass),
+    .reg1(reg_data1),
+    .reg2(reg_data2),
+    .index1(reg_index1),
+    .index2(reg_index2),
+    .bypass_reg1(bypass_reg1),
+    .bypass_reg2(bypass_reg2)
+);
+
 Regfile Regfile(
     .clk(clk),// clock
     .reset(reset),
@@ -110,6 +137,12 @@ EXE exe_stage(
     .id_ctrl_bus(id_bus), //ctrl flower
 
     .ex_ctrl_bus(ex_bus),
+    //bypass
+    .ex_bypass(ex_bypass),
+    //branch
+    .flush(flush),
+    .is_branch(is_branch),
+    .dnpc(dnpc),
     //shark hand
     .left_valid(id_right_valid),//ID stage's data is ready
     .left_ready(id_right_ready),//EX stage is allowin
@@ -129,6 +162,8 @@ MEM mem_stage(
     .wmask(wmask),
     .rdata(rdata),
     .wdata(wdata),
+    //bypass 
+    .mem_bypass(mem_bypass),
     //shark hand
     .left_valid(ex_right_valid),//EX stage's data is ready
     .left_ready(ex_right_ready),//MEM stage is allowin
@@ -142,7 +177,8 @@ WB wb_syage(
     //ctrl flower
     .mem_ctrl_bus(mem_bus),
     .wb_ctrl_bus(wb_bus),
-
+    //bypass 
+    .wb_bypass(wb_bypass),
     //shark hand
     .left_valid(mem_right_valid),//IF stage's data is ready
     .left_ready(mem_right_ready),//ID stage is allowin

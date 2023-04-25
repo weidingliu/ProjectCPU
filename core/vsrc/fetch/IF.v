@@ -9,6 +9,11 @@ module IF (
     output wire[31:0] PC, //inst addr
     input wire [31:0]Inst,//inst
     output wire [63:0]data_bus,
+
+    //branch
+    input wire is_branch,
+    input wire flush,
+    input wire [31:0]dnpc,
     //shark hand
     output wire pc_valid,//IF stage's data is ready
     input wire inst_ready,//ID stage is allowin
@@ -27,6 +32,9 @@ always @(posedge clk) begin
   if(reset == `RestEn)begin 
       temp <=32'h1C000000;
   end
+  else if(is_branch == 1'b1) begin 
+      temp <= dnpc;
+  end
   else begin 
       if(right_ready) temp<=temp+32'h4;
   end
@@ -39,6 +47,10 @@ always @(posedge clk) begin
     if(reset == `RestEn) begin 
       valid <= `false;
     end
+    else if(flush == 1'b1) begin 
+        valid <= `false;
+        bus_temp <= 64'h0;
+    end 
     else begin 
         if(inst_ready & right_ready)begin 
              valid <= `true;
