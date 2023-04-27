@@ -1,25 +1,26 @@
 .PHONY:  clean image $(ALL).elf
 
 BUILD_DIR := ./build
+$(shell mkdir -p $(BUILD_DIR))
 DIR := $(shell pwd)
 
 CROSS_COMPILE := loongarch32r-linux-gnusf-
-ASFLAGS       += -O0
+ASFLAGS       += -O0 -mabi=ilp32
 
 CC := $(CROSS_COMPILE)gcc
 OBJDUMP := $(CROSS_COMPILE)objdump
 OBJCOPY := $(CROSS_COMPILE)objcopy
 LD := $(CROSS_COMPILE)ld
 
-SRC :=  ./tests/$(ALL).c ./trm.c 
-ASRC := ./start.S
+SRC :=  tests/$(ALL).c am/trm.c 
+ASRC := am/start.S
 OBJS      = $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(SRC))))
 OBJS += $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(ASRC))))
 
 LIB := $(wildcard $(CHIPLAB_HOME)/toolchains/system_newlib/*.a)
-CFLAGS    += -fdata-sections -ffunction-sections -static
-LDFLAGS   +=-T /home/liuweiding/ProjectCPU/cpu-tests/linker.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
-LDFLAGS   += --gc-sections -e _start -static
+CFLAGS    += -fdata-sections -ffunction-sections -static -mabi=ilp32 -O0 -nostdinc -nostdlib -fno-builtin -D__loongarch32
+LDFLAGS   +=-T /home/liuweiding/ProjectCPU/cpu-tests/am/linker.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
+LDFLAGS   += --gc-sections -e _start -static 
 
 LINKAGE := $(LIB) $(OBJS)
 
@@ -28,16 +29,16 @@ LINKAGE := $(LIB) $(OBJS)
 
 
 $(BUILD_DIR)/%.o: %.c
-	@echo "###########################################"
-	@echo "#############start complier################"
-	@echo "###########################################"
-	mkdir -p $(BUILD_DIR) && echo + CC $<
+	mkdir -p $(dir $@) && echo + CC $<
 	$(CC) -std=gnu11 $(CFLAGS) -c -o $@ $(realpath $<)
 $(BUILD_DIR)/%.o: %.S	
-	mkdir -p $(BUILD_DIR) && echo + CC $<
+	mkdir -p $(dir $@) && echo + CC $<
 	$(CC) $(ASLAGS) -c -o $@ $(realpath $<)
 
 $(ALL).elf: $(OBJS)
+	@echo "###########################################"
+	@echo "#############start complier################"
+	@echo "###########################################"
 	@echo + LD "->" $(BUILD_DIR)/$(ALL).elf
 	@$(LD) $(LDFLAGS) -o $(BUILD_DIR)/$(ALL).elf --start-group $(LINKAGE) --end-group
 

@@ -84,21 +84,25 @@ wire inst_lu12i;
 wire inst_ori;
 wire inst_sub;
 wire inst_jirl;
+wire inst_break;
+wire inst_xor;
+wire inst_addi;
 
 
 
 //aluop
-assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl;
+assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi;
 assign alu_op[1] = inst_lu12i;
 assign alu_op[2] = inst_ori;
 assign alu_op[3] = inst_sub;
+assign alu_op[4] = inst_xor;
 
 //branchop
 assign branch_op[0] = inst_jirl;
 
 
 //is signextend or zero extend
-assign is_sign_extend = inst_jirl;
+assign is_sign_extend = inst_jirl | inst_addi;
 
 //split inst
 assign op_31_26  = Inst[31:26];
@@ -118,12 +122,13 @@ assign i26  = {Inst[ 9: 0], Inst[25:10]};
 
 //extend Imm
 assign Imm20 = ({i20,12'h0});
-assign Imm12 = {20'h0,i12};
-assign Imm16 = {{14{i16[15]}},i16,2'b00};
+assign Imm12 = ({20'h0,i12} & {32{~is_sign_extend}})|
+                ({{20{i12[11]}},i12} & {32{is_sign_extend}});
+assign Imm16 = ({{14{i16[15]}},i16,2'b00} & {32{is_sign_extend}});
 
 
 assign Imm20_en = inst_pcaddu12i | inst_lu12i;
-assign Imm12_en = inst_ori;
+assign Imm12_en = inst_ori | inst_addi;
 assign Imm16_en = inst_jirl;
 
 
@@ -138,7 +143,7 @@ decoder_5_32 decoder_5_32_1(.in(op_19_15),.out(decoder_op_19_15));
 assign select_src1[0] = inst_pcaddu12i | inst_lu12i;
 assign select_src1[1] = 1'b0;
 
-assign select_src2[0] = inst_ori | inst_jirl;
+assign select_src2[0] = inst_ori | inst_jirl | inst_addi;
 assign select_src2[1] = inst_pcaddu12i;
 
 //produce inst decoder result
@@ -149,6 +154,50 @@ assign inst_lu12i     = decoder_op_31_26[6'h05] & ~Inst[25];
 assign inst_ori       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'he];
 assign inst_jirl      = decoder_op_31_26[6'h13];
 assign inst_or        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0a];
+// assign inst_break     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h14];
+// assign inst_slt        = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h04];
+// assign inst_sltu       = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h05];
+// assign inst_nor        = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h08];
+// assign inst_and        = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h09];
+assign inst_xor        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0b];
+// assign inst_orn        = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0c];
+// assign inst_andn       = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0d];
+// assign inst_sll_w      = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0e];
+// assign inst_srl_w      = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0f];
+// assign inst_sra_w      = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h10];
+// assign inst_mul_w      = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h18];
+// assign inst_mulh_w     = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h19];
+// assign inst_mulh_wu    = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h1a];
+// assign inst_div_w      = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h00];
+// assign inst_mod_w      = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h01];
+// assign inst_div_wu     = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h02];
+// assign inst_mod_wu     = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h03];
+// assign inst_slli_w     = op_31_26_d[6'h00] & op_25_22_d[4'h1] & op_21_20_d[2'h0] & op_19_15_d[5'h01];
+// assign inst_srli_w     = op_31_26_d[6'h00] & op_25_22_d[4'h1] & op_21_20_d[2'h0] & op_19_15_d[5'h09];
+// assign inst_srai_w     = op_31_26_d[6'h00] & op_25_22_d[4'h1] & op_21_20_d[2'h0] & op_19_15_d[5'h11];
+// assign inst_slti       = op_31_26_d[6'h00] & op_25_22_d[4'h8];
+// assign inst_sltui      = op_31_26_d[6'h00] & op_25_22_d[4'h9];
+assign inst_addi       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'ha];
+// assign inst_andi       = op_31_26_d[6'h00] & op_25_22_d[4'hd];
+// assign inst_xori       = op_31_26_d[6'h00] & op_25_22_d[4'hf];
+// assign inst_ld_b       = op_31_26_d[6'h0a] & op_25_22_d[4'h0];
+// assign inst_ld_h       = op_31_26_d[6'h0a] & op_25_22_d[4'h1];
+// assign inst_ld_w       = op_31_26_d[6'h0a] & op_25_22_d[4'h2];
+// assign inst_st_b       = op_31_26_d[6'h0a] & op_25_22_d[4'h4];
+// assign inst_st_h       = op_31_26_d[6'h0a] & op_25_22_d[4'h5];
+// assign inst_st_w       = op_31_26_d[6'h0a] & op_25_22_d[4'h6];
+// assign inst_ld_bu      = op_31_26_d[6'h0a] & op_25_22_d[4'h8];
+// assign inst_ld_hu      = op_31_26_d[6'h0a] & op_25_22_d[4'h9];
+// assign inst_b          = op_31_26_d[6'h14];
+// assign inst_bl         = op_31_26_d[6'h15];
+// assign inst_beq        = op_31_26_d[6'h16];
+// assign inst_bne        = op_31_26_d[6'h17];
+// assign inst_blt        = op_31_26_d[6'h18];
+// assign inst_bge        = op_31_26_d[6'h19];
+// assign inst_bltu       = op_31_26_d[6'h1a];
+// assign inst_bgeu       = op_31_26_d[6'h1b];
+// assign inst_ll_w       = op_31_26_d[6'h08] & ~ds_inst[25] & ~ds_inst[24];
+// assign inst_sc_w       = op_31_26_d[6'h08] & ~ds_inst[25] &  ds_inst[24];
 
 //next stage's data was consumed
 assign right_fire=right_ready & right_valid;//data submit finish
@@ -156,14 +205,15 @@ assign right_fire=right_ready & right_valid;//data submit finish
 assign is_sign=1'b0;
 
 //for next stage and difftest
-assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl;
+assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl
+                    | inst_xor | inst_addi | inst_addi;
 
 //output logic
 assign ctrl_bus= bus_temp;
 assign reg_index1=rj;
 assign reg_index2=rk;
 assign wreg_index=rd;
-assign wreg_en = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl;
+assign wreg_en = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi;
 assign Imm = ({32{Imm20_en}} & Imm20) |
              ({32{Imm12_en}} & Imm12) |
              ({32{Imm16_en}} & Imm16);
