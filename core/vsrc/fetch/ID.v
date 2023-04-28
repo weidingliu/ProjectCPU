@@ -66,6 +66,7 @@ wire [31:0] Imm26;
 wire Imm20_en;
 wire Imm12_en;
 wire Imm16_en;
+wire Imm26_en;
 //select src form reg , Imm, PC
 wire [1:0]select_src1;//select src1
 wire [1:0]select_src2;//select src2
@@ -73,6 +74,19 @@ wire [1:0]select_src2;//select src2
 //inst is sign compute
 wire is_sign;
 wire is_sign_extend;
+/**
+*    op_mem[0] is mem inst
+*    op_mem[1] is usignal extend
+*    op_mem[2] 1'b0 is load ,1'b1 is store
+*    op_mem[3] is word mem inst 
+*    op_mem[4] is half mem inst
+*    op_mem[5] is byte mem inst
+*/
+wire [5:0]op_mem;
+//select rd as source reg (only for memory inst)
+wire is_rd;
+//select r1 as dest
+wire is_r1;
 
 //inst valid
 wire inst_valid;
@@ -87,22 +101,36 @@ wire inst_jirl;
 wire inst_break;
 wire inst_xor;
 wire inst_addi;
+wire inst_bl;
+wire inst_st_w;
+wire inst_ld_w;
 
+//op_mem
+assign op_mem[0] = inst_st_w | inst_ld_w;
+assign op_mem[1] = 1'b0;
+assign op_mem[2] = inst_st_w;
+assign op_mem[3] = inst_st_w | inst_ld_w;
+assign op_mem[4] = 1'b0;
+assign op_mem[5] = 1'b0;
 
+//select rd as second source reg
+assign is_rd = inst_st_w;
+assign is_r1 = inst_bl;
 
 //aluop
-assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi;
+assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl;
 assign alu_op[1] = inst_lu12i;
-assign alu_op[2] = inst_ori;
+assign alu_op[2] = inst_ori | inst_or;
 assign alu_op[3] = inst_sub;
 assign alu_op[4] = inst_xor;
 
-//branchop
+//branch_op
 assign branch_op[0] = inst_jirl;
+assign branch_op[1] = inst_bl;
 
 
 //is signextend or zero extend
-assign is_sign_extend = inst_jirl | inst_addi;
+assign is_sign_extend = inst_jirl | inst_addi | inst_st_w | inst_ld_w;
 
 //split inst
 assign op_31_26  = Inst[31:26];
@@ -125,11 +153,13 @@ assign Imm20 = ({i20,12'h0});
 assign Imm12 = ({20'h0,i12} & {32{~is_sign_extend}})|
                 ({{20{i12[11]}},i12} & {32{is_sign_extend}});
 assign Imm16 = ({{14{i16[15]}},i16,2'b00} & {32{is_sign_extend}});
+assign Imm26 = ({{4{i26[25]}},i26,2'b00});
 
 
 assign Imm20_en = inst_pcaddu12i | inst_lu12i;
-assign Imm12_en = inst_ori | inst_addi;
+assign Imm12_en = inst_ori | inst_addi | inst_st_w | inst_ld_w;
 assign Imm16_en = inst_jirl;
+assign Imm26_en = inst_bl;
 
 
 
@@ -141,9 +171,9 @@ decoder_5_32 decoder_5_32_1(.in(op_19_15),.out(decoder_op_19_15));
 
 //produce select_src 2'b00 for reg, 2'b01 for Imm , 2'b10 for PC
 assign select_src1[0] = inst_pcaddu12i | inst_lu12i;
-assign select_src1[1] = 1'b0;
+assign select_src1[1] = inst_bl;
 
-assign select_src2[0] = inst_ori | inst_jirl | inst_addi;
+assign select_src2[0] = inst_ori | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl; 
 assign select_src2[1] = inst_pcaddu12i;
 
 //produce inst decoder result
@@ -182,14 +212,14 @@ assign inst_addi       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'ha];
 // assign inst_xori       = op_31_26_d[6'h00] & op_25_22_d[4'hf];
 // assign inst_ld_b       = op_31_26_d[6'h0a] & op_25_22_d[4'h0];
 // assign inst_ld_h       = op_31_26_d[6'h0a] & op_25_22_d[4'h1];
-// assign inst_ld_w       = op_31_26_d[6'h0a] & op_25_22_d[4'h2];
+assign inst_ld_w       = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h2];
 // assign inst_st_b       = op_31_26_d[6'h0a] & op_25_22_d[4'h4];
 // assign inst_st_h       = op_31_26_d[6'h0a] & op_25_22_d[4'h5];
-// assign inst_st_w       = op_31_26_d[6'h0a] & op_25_22_d[4'h6];
+assign inst_st_w       = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h6];
 // assign inst_ld_bu      = op_31_26_d[6'h0a] & op_25_22_d[4'h8];
 // assign inst_ld_hu      = op_31_26_d[6'h0a] & op_25_22_d[4'h9];
 // assign inst_b          = op_31_26_d[6'h14];
-// assign inst_bl         = op_31_26_d[6'h15];
+assign inst_bl         = decoder_op_31_26[6'h15];
 // assign inst_beq        = op_31_26_d[6'h16];
 // assign inst_bne        = op_31_26_d[6'h17];
 // assign inst_blt        = op_31_26_d[6'h18];
@@ -206,17 +236,19 @@ assign is_sign=1'b0;
 
 //for next stage and difftest
 assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl
-                    | inst_xor | inst_addi | inst_addi;
+                    | inst_xor | inst_addi | inst_addi | inst_st_w | inst_ld_w | inst_bl ;
 
 //output logic
 assign ctrl_bus= bus_temp;
 assign reg_index1=rj;
-assign reg_index2=rk;
-assign wreg_index=rd;
-assign wreg_en = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi;
+assign reg_index2=(is_rd)? rd:rk;
+assign wreg_index=(is_r1)? 5'h1:rd;
+assign wreg_en = (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
+                 inst_ld_w);
 assign Imm = ({32{Imm20_en}} & Imm20) |
              ({32{Imm12_en}} & Imm12) |
-             ({32{Imm16_en}} & Imm16);
+             ({32{Imm16_en}} & Imm16) |
+             ({32{Imm26_en}} & Imm26);
 
 
 //op number decoder
@@ -260,6 +292,7 @@ always @(posedge clk) begin
     else begin 
         if(left_valid & right_ready) begin 
             bus_temp <= {
+                    op_mem,//194:199
                     branch_op,//186:193
                     select_src1,//184:185
                     select_src2,//182:183

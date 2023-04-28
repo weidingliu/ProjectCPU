@@ -41,6 +41,9 @@ always @(posedge clk) begin
 end
 
 assign PC=temp;
+// always @(*) begin
+//     $display("%h---%h-- %h---%h\n",temp,is_branch,flush,dnpc);
+// end
 
 //shark hands
 always @(posedge clk) begin 

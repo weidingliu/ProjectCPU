@@ -7,6 +7,8 @@ module EXE (
     output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
     //bypass
     output wire [`bypass_width-1:0]ex_bypass,
+
+    // input wire [`bypass_width-1:0]mem_bypass,
     
     //branch
     output wire is_branch,
@@ -39,8 +41,10 @@ wire [1:0]select_src1;
 wire [1:0]select_src2;
 wire [7:0]branch_op;
 wire [31:0] write_data;
+wire [5:0] op_mem;
 
 assign {
+    op_mem,//194:199
     branch_op,//186:193
     select_src1,//184:185
     select_src2,//182:183
@@ -76,7 +80,7 @@ alu alu(
     .alu_result(alu_result)
 );
 
-assign write_data = branch_op[0] ? PC+32'h4 : alu_result;
+assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : alu_result;
 
 assign right_fire=right_ready & right_valid;//data submit finish
 //shark hands
@@ -105,6 +109,7 @@ always @(posedge clk) begin
     else begin 
         if(left_valid & right_ready) begin 
             ctrl_temp_bus <= {
+                    op_mem,//213:218
                     alu_op,//199:212
                     inst_valid,//198:198
                     Imm,//166:197
@@ -112,8 +117,8 @@ always @(posedge clk) begin
                     Inst,//102:133
                     wreg_index,//97:101
                     wreg_en,//96:96
-                    src2,// 64:95
-                    src1,// 32:63
+                    reg2,// 64:95
+                    reg1,// 32:63
                     write_data// 0:31
                     };
         end
@@ -125,8 +130,11 @@ assign left_ready=right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
 assign ex_bypass = {alu_result,wreg_index,wreg_en};
 
-assign is_branch = branch_op[0];
-assign flush = branch_op[0];
+assign is_branch = (branch_op[0] | branch_op[1]);
+assign flush = (branch_op[0] | branch_op[1]);
 assign dnpc = alu_result;
+// always @(*) begin
+//     $display("666-----%h %h %h %h--%h %h\n",flush,dnpc,PC,inst_valid,src1,src2);
+// end
 
 endmodule //EXE

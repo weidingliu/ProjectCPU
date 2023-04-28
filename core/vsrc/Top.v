@@ -13,7 +13,8 @@ module Top (
     output wire [31:0]addr,
     output wire [31:0]wdata,
     output wire [3:0]wmask,
-    output wire en
+    output wire en,
+    output wire we
 );
 
 //IF stage signal
@@ -94,7 +95,7 @@ ID id_stage(
     .reg_index1(reg_index1),//read REG index1
     .reg_index2(reg_index2),//read REG index2
     .reg_data1(bypass_reg1),
-    .reg_data2(bypass_reg1),
+    .reg_data2(bypass_reg2),
     //flush 
     .flush(flush),
     //ctrl flower
@@ -162,6 +163,7 @@ MEM mem_stage(
     .wmask(wmask),
     .rdata(rdata),
     .wdata(wdata),
+    .we(we),
     //bypass 
     .mem_bypass(mem_bypass),
     //shark hand

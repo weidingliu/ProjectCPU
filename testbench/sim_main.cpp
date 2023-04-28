@@ -7,7 +7,6 @@ int main(int argc, char** argv){
     testbench->reset_rtl();
     testbench->eval();
     testbench->end_testbench();
-
     delete(testbench);
     return 0;
 }

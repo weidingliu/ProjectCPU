@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #define DIFFTEST
+#define MTRACE
 
 extern char* difftest_ref_so;
 #ifndef FIRST_INST_ADDRESS

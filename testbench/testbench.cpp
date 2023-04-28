@@ -39,37 +39,59 @@ void CpuTestBench :: init_testbench(int argc, char** argv){
 
 void CpuTestBench :: eval(){
     uint32_t inst;
+    uint32_t rdata;
+    int state = STATE_RUNNING;
     while (! contextp->gotFinish()){
         dut->clk ^=1;
         if(dut->pc_valid){
+            // printf("sdffff %x-----\n",dut->PC);
             ram->pmem_read(dut->PC,&inst);
             dut->inst_ready = 1;
 
             dut->inst=inst;
         }
+        
+        if(dut->en & (dut->clk != 1)){
+            if(dut->we){
+                ram->pmem_write(dut->addr,dut->wdata,dut->wmask);
+                #ifdef MTRACE
+                printf("WRITE-> addr : %x data : %x mask: %x\n",dut->addr,dut->wdata,dut->wmask);
+                #endif
+            }
+            else {
+                
+                ram->pmem_read(dut->addr,&rdata);
+                dut->rdata = rdata;
+                #ifdef MTRACE
+                printf("READ-> addr : %x data : %x\n",dut->addr,rdata);
+                #endif
+            }
+        }
         //printf("%d\n",dut->clk);
+        
 
         #ifdef DIFFTEST
         
-        int state;
+        
         if(dut->clk != 0){
             state =ref->step(sim_time);
         }
         // printf("dfgg %ld\n",sim_time);
         if(state==STATE_ABORT || state==STATE_END){
-            
+            // printf("adfgdfg\n");
             break;
         }
         #endif
         dut->eval();
-
         #ifdef WTRACE
         m_trace->dump(sim_time);
         #endif
+
+        
         if(sim_time > 1000) break;
         sim_time++;
     }
-    
+    // printf("adfgddddddddddfg\n");
 }
 
 void CpuTestBench :: reset_rtl(){
