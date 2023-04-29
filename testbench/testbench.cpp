@@ -40,7 +40,7 @@ void CpuTestBench :: init_testbench(int argc, char** argv){
 void CpuTestBench :: eval(){
     uint32_t inst;
     uint32_t rdata;
-    int state = STATE_RUNNING;
+    
     while (! contextp->gotFinish()){
         dut->clk ^=1;
         if(dut->pc_valid){
@@ -91,6 +91,7 @@ void CpuTestBench :: eval(){
         if(sim_time > 1000) break;
         sim_time++;
     }
+
     // printf("adfgddddddddddfg\n");
 }
 
@@ -111,7 +112,8 @@ void CpuTestBench :: reset_rtl(){
 }
 
 void CpuTestBench :: end_testbench(){
-
+    ref->end_test(state);
+    
     #ifdef WTRACE
     m_trace->close();
     #endif

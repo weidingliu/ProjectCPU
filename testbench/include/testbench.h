@@ -19,6 +19,7 @@ class CpuTestBench {
     VerilatedContext* contextp;
     VTop *dut;
     vluint64_t sim_time;
+    int state = STATE_RUNNING;
 
     #ifdef WTRACE
     VerilatedVcdC *m_trace;

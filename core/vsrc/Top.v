@@ -32,6 +32,7 @@ wire [31:0] reg_data1;
 wire [31:0] reg_data2;
 wire id_right_valid;
 wire id_right_ready;
+wire is_break;
 
 //EXE stage signal
 wire [`ex_ctrl_width-1:0] ex_bus;
@@ -60,6 +61,7 @@ wire difftest_wreg_en;
 wire [31:0] difftest_Inst;
 wire [31:0] difftest_PC;
 wire [31:0]difftest_result;
+wire diifftest_is_break;
 
 // from regfile
 wire    [31:0]  regs[31:0];
@@ -98,6 +100,8 @@ ID id_stage(
     .reg_data2(bypass_reg2),
     //flush 
     .flush(flush),
+    //is_break
+    .is_break(is_break),
     //ctrl flower
     .ctrl_bus(id_bus),//ctrl bus
     //shark hand
@@ -140,6 +144,8 @@ EXE exe_stage(
     .ex_ctrl_bus(ex_bus),
     //bypass
     .ex_bypass(ex_bypass),
+    //mem_bypass
+    .mem_bypass(mem_bypass),
     //branch
     .flush(flush),
     .is_branch(is_branch),
@@ -198,6 +204,7 @@ always @(posedge clk) begin
     end
 end
 assign {     
+    diifftest_is_break,//103:103
     difftest_inst_valid,//102:102
     difftest_wreg_index,//97:101
     difftest_wreg_en,//96:96
@@ -205,6 +212,11 @@ assign {
     difftest_PC,// 32:63
     difftest_result// 0:31
     }=difftest_bus;
+break_ Break(
+    .clk(clk),
+    .reset(reset),
+    .is_break(diifftest_is_break)
+);
 
 DifftestInstrCommit DifftestInstrCommit(
     .clock(clk),

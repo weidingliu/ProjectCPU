@@ -174,7 +174,23 @@ void DiffTest::display() {
     fflush(NULL);
 }
 
+void DiffTest::end_test(int state){
+    printf("-------------------------------------\n");
+    printf("#####################################\n");
+    if((dut_regs_ptr[23] != 0) && (state == STATE_END)){
+        printf("\033[40;31mHIT BAD TRAP at pc = \033[0m \033[40;31m0x%08x\033[0m\n",dut.commit[0].pc);
+    }
+    else if(state == STATE_ABORT){
+        printf("\033[40;31mHIT BAD TRAP at pc = \033[0m \033[40;31m0x%08x\033[0m\n",dut.commit[0].pc);
+    }
+    else{
+        printf("\033[40;32mHIT GOOD TRAP at pc = \033[0m \033[40;32m0x%08x\033[0m\n",dut.commit[0].pc);
+    }
 
+    printf("program is break test end!\n");
+    printf("-------------------------------------\n");
+
+}
 
 DiffTest::DiffTest() {
     proxy = new DIFF_PROXY();

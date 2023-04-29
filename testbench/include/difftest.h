@@ -121,6 +121,8 @@ class DiffTest{
 
     /* Print dut core state info */
     void display();
+    // 
+    void end_test(int state);
 
     inline instr_commit_t *get_instr_commit(uint8_t index) {
         return &(dut.commit[index]);

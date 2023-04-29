@@ -38,8 +38,10 @@ wire [31:0]src1;
 wire [31:0]src2;
 wire [31:0]alu_result;
 wire [5:0] op_mem;
+wire is_break;
 
 assign {
+    is_break,//219:219
     op_mem,//213:218
     alu_op,//199:212
     inst_valid,//198:198
@@ -99,6 +101,7 @@ always @(posedge clk) begin
     else begin 
         if(left_valid & right_ready) begin 
             bus_temp <= {
+                    is_break,//103:103
                     inst_valid,//102:102
                     wreg_index,//97:101
                     wreg_en,//96:96
@@ -113,6 +116,6 @@ end
 assign right_valid=valid;
 assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
-assign mem_bypass = {alu_result,wreg_index,wreg_en};
+assign mem_bypass = {mem_result,wreg_index,wreg_en};
 
 endmodule //MEM
