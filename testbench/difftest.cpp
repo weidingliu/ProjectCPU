@@ -1,7 +1,7 @@
 #include <difftest.h>
 #include <debug.h>
 //#include<testbench.h>
-
+#ifdef DIFFTEST
 // not compare estat
 static const int DIFFTEST_NR_GREG = sizeof(arch_greg_state_t) / sizeof(uint32_t);
 static const int DIFFTEST_NR_CSRREG = sizeof(arch_csr_state_t) / sizeof(uint32_t);
@@ -78,7 +78,7 @@ int DiffTest :: step(vluint64_t& main_time){
     if(dut.commit[0].valid && !check_reg()){
         return STATE_ABORT;
     }
-    if(commit_count == mem_size) sim_over = true;
+    // if(commit_count == mem_size) sim_over = true;
     
     return STATE_RUNNING;
 }
@@ -92,8 +92,8 @@ void DiffTest::do_first_instr_commit() {
        if(get_img_start()==NULL) panic("img_start fail!");
         dut.csr.this_pc = dut.commit[0].pc;
         proxy->memcpy(RESET_VECTOR, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
-        // proxy->memcpy(0x0,me , get_img_size(), REF_TO_DUT);
-        // printf("%08x\n",*((uint32_t *)me+1));
+        // proxy->memcpy(RESET_VECTOR,me , get_img_size(), REF_TO_DUT);
+        // printf("%08x\n",*((uint32_t *)me));
 
         // munmap(get_img_start(), EMU_RAM_SIZE);
         proxy->regcpy(dut_regs_ptr, DIFFTEST_TO_REF, DIFF_TO_REF_ALL);
@@ -125,6 +125,10 @@ void DiffTest::do_instr_commit(int i) {
     // printf("sdfdg\n");
     proxy->exec(1);
     proxy->regcpy(ref_regs_ptr,REF_TO_DUT,REF_TO_DIFF_ALL);
+
+// uint8_t me[get_img_size()];
+//     proxy->memcpy(RESET_VECTOR,me , get_img_size(), REF_TO_DUT);
+//         printf("%08x\n",*((uint32_t *)me+1));
     // printf("sdaff\n");
     // printf("df %p\n",(void *)&ref.csr);
     // proxy->csrcpy((void *)&ref.csr,REF_TO_DUT);
@@ -343,3 +347,4 @@ INTERFACE_GREG_STATE {
     packet->gpr[30] = gpr_30;
     packet->gpr[31] = gpr_31;
 }
+#endif

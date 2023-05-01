@@ -92,7 +92,10 @@ assign src2 = (select_src2[1])? PC:
 
 assign branch_flag = inst_valid & (
     branch_op[0] | branch_op[1] | 
-    (branch_op[2] &((bypass_reg1 >= bypass_reg2))));
+    (branch_op[2] & ($signed(bypass_reg1) >= $signed(bypass_reg2))) |
+    (branch_op[3] & (bypass_reg1 == bypass_reg2)) |
+    (branch_op[4] & (bypass_reg1 >= bypass_reg2))
+    );
 
 alu alu(
     .alu_op(alu_op),

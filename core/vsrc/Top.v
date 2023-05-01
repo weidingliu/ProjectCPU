@@ -215,7 +215,7 @@ assign {
 break_ Break(
     .clk(clk),
     .reset(reset),
-    .is_break(diifftest_is_break)
+    .is_break(diifftest_is_break & difftest_inst_valid)
 );
 
 DifftestInstrCommit DifftestInstrCommit(

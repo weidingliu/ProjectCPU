@@ -14,10 +14,10 @@
 //     // for TVAL csr
 //     uint32_t time_val;
 // };
-
+#ifdef DIFFTEST
 
 NemuProxy::NemuProxy() {
-#ifdef DIFFTEST
+
     // if (difftest_ref_so == NULL) {
     //     printf("--diff is not given, "
     //             "try to use $(CHIPLAB_HOME)/toolchains/nemu/la32r-nemu-interpreter-so by "
@@ -91,7 +91,7 @@ NemuProxy::NemuProxy() {
     printf("The current platform is not supported.\n");
     exit(1);
 #endif
-#endif
+
 }
 
 NemuProxy::~NemuProxy() {
@@ -99,3 +99,4 @@ NemuProxy::~NemuProxy() {
         dlclose(handle);
     }
 }
+#endif
