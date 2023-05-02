@@ -18,7 +18,7 @@ OBJS      = $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(SRC))))
 OBJS += $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(ASRC))))
 
 LIB := $(wildcard $(CHIPLAB_HOME)/toolchains/system_newlib/*.a)
-CFLAGS    += -fdata-sections -ffunction-sections -static -mabi=ilp32d -O0 -D__loongarch32 -I $(CHIPLAB_HOME)/toolchains/system_newlib/
+CFLAGS    += -fdata-sections -ffunction-sections -mabi=ilp32d -O0 -D__loongarch32 -D_KERNEL -I $(CHIPLAB_HOME)/toolchains/system_newlib/
 LDFLAGS   +=-T /home/liuweiding/ProjectCPU/cpu-tests/am/linker.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
 LDFLAGS   += --gc-sections -e _start -static 
 

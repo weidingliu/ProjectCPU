@@ -95,6 +95,10 @@ assign byte_load = (
     ({32{ alu_result[1] & ~alu_result[0]}} & (({24'h0,rdata[23:16]} & {32{op_mem[1]}}) | ({{24{rdata[23]}},rdata[23:16]} & {32{~op_mem[1]}}))) |
     ({32{ alu_result[1] &  alu_result[0]}} & (({24'h0,rdata[31:24]} & {32{op_mem[1]}}) | ({{24{rdata[31]}},rdata[31:24]} & {32{~op_mem[1]}})))
 );
+assign half_load = (
+    ({32{~alu_result[1]}} & (({16'h0,rdata[15:0]}   & {32{op_mem[1]}}) | ({{16{rdata[15]}},rdata[15:0]}    & {32{~op_mem[1]}}))) |
+    ({32{alu_result[1]}} & (({16'h0,rdata[31:16]}   & {32{op_mem[1]}}) | ({{16{rdata[31]}},rdata[31:16]}    & {32{~op_mem[1]}})))
+);
 
 //for sram
 assign en = op_mem[0] & inst_valid;

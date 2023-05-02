@@ -26,6 +26,7 @@ reg valid;
 reg [`ex_ctrl_width-1:0] ctrl_temp_bus;//exe ctrl bus
 wire [31:0]alu_result;
 
+wire [3:0] mul_div_op;
 wire [31:0] src1;
 wire [31:0] src2;
 wire is_sign;
@@ -52,6 +53,11 @@ wire bypass_en1;
 wire bypass_en2;
 wire [31:0] bypass_reg1;
 wire [31:0] bypass_reg2;
+wire [64:0]mul_result;
+wire [31:0]mod_result;
+wire [31:0]mul_div_result;
+wire is_mul_div;
+
 
 wire branch_flag;
 //mem_bypass 
@@ -61,6 +67,7 @@ assign bypass_reg1 = bypass_en1 ? mem_bypass[37:6]:reg1;
 assign bypass_reg2 = bypass_en2 ? mem_bypass[37:6]:reg2;
 //bus
 assign {
+    mul_div_op,//211:214
     is_break,//210:210
     reg_index1,//205:209
     reg_index2,//200:204
@@ -94,7 +101,9 @@ assign branch_flag = inst_valid & (
     branch_op[0] | branch_op[1] | 
     (branch_op[2] & ($signed(bypass_reg1) >= $signed(bypass_reg2))) |
     (branch_op[3] & (bypass_reg1 == bypass_reg2)) |
-    (branch_op[4] & (bypass_reg1 >= bypass_reg2))
+    (branch_op[4] & (bypass_reg1 >= bypass_reg2)) |
+    (branch_op[5] & ($signed(bypass_reg1) < $signed(bypass_reg2))) | 
+    (branch_op[6] & (bypass_reg1 != bypass_reg2))
     );
 
 alu alu(
@@ -103,10 +112,18 @@ alu alu(
     .alu_src2(src2),
     .alu_result(alu_result)
 );
+//mul and div 
+assign is_mul_div = mul_div_op[0] | mul_div_op[1] | mul_div_op[2];
+assign mul_result = ({64{is_sign}} & ($signed(src1)*$signed(src2))) | 
+                    ({64{~is_sign}} & (src1*src2));
+assign mod_result = ({32{is_sign}} & ($signed(src1) % $signed(src2)));
 
-assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : alu_result;
+assign mul_div_result = ({32{mul_div_op[0]}} & mul_result[31:0])|
+                        ({32{mul_div_op[2]}} & mul_result[63:32])|
+                        ({32{mul_div_op[1]}} & mod_result); 
 
-assign right_fire=right_ready & right_valid;//data submit finish
+
+
 //shark hands
 always @(posedge clk) begin
     if(reset == `RestEn) begin
@@ -158,6 +175,10 @@ assign ex_bypass = {alu_result,wreg_index,wreg_en};
 assign is_branch = (branch_flag);
 assign flush = branch_flag;
 assign dnpc = alu_result;
+
+assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:alu_result;
+
+assign right_fire=right_ready & right_valid;//data submit finish
 // always @(*) begin
 //     $display("666-----%h %h %h %h--%h %h\n",flush,dnpc,PC,inst_valid,src1,src2);
 // end

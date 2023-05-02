@@ -15,6 +15,7 @@ wire op_sll;
 wire op_srl;
 wire op_sltu;
 wire op_nor;
+wire op_slt;
 
 wire [31:0]or_result;
 wire [31:0]adder_result;
@@ -25,6 +26,7 @@ wire [31:0]sll_result;
 wire [31:0]srl_result;
 wire [31:0]sltu_result;
 wire [31:0]nor_result;
+wire [31:0]slt_result;
 
 //adder 
 wire [31:0]adder_a;
@@ -44,6 +46,7 @@ assign op_sll = alu_op[7];
 assign op_srl = alu_op[8];
 assign op_sltu = alu_op[9];
 assign op_nor = alu_op[10];
+assign op_slt = alu_op[11];
 
 assign adder_a = alu_src1;
 assign adder_b = alu_op[3] ? ~alu_src2:alu_src2;
@@ -58,6 +61,7 @@ assign sll_result = adder_a << adder_b[4:0];
 assign srl_result = adder_a >> adder_b[4:0];
 assign sltu_result = (adder_a < adder_b) ? 32'h1:32'h0;
 assign nor_result = ~(adder_a | adder_b);
+assign sltu_result = ($signed(adder_a) < $signed(adder_b)) ? 32'h1:32'h0;
 
 
 assign alu_result = ({32{op_add | op_sub}} & adder_result) | 
