@@ -57,6 +57,7 @@ wire [64:0]mul_result;
 wire [31:0]mod_result;
 wire [31:0]mul_div_result;
 wire is_mul_div;
+wire [31:0]div_result;
 
 
 wire branch_flag;
@@ -96,16 +97,17 @@ assign src2 = (select_src2[1])? PC:
 // always @(*) begin 
 //     $display("%h   %h   %h",PC,src1,src2);
 // end
-
+//branch
 assign branch_flag = inst_valid & (
     branch_op[0] | branch_op[1] | 
     (branch_op[2] & ($signed(bypass_reg1) >= $signed(bypass_reg2))) |
     (branch_op[3] & (bypass_reg1 == bypass_reg2)) |
     (branch_op[4] & (bypass_reg1 >= bypass_reg2)) |
     (branch_op[5] & ($signed(bypass_reg1) < $signed(bypass_reg2))) | 
-    (branch_op[6] & (bypass_reg1 != bypass_reg2))
+    (branch_op[6] & (bypass_reg1 != bypass_reg2)) |
+    (branch_op[7] & (bypass_reg1 < bypass_reg2))
     );
-
+//alu 
 alu alu(
     .alu_op(alu_op),
     .alu_src1(src1),
@@ -113,14 +115,21 @@ alu alu(
     .alu_result(alu_result)
 );
 //mul and div 
-assign is_mul_div = mul_div_op[0] | mul_div_op[1] | mul_div_op[2];
+assign is_mul_div = mul_div_op[0] | mul_div_op[1] | mul_div_op[2] | mul_div_op[3];
 assign mul_result = ({64{is_sign}} & ($signed(src1)*$signed(src2))) | 
                     ({64{~is_sign}} & (src1*src2));
-assign mod_result = ({32{is_sign}} & ($signed(src1) % $signed(src2)));
+assign mod_result = ({32{is_sign}} & ($signed(src1) % $signed(src2)) |
+                    ({32{~is_sign}} & (src1 % src2))
+                    );
+assign div_result = (
+    ({32{is_sign}} & ($signed(src1) / $signed(src2))) | 
+    ({32{~is_sign}} & (src1 / src2))
+);
 
 assign mul_div_result = ({32{mul_div_op[0]}} & mul_result[31:0])|
+                        ({32{mul_div_op[1]}} & mod_result)|
                         ({32{mul_div_op[2]}} & mul_result[63:32])|
-                        ({32{mul_div_op[1]}} & mod_result); 
+                        ({32{mul_div_op[3]}} & div_result); 
 
 
 

@@ -132,6 +132,11 @@ wire inst_ld_b;
 wire inst_ld_h;
 wire inst_mulh;
 wire inst_mulh_u;
+wire inst_st_h;
+wire inst_div;
+wire inst_bltu;
+wire inst_div_wu;
+wire inst_mod_wu;
 
 wire is_sign_extend;
 
@@ -145,20 +150,20 @@ wire is_sign_extend;
 */
 
 //op_mem
-assign op_mem[0] = inst_st_w | inst_ld_w | inst_st_b | inst_ld_bu | inst_ld_hu | inst_ld_b | inst_ld_h;
+assign op_mem[0] = inst_st_w | inst_ld_w | inst_st_b | inst_ld_bu | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h;
 assign op_mem[1] = inst_ld_bu | inst_ld_hu;
-assign op_mem[2] = inst_st_w | inst_st_b;
+assign op_mem[2] = inst_st_w | inst_st_b | inst_st_h;
 assign op_mem[3] = inst_st_w | inst_ld_w;
-assign op_mem[4] = inst_ld_hu | inst_ld_h;
+assign op_mem[4] = inst_ld_hu | inst_ld_h | inst_st_h;
 assign op_mem[5] = inst_st_b | inst_ld_bu | inst_ld_b ;
 
 //select rd as second source reg
-assign is_rd = inst_st_w | inst_bge | inst_st_b | inst_beq | inst_bgeu | inst_blt | inst_bne; 
+assign is_rd = inst_st_w | inst_bge | inst_st_b | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_st_h | inst_bltu; 
 assign is_r1 = inst_bl;
 
 //aluop
 assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge | inst_st_b | inst_ld_bu
-                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h;
+                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu;
 assign alu_op[1] = inst_lu12i;
 assign alu_op[2] = inst_ori | inst_or;
 assign alu_op[3] = inst_sub;
@@ -170,11 +175,12 @@ assign alu_op[8] = inst_srli | inst_srl;
 assign alu_op[9] = inst_sltu | inst_sltui;
 assign alu_op[10] = inst_nor;
 assign alu_op[11] = inst_slti | inst_slt;
-// assign alu_op[5] = 
+
 
 assign mul_div_op[0] = inst_mul;
-assign mul_div_op[1] = inst_mod_w;
+assign mul_div_op[1] = inst_mod_w | inst_mod_wu;
 assign mul_div_op[2] = inst_mulh | inst_mulh_u;
+assign mul_div_op[3] = inst_div | inst_div_wu;
 
 //branch_op
 assign branch_op[0] = inst_jirl;
@@ -184,13 +190,14 @@ assign branch_op[3] = inst_beq;
 assign branch_op[4] = inst_bgeu;
 assign branch_op[5] = inst_blt;
 assign branch_op[6] = inst_bne;
+assign branch_op[7] = inst_bltu;
 
 //is break
 assign is_break = inst_break;
 
 //is signextend or zero extend
 assign is_sign_extend = inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bge | inst_st_b | inst_ld_bu | inst_beq | inst_sltui | inst_bgeu | inst_blt
-                        | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h;
+                        | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu;
 
 //split inst
 assign op_31_26  = Inst[31:26];
@@ -217,11 +224,11 @@ assign Imm16 = ({{14{i16[15]}},i16,2'b00} & {32{is_sign_extend}});
 assign Imm26 = ({{4{i26[25]}},i26,2'b00});
 assign Imm5 = ({27'h0,i5});
 
-
+//select Imm
 assign Imm20_en = inst_pcaddu12i | inst_lu12i;
 assign Imm12_en = inst_ori | inst_addi | inst_st_w | inst_ld_w | inst_st_b | inst_andi | inst_ld_bu | inst_xori | inst_sltui | inst_slti
-                  | inst_ld_hu | inst_ld_b | inst_ld_h;
-assign Imm16_en = inst_jirl | inst_bge | inst_beq | inst_bgeu | inst_blt | inst_bne; 
+                  | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h;
+assign Imm16_en = inst_jirl | inst_bge | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_bltu; 
 assign Imm26_en = inst_bl | inst_b;
 assign Imm5_en  = inst_srai | inst_slli | inst_srli;
 
@@ -235,11 +242,11 @@ decoder_5_32 decoder_5_32_1(.in(op_19_15),.out(decoder_op_19_15));
 
 //produce select_src 2'b00 for reg, 2'b01 for Imm , 2'b10 for PC
 assign select_src1[0] = inst_pcaddu12i | inst_lu12i;
-assign select_src1[1] = inst_bl | inst_b | inst_bge | inst_beq | inst_bgeu | inst_blt | inst_bne;
+assign select_src1[1] = inst_bl | inst_b | inst_bge | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_bltu;
 
 assign select_src2[0] = inst_ori | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge
                         | inst_st_b | inst_srai | inst_andi | inst_ld_bu | inst_slli | inst_srli | inst_xori | inst_beq | inst_sltui
-                        | inst_bgeu | inst_blt | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h; 
+                        | inst_bgeu | inst_blt | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu; 
 assign select_src2[1] = inst_pcaddu12i;
 
 //produce inst decoder result
@@ -251,61 +258,62 @@ assign inst_ori       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'he];
 assign inst_jirl      = decoder_op_31_26[6'h13];
 assign inst_or        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0a];
 assign inst_break     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h14];
-assign inst_slt        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h04];
-assign inst_sltu       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h05];
-assign inst_nor        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h08];
-assign inst_and        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h09];
-assign inst_xor        = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0b];
+assign inst_slt       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h04];
+assign inst_sltu      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h05];
+assign inst_nor       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h08];
+assign inst_and       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h09];
+assign inst_xor       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0b];
 // assign inst_orn        = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0c];
 // assign inst_andn       = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0d];
-assign inst_sll      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0e];
-assign inst_srl      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0f];
-assign inst_sra      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h10];
-assign inst_mul      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h18];
-assign inst_mulh     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h19];
+assign inst_sll       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0e];
+assign inst_srl       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0f];
+assign inst_sra       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h10];
+assign inst_mul       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h18];
+assign inst_mulh      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h19];
 assign inst_mulh_u    = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h1a];
-// assign inst_div_w      = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h00];
-assign inst_mod_w      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h01];
-// assign inst_div_wu     = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h02];
-// assign inst_mod_wu     = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h03];
-assign inst_slli     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h01];
-assign inst_srli     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h09];
-assign inst_srai     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h11];
-assign inst_slti       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h8];
-assign inst_sltui      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h9];
-assign inst_addi       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'ha];
-assign inst_andi       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'hd];
-assign inst_xori       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'hf];
-assign inst_ld_b       = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h0];
-assign inst_ld_h       = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h1];
-assign inst_ld_w       = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h2];
-assign inst_st_b       = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h4];
-// assign inst_st_h       = op_31_26_d[6'h0a] & op_25_22_d[4'h5];
-assign inst_st_w       = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h6];
-assign inst_ld_bu      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h8];
-assign inst_ld_hu      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h9];
-assign inst_b          = decoder_op_31_26[6'h14];
-assign inst_bl         = decoder_op_31_26[6'h15];
-assign inst_beq        = decoder_op_31_26[6'h16];
-assign inst_bne        = decoder_op_31_26[6'h17];
-assign inst_blt        = decoder_op_31_26[6'h18];
-assign inst_bge        = decoder_op_31_26[6'h19];
-// assign inst_bltu       = op_31_26_d[6'h1a];
-assign inst_bgeu       = decoder_op_31_26[6'h1b];
+assign inst_div       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h00];
+assign inst_mod_w     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h01];
+assign inst_div_wu    = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h02];
+assign inst_mod_wu    = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h03];
+assign inst_slli      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h01];
+assign inst_srli      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h09];
+assign inst_srai      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h11];
+assign inst_slti      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h8];
+assign inst_sltui     = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h9];
+assign inst_addi      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'ha];
+assign inst_andi      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'hd];
+assign inst_xori      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'hf];
+assign inst_ld_b      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h0];
+assign inst_ld_h      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h1];
+assign inst_ld_w      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h2];
+assign inst_st_b      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h4];
+assign inst_st_h      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h5];
+assign inst_st_w      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h6];
+assign inst_ld_bu     = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h8];
+assign inst_ld_hu     = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'h9];
+assign inst_b         = decoder_op_31_26[6'h14];
+assign inst_bl        = decoder_op_31_26[6'h15];
+assign inst_beq       = decoder_op_31_26[6'h16];
+assign inst_bne       = decoder_op_31_26[6'h17];
+assign inst_blt       = decoder_op_31_26[6'h18];
+assign inst_bge       = decoder_op_31_26[6'h19];
+assign inst_bltu      = decoder_op_31_26[6'h1a];
+assign inst_bgeu      = decoder_op_31_26[6'h1b];
 // assign inst_ll_w       = op_31_26_d[6'h08] & ~ds_inst[25] & ~ds_inst[24];
 // assign inst_sc_w       = op_31_26_d[6'h08] & ~ds_inst[25] &  ds_inst[24];
 
 //next stage's data was consumed
 assign right_fire=right_ready & right_valid;//data submit finish
 // if alu is sign compute 
-assign is_sign=inst_mul | inst_mod_w | inst_mulh;
+assign is_sign=inst_mul | inst_mod_w | inst_mulh | inst_div;
 
 //for next stage and difftest
 assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl
                     | inst_xor | inst_addi | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_break | inst_b| inst_bge
                     | inst_st_b | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
-                    | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u;
+                    | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
+                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu;
 
 //output logic
 assign ctrl_bus= bus_temp;
@@ -315,7 +323,7 @@ assign wreg_index=(is_r1)? 5'h1:rd;
 assign wreg_en = (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
                  inst_ld_w | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu | inst_xori | inst_nor |
                  inst_sltui | inst_mul | inst_mod_w | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh |
-                 inst_mulh_u);
+                 inst_mulh_u | inst_div | inst_div_wu | inst_mod_wu);
 assign Imm = ({32{Imm20_en}} & Imm20) |
              ({32{Imm12_en}} & Imm12) |
              ({32{Imm16_en}} & Imm16) |

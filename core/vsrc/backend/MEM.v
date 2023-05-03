@@ -47,6 +47,7 @@ wire [31:0] byte_load;
 wire [31:0]half_load;
 
 wire [3:0] byte_wmask;
+wire [3:0] half_wmask;
 
 assign {
     is_break,//219:219
@@ -77,7 +78,15 @@ assign byte_wmask = (
     ({4{ alu_result[1] & ~alu_result[0]}} & 4'b0100) |
     ({4{ alu_result[1] &  alu_result[0]}} & 4'b1000) 
 );
-
+// half store wdata nad wmask
+assign half_temp = (
+    ({32{~alu_result[1]}} & {16'h0,src2[15:0]}) |
+    ({32{ alu_result[1]}} & {src2[15:0],16'h0}) 
+);
+assign half_wmask = (
+    ({4{~alu_result[1]}} & 4'b0011) |
+    ({4{ alu_result[1]}} & 4'b1100) 
+);
 
 /*
 *    op_mem[0] is mem inst
@@ -107,7 +116,7 @@ assign addr = alu_result;
 assign wdata = op_mem[3] ? src2:
                op_mem[5] ? byte_temp:half_temp;
 assign wmask = op_mem[3] ? 4'b1111:
-               op_mem[5] ? byte_wmask:4'h0;
+               op_mem[5] ? byte_wmask:half_wmask;
 // always @(*) begin
 //     $display("%h-------%h-\n",addr,en);
 // end

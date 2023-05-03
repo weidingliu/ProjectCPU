@@ -25,7 +25,9 @@ static const char compare_mask[DIFFTEST_NR_CSRREG] = {
 
 bool DiffTest::check_reg(){
     fflush(NULL);
+    #ifdef DIFFTEST_TRACE
      printf("----dut %x ref %x \n",dut.commit[0].pc,ref.csr.this_pc);
+     #endif
     // printf("%08x   %08x\n",dut.commit[0].pc,dut.commit[0].inst);
     if(dut.commit[0].pc != ref.csr.this_pc){
         
