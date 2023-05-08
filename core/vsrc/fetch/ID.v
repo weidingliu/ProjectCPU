@@ -137,6 +137,7 @@ wire inst_div;
 wire inst_bltu;
 wire inst_div_wu;
 wire inst_mod_wu;
+wire logic_valid;
 
 wire is_sign_extend;
 
@@ -347,7 +348,7 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
-        if(left_valid & right_ready) begin
+        if(logic_valid & right_ready) begin
             valid <= `true;
         end
         else if(~right_fire)begin 
@@ -370,7 +371,7 @@ always @(posedge clk) begin
         bus_temp <= `ctrl_width'h0;
     end
     else begin 
-        if(left_valid & right_ready) begin 
+        if(logic_valid & right_ready) begin 
             bus_temp <= {
                     mul_div_op,//211:214
                     is_break,//210:210
@@ -397,5 +398,6 @@ end
 // shark hands output logic
 assign right_valid=valid;
 assign left_ready=right_ready;
+assign logic_valid = 1'b1;
 
 endmodule //ID

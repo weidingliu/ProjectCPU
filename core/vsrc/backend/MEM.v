@@ -23,6 +23,7 @@ module MEM (
 //shark hands
 wire right_fire;
 reg valid;
+wire logic_valid;
 //bus REG
 reg [`mem_ctrl_width-1:0] bus_temp;//
 //decompone bus
@@ -39,6 +40,7 @@ wire [31:0]src2;
 wire [31:0]alu_result;
 wire [5:0] op_mem;
 wire is_break;
+wire Inst_valid;
 
 wire [31:0] byte_temp;
 wire [31:0] half_temp;
@@ -64,7 +66,7 @@ assign {
     alu_result// 0:31
 }=mem_ctrl_bus;
 
-
+assign Inst_valid = left_valid ? inst_valid:1'b0;
 // byte store wdata and wmask
 assign byte_temp = (
     ({32{~alu_result[1] & ~alu_result[0]}} & {24'h0,src2[7:0]}) |
@@ -133,7 +135,7 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
-        if(left_valid & right_ready) begin
+        if(logic_valid & right_ready) begin
             valid <= `true;
         end
         else if(~right_fire)begin 
@@ -151,10 +153,10 @@ always @(posedge clk) begin
         bus_temp <= `mem_ctrl_width'h0;
     end
     else begin 
-        if(left_valid & right_ready) begin 
+        if(logic_valid & right_ready) begin 
             bus_temp <= {
                     is_break,//103:103
-                    inst_valid,//102:102
+                    (Inst_valid),//102:102
                     wreg_index,//97:101
                     wreg_en,//96:96
                     Inst,// 64:95
@@ -166,6 +168,7 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
+assign logic_valid = 1'b1;
 assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
 assign mem_bypass = {mem_result,wreg_index,wreg_en};

@@ -48,17 +48,13 @@ void CpuTestBench :: eval(){
         if(dut->en & (dut->clk != 1)){
             if(dut->we){
                 ram->pmem_write(dut->addr,dut->wdata,dut->wmask);
-                #ifdef MTRACE
-                printf("WRITE-> addr : %x data : %x mask: %x\n",dut->addr,dut->wdata,dut->wmask);
-                #endif
+                
             }
             else {
                 
                 ram->pmem_read(dut->addr,&rdata);
                 dut->rdata = rdata;
-                #ifdef MTRACE
-                printf("READ-> addr : %x data : %x\n",dut->addr,rdata);
-                #endif
+                
             }
         }
         //printf("%d\n",dut->clk);
@@ -80,7 +76,7 @@ void CpuTestBench :: eval(){
         #ifdef WTRACE
         m_trace->dump(sim_time);
         #endif
-
+        // printf("dfgg %ld\n",sim_time);
         
         // if(sim_time > 1000) break;
         sim_time++;

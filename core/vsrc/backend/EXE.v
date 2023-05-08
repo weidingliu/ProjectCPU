@@ -58,6 +58,12 @@ wire [31:0]mod_result;
 wire [31:0]mul_div_result;
 wire is_mul_div;
 wire [31:0]div_result;
+wire is_mul;
+wire is_div;
+wire [31:0] mul_hi;
+wire [31:0]mul_lo;
+wire mul_valid;
+wire logic_valid;
 
 
 wire branch_flag;
@@ -114,10 +120,12 @@ alu alu(
     .alu_src2(src2),
     .alu_result(alu_result)
 );
+
 //mul and div 
 assign is_mul_div = mul_div_op[0] | mul_div_op[1] | mul_div_op[2] | mul_div_op[3];
-assign mul_result = ({64{is_sign}} & ($signed(src1)*$signed(src2))) | 
-                    ({64{~is_sign}} & (src1*src2));
+
+// assign mul_result = ({64{is_sign}} & ($signed(src1)*$signed(src2))) | 
+//                     ({64{~is_sign}} & (src1*src2));
 assign mod_result = ({32{is_sign}} & ($signed(src1) % $signed(src2)) |
                     ({32{~is_sign}} & (src1 % src2))
                     );
@@ -126,10 +134,28 @@ assign div_result = (
     ({32{~is_sign}} & (src1 / src2))
 );
 
-assign mul_div_result = ({32{mul_div_op[0]}} & mul_result[31:0])|
+assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
                         ({32{mul_div_op[1]}} & mod_result)|
-                        ({32{mul_div_op[2]}} & mul_result[63:32])|
+                        ({32{mul_div_op[2]}} & mul_hi)|
                         ({32{mul_div_op[3]}} & div_result); 
+assign is_mul = mul_div_op[0] | mul_div_op[1] | mul_div_op[2];
+assign is_div = mul_div_op[3];
+// booth multiplier
+Booth_MUL MUL(
+    .clock(clk),
+    .reset(reset),
+    .io_in_ready(),
+    .io_in_valid(is_mul),
+    .io_in_bits_ctrl_flow_flush(1'b0),
+    .io_in_bits_ctrl_flow_mulw(1'b0),
+    .io_in_bits_ctrl_flow_mul_sign({~is_sign,~is_sign}),
+    .io_in_bits_ctrl_data_src1(src1),
+    .io_in_bits_ctrl_data_src2(src2),
+    .io_out_ready(1'b1),
+    .io_out_valid(mul_valid),//is mul end
+    .io_out_bits_result_result_hi(mul_hi),//hight 32-bit
+    .io_out_bits_result_result_lo(mul_lo)// low 32-bit
+);
 
 
 
@@ -139,7 +165,7 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
-        if(left_valid & right_ready) begin
+        if(logic_valid & right_ready) begin
             valid <= `true;
         end
         else if(~right_fire)begin 
@@ -157,12 +183,12 @@ always @(posedge clk) begin
         ctrl_temp_bus <= `ex_ctrl_width'h0;
     end
     else begin 
-        if(left_valid & right_ready) begin 
+        if(logic_valid & right_ready) begin 
             ctrl_temp_bus <= {
                     is_break,//219:219
                     op_mem,//213:218
                     alu_op,//199:212
-                    inst_valid,//198:198
+                    (inst_valid),//198:198
                     Imm,//166:197
                     PC,//134:165
                     Inst,//102:133
@@ -177,7 +203,8 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign left_ready=right_ready;
+assign logic_valid = (!mul_valid && is_mul)? 1'b0:1'b1;
+assign left_ready=(!mul_valid && is_mul)? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
 assign ex_bypass = {alu_result,wreg_index,wreg_en};
 

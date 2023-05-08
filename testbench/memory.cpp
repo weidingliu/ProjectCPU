@@ -44,6 +44,9 @@ void Memory :: pmem_read(uint32_t addr, uint32_t *rdata){
     }
     memcpy(&temp,(mem+(addr& ~0x3u)-RESET_VECTOR),sizeof(uint32_t));
    *rdata=temp;
+    #ifdef MTRACE
+    printf("READ-> addr : %x data : %x\n",addr,*rdata);
+    #endif
    //printf("%08x\n",temp);
 }
 
@@ -64,6 +67,9 @@ void Memory :: pmem_write(uint32_t addr, uint32_t wdata, char wmask){
       i++;
       loop=loop>>1;
   }
+    #ifdef MTRACE
+    printf("WRITE-> addr : %x data : %x mask: %x\n",addr,wdata,wmask);
+    #endif
 }
 
 Memory ::Memory(){

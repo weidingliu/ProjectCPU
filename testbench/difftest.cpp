@@ -96,12 +96,14 @@ void DiffTest::do_first_instr_commit() {
         proxy->memcpy(RESET_VECTOR, get_img_start(), get_img_size(), DIFFTEST_TO_REF);
         // proxy->memcpy(RESET_VECTOR,me , get_img_size(), REF_TO_DUT);
         // printf("%08x\n",*((uint32_t *)me));
-
+        // printf("dfgdfg\n");  
         // munmap(get_img_start(), EMU_RAM_SIZE);
         proxy->regcpy(dut_regs_ptr, DIFFTEST_TO_REF, DIFF_TO_REF_ALL);
-        proxy->csrcpy((void *)&dut.csr,DIFFTEST_TO_REF);
-        
+        // printf("dfgdfg\n");  
+        // proxy->csrcpy((void *)&dut.csr,DIFFTEST_TO_REF);
+        // printf("dfgdfg\n");    
     }
+
 }
 
 void DiffTest::do_instr_commit(int i) {

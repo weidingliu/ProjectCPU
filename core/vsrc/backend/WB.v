@@ -17,9 +17,10 @@ module WB (
 wire right_fire;
 reg valid;
 reg [`mem_ctrl_width-1:0]bus_temp;
+wire logic_valid;
+wire inst_valid;
 
-
-
+assign inst_valid = left_valid? mem_ctrl_bus[102:102]:1'b0;
 
 
 
@@ -30,7 +31,7 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
-        if(left_valid & right_ready) begin
+        if(logic_valid & right_ready) begin
             valid <= `true;
         end
         else if(~right_fire)begin 
@@ -48,13 +49,14 @@ always @(posedge clk) begin
         bus_temp <= `mem_ctrl_width'h0;
     end
     else begin 
-        if(left_valid & right_ready) begin 
-            bus_temp <= mem_ctrl_bus;
+        if(logic_valid & right_ready) begin 
+            bus_temp <= {mem_ctrl_bus[103:103],inst_valid,mem_ctrl_bus[101:0]};
         end
     end
 end
 // output logic
 assign right_valid=valid;
+assign logic_valid = 1'b1;
 assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
 assign wb_bypass = {mem_ctrl_bus[31:0],mem_ctrl_bus[101:97],mem_ctrl_bus[96:96]};
