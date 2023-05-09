@@ -58,6 +58,10 @@ npc测试环境搭建以及NEMU中的测试环境，其中并没有实现一键�
 
 difftest来源于[Loongarch-NEMU](https://gitee.com/wwt_panache/la32r-nemu?_from=gitee_search)，同时使用方式也与[一生一芯](https://ysyx.oscc.cc)项目是一致的。
 
+## 对Hit xxx Trap”的说明
+
+在测试结束时仿真环境会产生一个‘Hit xxx Trap’的信息，当产生的是‘Hit GOOD Trap’时表示仿真程序运行到了结尾，并且运行中没有产生错误。
+
 ## 参考项目
 [一生一芯](https://ysyx.oscc.cc)项目
 
