@@ -71,3 +71,8 @@ difftest来源于[Loongarch-NEMU](https://gitee.com/wwt_panache/la32r-nemu?_from
 
 [chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)
 
+《龙芯架构32位精简版参考手册》可以从龙芯官网下载。https://www.loongson.cn/FileShow
+
+LA32R 相关工具链请前往龙芯官方的 Chiplab 仓库下载 https://gitee.com/loongson-edu/chiplab 
+
+
