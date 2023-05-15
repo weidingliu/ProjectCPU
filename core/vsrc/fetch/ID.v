@@ -25,10 +25,13 @@ module ID (
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
     output wire right_valid,//ID stage's data is ready
-    input wire right_ready//EXE stage is allowin
+    input wire right_ready,//EXE stage is allowin
+    output wire is_fire,
+    input wire fire//next stage's data was consumed
 );
+assign is_fire = logic_valid & right_ready;
 
-wire right_fire;
+// wire right_fire;
 reg valid;
 
 wire [13:0] alu_op;//alu opcode
@@ -303,8 +306,8 @@ assign inst_bgeu      = decoder_op_31_26[6'h1b];
 // assign inst_ll_w       = op_31_26_d[6'h08] & ~ds_inst[25] & ~ds_inst[24];
 // assign inst_sc_w       = op_31_26_d[6'h08] & ~ds_inst[25] &  ds_inst[24];
 
-//next stage's data was consumed
-assign right_fire=right_ready & right_valid;//data submit finish
+
+// assign right_fire=right_ready & right_valid;//data submit finish
 // if alu is sign compute 
 assign is_sign=inst_mul | inst_mod_w | inst_mulh | inst_div;
 
@@ -348,13 +351,13 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
+        if(fire)begin 
+            valid <= `false;
+        end
         if(logic_valid & right_ready) begin
             valid <= `true;
         end
-        else if(~right_fire)begin 
-            valid <= `false;
-        end
-        else begin 
+        if(flush) begin
             valid <= `false;
         end
         
@@ -398,6 +401,6 @@ end
 // shark hands output logic
 assign right_valid=valid;
 assign left_ready=right_ready;
-assign logic_valid = 1'b1;
+assign logic_valid = left_valid;;
 
 endmodule //ID

@@ -33,6 +33,7 @@ wire [31:0] reg_data2;
 wire id_right_valid;
 wire id_right_ready;
 wire is_break;
+wire id_is_fire;
 
 //EXE stage signal
 wire [`ex_ctrl_width-1:0] ex_bus;
@@ -42,16 +43,20 @@ wire [`bypass_width-1:0] ex_bypass;
 wire flush;
 wire is_branch;
 wire [31:0]dnpc;
+wire exe_is_fire;
 
 //MEM stage signal
 wire [`mem_ctrl_width-1:0] mem_bus;
 wire mem_right_valid;
 wire mem_right_ready;
 wire [`bypass_width-1:0] mem_bypass;
+wire mem_is_fire;
 
 //WB stage signal
 wire [`mem_ctrl_width-1:0] wb_bus;
 wire [`bypass_width-1:0] wb_bypass;
+wire wb_is_fire;
+wire wb_valid;
 
 //difftest
 reg [`mem_ctrl_width-1:0] difftest_bus;
@@ -85,7 +90,8 @@ IF if_stage(
     .pc_valid(pc_valid),//IF stage's data is ready
     .inst_ready(inst_ready),//ID stage is allowin
     .right_valid(if_right_valid),//ID stage's data is ready
-    .right_ready(if_right_ready)//EXE stage is allowin
+    .right_ready(if_right_ready),//EXE stage is allowin
+    .fire(id_is_fire)
 );
 
 ID id_stage(
@@ -109,7 +115,9 @@ ID id_stage(
     .left_valid(if_right_valid),//IF stage's data is ready
     .left_ready(if_right_ready),//ID stage is allowin
     .right_valid(id_right_valid),//ID stage's data is ready
-    .right_ready(id_right_ready)//EXE stage is allowin
+    .right_ready(id_right_ready),//EXE stage is allowin
+    .is_fire(id_is_fire),
+    .fire(exe_is_fire)
 );
 bypass Bypass(
     .ex_bypass(ex_bypass),
@@ -154,7 +162,9 @@ EXE exe_stage(
     .left_valid(id_right_valid),//ID stage's data is ready
     .left_ready(id_right_ready),//EX stage is allowin
     .right_valid(ex_right_valid),//EX stage's data is ready
-    .right_ready(ex_right_ready)//MEM stage is allowin
+    .right_ready(ex_right_ready),//MEM stage is allowin
+    .is_fire(exe_is_fire),
+    .fire(mem_is_fire)
 );
 
 MEM mem_stage(
@@ -176,7 +186,9 @@ MEM mem_stage(
     .left_valid(ex_right_valid),//EX stage's data is ready
     .left_ready(ex_right_ready),//MEM stage is allowin
     .right_valid(mem_right_valid),//MEM stage's data is ready
-    .right_ready(mem_right_ready)//WB stage is allowin
+    .right_ready(mem_right_ready),//WB stage is allowin
+    .is_fire(mem_is_fire),
+    .fire(wb_is_fire)
 );
 
 WB wb_syage(
@@ -190,8 +202,10 @@ WB wb_syage(
     //shark hand
     .left_valid(mem_right_valid),//IF stage's data is ready
     .left_ready(mem_right_ready),//ID stage is allowin
-    .right_valid(),//ID stage's data is ready
-    .right_ready(1'b1)//EXE stage is allowin
+    .right_valid(wb_valid),//ID stage's data is ready
+    .right_ready(1'b1),//EXE stage is allowin
+    .is_fire(wb_is_fire),
+    .fire(1'b1)
 );
 
 //delay one cycle for difftest
@@ -200,7 +214,7 @@ always @(posedge clk) begin
         difftest_bus <= `mem_ctrl_width'h0;
     end
     else begin 
-        difftest_bus <= wb_bus;
+        difftest_bus <= wb_bus & {`mem_ctrl_width{wb_valid}};
     end
 end
 assign {     
@@ -215,7 +229,7 @@ assign {
 break_ Break(
     .clk(clk),
     .reset(reset),
-    .is_break(diifftest_is_break & difftest_inst_valid)
+    .is_break(diifftest_is_break)
 );
 
 DifftestInstrCommit DifftestInstrCommit(

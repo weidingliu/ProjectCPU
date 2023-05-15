@@ -19,9 +19,12 @@ module EXE (
     input wire left_valid,//ID stage's data is ready
     output wire left_ready,//EX stage is allowin
     output wire right_valid,//EX stage's data is ready
-    input wire right_ready//MEM stage is allowin
+    input wire right_ready,//MEM stage is allowin
+    output wire is_fire,
+    input wire fire
 );
-wire right_fire;
+// wire right_fire;
+
 reg valid;
 reg [`ex_ctrl_width-1:0] ctrl_temp_bus;//exe ctrl bus
 wire [31:0]alu_result;
@@ -183,15 +186,14 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
+        if(fire)begin 
+            valid <= `false;
+        end
         if(logic_valid & right_ready) begin
             valid <= `true;
         end
-        else if(~right_fire)begin 
-            valid <= `false;
-        end
-        else begin 
-            valid <= `false;
-        end
+        
+        
     end
 end
 
@@ -221,10 +223,10 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = (!mul_valid && is_mul || !div_valid && is_div)? 1'b0:1'b1;
-assign left_ready=(!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_ready;
+assign logic_valid = !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
+assign left_ready= (!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
-assign ex_bypass = {alu_result,wreg_index,wreg_en};
+assign ex_bypass = {alu_result,wreg_index,wreg_en & left_valid};
 
 assign is_branch = (branch_flag);
 assign flush = branch_flag;
@@ -232,7 +234,9 @@ assign dnpc = alu_result;
 
 assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:alu_result;
 
-assign right_fire=right_ready & right_valid;//data submit finish
+assign is_fire = logic_valid & right_ready;
+
+// assign right_fire=right_ready & right_valid;//data submit finish
 // always @(*) begin
 //     $display("666-----%h %h %h %h--%h %h\n",flush,dnpc,PC,inst_valid,src1,src2);
 // end

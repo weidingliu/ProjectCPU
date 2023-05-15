@@ -18,15 +18,16 @@ module IF (
     output wire pc_valid,//IF stage's data is ready
     input wire inst_ready,//ID stage is allowin
     output wire right_valid,//ID stage's data is ready
-    input wire right_ready//EXE stage is allowin
+    input wire right_ready,//EXE stage is allowin
+    input wire fire
 
 );
 
 reg [31:0]temp;
 reg valid;
 reg [63:0]bus_temp;
-wire right_fire;
-assign right_fire=right_ready & right_valid;//data submit finish
+// wire right_fire;
+// assign right_fire=right_ready & right_valid;//data submit finish
 
 always @(posedge clk) begin
   if(reset == `RestEn)begin 
@@ -55,6 +56,9 @@ always @(posedge clk) begin
         bus_temp <= 64'h0;
     end 
     else begin 
+        if(fire)begin 
+            valid <= `false;
+        end
         if(inst_ready & right_ready)begin 
              valid <= `true;
              bus_temp <= {
@@ -62,9 +66,7 @@ always @(posedge clk) begin
                 Inst//31:0
              };
         end
-        else if(~right_fire)begin 
-            valid <= `false;
-        end
+        if(flush) valid <= `false;
     end
 end
 assign right_valid=valid;
