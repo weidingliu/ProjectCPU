@@ -192,8 +192,6 @@ always @(posedge clk) begin
         if(logic_valid & right_ready) begin
             valid <= `true;
         end
-        
-        
     end
 end
 
