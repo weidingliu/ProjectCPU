@@ -78,6 +78,49 @@ wire DMW1_wen   = csr_wr_en & (wr_addr == DMW1);
 wire BRK_wen    = csr_wr_en & (wr_addr == BRK);
 wire disable_cache_wen = csr_wr_en & (wr_addr == DISABLE_CACHE);
 
+reg [31:0]crmd;
+reg [31:0]prmd;
+
+//crmd
+always @(posedge clk) begin
+    if(reset == `RestEn) begin 
+        crmd[ `PLV] <=  2'b0;
+        crmd[  `IE] <=  1'b0;
+        crmd[  `DA] <=  1'b1;
+        crmd[  `PG] <=  1'b0;
+        crmd[`DATF] <=  2'b0;
+        crmd[`DATM] <=  2'b0;
+        crmd[31: 9] <= 23'b0;
+
+    end
+    else begin 
+        if(crmd_wen) begin 
+            crmd[ `PLV] <= csr_wdata[ `PLV];
+            crmd[  `IE] <= csr_wdata[  `IE];
+            crmd[  `DA] <= csr_wdata[  `DA];
+            crmd[  `PG] <= csr_wdata[  `PG];
+            crmd[`DATF] <= csr_wdata[`DATF];
+            crmd[`DATM] <= csr_wdata[`DATM];
+            // crmd[31: 9] <= csr_wdata[`DATM];
+        end
+    end
+end
+
+//prmd
+always @(posedge clk) begin
+    if(reset == `RestEn) begin 
+        prmd[ `PPLV] <=  2'b0;
+        prmd[  `PIE] <=  1'b0;
+        prmd[  31:3] <=  29'h0;
+
+    end
+    else begin 
+        if(crmd_wen) begin 
+            prmd[ `PPLV] <=  csr_wdata[ `PPLV];
+            prmd[  `PIE] <=  csr_wdata[  `PIE];
+        end
+    end
+end
 
 
 endmodule //CSR
