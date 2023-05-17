@@ -48,7 +48,7 @@ localparam DISABLE_CACHE = 14'h101;
 
 wire crmd_wen   = csr_wr_en & (wr_addr == CRMD);
 wire prmd_wen   = csr_wr_en & (wr_addr == PRMD);
-wire ectl_wen   = csr_wr_en & (wr_addr == ECTL);
+wire ecfg_wen   = csr_wr_en & (wr_addr == ECTL);
 wire estat_wen  = csr_wr_en & (wr_addr == ESTAT);
 wire era_wen    = csr_wr_en & (wr_addr == ERA);
 wire badv_wen   = csr_wr_en & (wr_addr == BADV);
@@ -80,6 +80,8 @@ wire disable_cache_wen = csr_wr_en & (wr_addr == DISABLE_CACHE);
 
 reg [31:0]crmd;
 reg [31:0]prmd;
+reg [31:0]ecfg;
+reg [31:0]estat;
 
 //crmd
 always @(posedge clk) begin
@@ -121,6 +123,35 @@ always @(posedge clk) begin
         end
     end
 end
+
+//ecfg
+always @(posedge clk) begin
+    if(reset == `RestEn) begin 
+        ecfg <=  32'h0;
+
+    end
+    else begin 
+        if(ecfg_wen) begin 
+            ecfg[ `LIE1] <=  csr_wdata[ `LIE1];
+            ecfg[ `LIE2] <=  csr_wdata[ `LIE2];
+        end
+    end
+end
+
+//estat
+always @(posedge clk) begin
+    if(reset == `RestEn) begin 
+        estat <=  32'h0;
+    end
+    else begin 
+        if(ecfg_wen) begin 
+            estat[ `IS1] <=  csr_wdata[ `IS1];
+            // estat[ `Ecode] <=  csr_wdata[ `Ecode];
+            // estat[ `EsubCode] <=  csr_wdata[ `EsubCode];
+        end
+    end
+end
+
 
 
 endmodule //CSR
