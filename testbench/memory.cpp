@@ -1,5 +1,9 @@
 #include <Memory.h>
 #include <debug.h>
+extern "C" void pmem_read(uint32_t addr, uint32_t *rdata){
+    
+}
+
 
 void Memory :: init_mem(char *file_path){
     FILE *fp;

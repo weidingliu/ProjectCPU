@@ -39,11 +39,8 @@ cpu-tests is programer, you can program yourself test script to test you design,
 
 ## 关于更简单的仿真框架
 事实上，我认为[chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)提供的仿真框架十分优秀，但是在我进行CPU设计与仿真的时候发现，
-直接使用chiplab提供的仿真框架不符合一个CPU设计的流程：我们可能想要在实现完一条或者若干条指令之后立马对这些指令进行测试，但是因为chiplab的框架太集成，
-内部代码太复杂（文档中对于仿真框架的实现细节不是很清晰），当我的cpu只实现了一两条指令时，我无法使用chiplab的仿真框架进行流水线的初始验证，当我想自己编写一些简单的测试用例时我
-要花费大量时间修改其中复杂的脚本，因此我参考[一生一芯](https://ysyx.oscc.cc)项目与[南京大学PA](https://ysyx.oscc.cc/docs/ics-pa/)
-做了一个简单的仿真框架，在其中能够编写一些简单的测试用例，当你完成一条指令之后，可以编写相应的c代码对这条指令单独进行测试与验证，将CPU的bug锁定在比较
-小的范围，我认为是能够提升开发效率的。
+直接使用chiplab提供的仿真框架不符合一个CPU设计的流程：我们可能想要在实现完一条或者若干条指令之后立马对这些指令进行测试，但是因为chiplab的框架太集成，内部代码太复杂（文档中对于仿真框架的实现细节不是很清晰），当我的cpu只实现了一两条指令时，我无法使用chiplab的仿真框架进行流水线的初始验证，因此我参考[一生一芯](https://ysyx.oscc.cc)项目与[南京大学PA](https://ysyx.oscc.cc/docs/ics-pa/)
+做了一个简单的仿真框架，在其中能够编写一些简单的裸机测试用例，当你完成一条指令之后，可以编写相应的c代码对这条指令单独进行测试与验证，将CPU的bug锁定在比较小的范围，在CPU核的功能完善之后再接入chiplab环境。
 
 其中cpu-tests中的测试一大部分来源于[一生一芯](https://ysyx.oscc.cc)项目。
 

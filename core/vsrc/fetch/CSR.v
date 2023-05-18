@@ -6,10 +6,16 @@ module CSR (
     //read bus
     input wire [13:0] csr_raddr,
     output wire [31:0] csr_rdata,
-    
+    //write bus
     input wire csr_wr_en,
     input wire [13:0] csr_waddr,
-    input wire [31:0] csr_wdata
+    input wire [31:0] csr_wdata,
+
+    //excp
+    input wire excp_flush,
+    input wire [31:0]era_in,
+    input wire [5:0]ecode_in,
+    input wire [8:0]esubcode_in
 
 
 );
@@ -82,6 +88,10 @@ reg [31:0]crmd;
 reg [31:0]prmd;
 reg [31:0]ecfg;
 reg [31:0]estat;
+reg [31:0]era;
+reg [31:0]badv;
+reg [31:0]eentry;
+reg [31:0]cpuid;
 
 //crmd
 always @(posedge clk) begin
@@ -96,7 +106,11 @@ always @(posedge clk) begin
 
     end
     else begin 
-        if(crmd_wen) begin 
+        if (excp_flush) begin
+            csr_crmd[ `PLV] <=  2'b0;
+            csr_crmd[  `IE] <=  1'b0;
+         end
+        else if(crmd_wen) begin 
             crmd[ `PLV] <= csr_wdata[ `PLV];
             crmd[  `IE] <= csr_wdata[  `IE];
             crmd[  `DA] <= csr_wdata[  `DA];
@@ -117,7 +131,11 @@ always @(posedge clk) begin
 
     end
     else begin 
-        if(crmd_wen) begin 
+        if (excp_flush) begin
+            csr_prmd[`PPLV] <= csr_crmd[`PLV];
+            csr_prmd[ `PIE] <= csr_crmd[`IE ];
+        end
+        else if(crmd_wen) begin 
             prmd[ `PPLV] <=  csr_wdata[ `PPLV];
             prmd[  `PIE] <=  csr_wdata[  `PIE];
         end
@@ -131,6 +149,7 @@ always @(posedge clk) begin
 
     end
     else begin 
+        
         if(ecfg_wen) begin 
             ecfg[ `LIE1] <=  csr_wdata[ `LIE1];
             ecfg[ `LIE2] <=  csr_wdata[ `LIE2];
@@ -144,14 +163,51 @@ always @(posedge clk) begin
         estat <=  32'h0;
     end
     else begin 
-        if(ecfg_wen) begin 
+
+        if (excp_flush) begin
+            csr_estat[   `Ecode] <= ecode_in;
+            csr_estat[`EsubCode] <= esubcode_in;
+        end
+        else if(ecfg_wen) begin 
             estat[ `IS1] <=  csr_wdata[ `IS1];
             // estat[ `Ecode] <=  csr_wdata[ `Ecode];
             // estat[ `EsubCode] <=  csr_wdata[ `EsubCode];
         end
     end
 end
+//era
+always @(posedge clk) begin
+    if (excp_flush) begin
+        csr_era <= era_in;
+    end
+    else if (era_wen) begin
+        csr_era <= wr_data;
+    end
+end
 
+//badv
+always @(posedge clk) begin 
+    badv <= 32'h0;
+end
+
+//eentry
+always @(posedge clk) begin
+    if(reset) begin 
+        eentry[5:0] <= 6'h0; 
+    end
+    else begin 
+        if(eentry_wen) begin 
+            eentry[`VA] <= csr_wdata[`VA];
+        end
+    end
+    
+end
+//cpuid
+always @(posedge clk) begin 
+    if(reset) begin 
+        cpuid <= 32'h0;
+    end
+end
 
 
 endmodule //CSR

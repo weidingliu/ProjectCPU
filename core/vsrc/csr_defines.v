@@ -23,3 +23,10 @@
 `define Ecode 21:16
 `define EsubCode 30:22
 
+//eentry
+`define VA 31:6
+
+//cpuid
+`define CoreID 8:0
+
+
