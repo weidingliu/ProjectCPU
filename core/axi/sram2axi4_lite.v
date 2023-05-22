@@ -9,7 +9,7 @@ module sram2axi4_lite #(
 )
 (
     input wire aclk,
-    input wire reset,
+    input wire reset,//active low
     //sram port
         // read request
     input wire [BUS_WIDTH-1 : 0]addr,
@@ -49,31 +49,65 @@ module sram2axi4_lite #(
     //write respone channel
     input wire wr_valid,
     output wire wr_ready,
-    input wire wr_breap
+    input wire [1:0]wr_breap
 
 );
-localparam 
+//FSM
+localparam idle = 2'b00;
+localparam read = 2'b01;
+localparam write = 2'b10;
 
+reg [1:0]state;
+
+always @(posedge aclk) begin
+    if(!reset) begin 
+        state <= idle;
+    end
+    else begin 
+        case (state)
+            idle: begin 
+                if(ce && we && aw_ready && wd_ready) begin 
+                    state <= write;
+                end
+                else if(ce && !we && ar_ready) begin 
+                    state <= read;
+                end
+            end
+            read: begin 
+                    if(rd_valid) begin 
+                        state <=idle;
+                    end
+            end
+            write: begin 
+                   if(wr_valid && wr_breap == 2'b00) begin 
+                        state <= idle;
+                   end
+            end
+            default: state <=idle;
+        endcase
+    end
+end
+//logic output
 
 assign ar_addr = addr;
 assign ar_prot = 3'b000;
-assign ar_valid = ((reset == 1'b1) & ce & !we)? 1'b1:1'b0;
+assign ar_valid = ((reset == 1'b1) & ce & !we & (state == idle))? 1'b1:1'b0;
 
 assign aw_addr = addr;
 assign aw_prot = 3'b000;
-assign aw_valid = ((reset == 1'b1) & ce & we)? 1'b1:1'b0;
+assign aw_valid = ((reset == 1'b1) & ce & we & (state == idle))? 1'b1:1'b0;
 
-assign rd_ready = 1'b1;
+assign rd_ready = (state == read)? 1'b1:1'b0;
 
-assign wd_valid = ((reset == 1'b1) & ce & we)? 1'b1:1'b0;
+assign wd_valid = ((reset == 1'b1) & ce & we & (state == idle))? 1'b1:1'b0;
 assign wd_data = wdata;
 assign wstrb = wmask;
 
-assign wr_ready = 1'b1;
+assign wr_ready = (state == write)? 1'b1:1'b0;
 
 assign rdata_valid = rd_valid;
 assign rdata = rd_data;
-assign write_finish = wr_valid & wr_breap;
+assign write_finish = wr_valid & (wr_breap == 2'b00);
 
 
 endmodule //sram2axi4_lite
