@@ -95,9 +95,82 @@ module axi_liteArbiter #(
     output wire wr_ready,
     input wire [1:0]wr_breap
 );
+localparam idle 2'b00
+localparam busy 2'b01
+
+reg [1:0]arbiter_mar;
+reg [1:0]arbiter_mar_reg;
+reg [1:0]state;
 //Priority arbiter
+always @(*) begin 
+    if(!reset) begin 
+        arbiter_mar = 2'b00;
+    end
+    else if(mem_ar_valid) begin 
+        arbiter_mar = 2'b01;
+    end
+    else if(inst_ar_valid) begin 
+        arbiter_mar = 2'b10;
+    end
+    else arbiter_mar = 2'b00;
+end
+// save arbiter for data transport
+always @(posedge clk) begin
+    if(!reset) begin 
+        arbiter_mar_reg <= 2'b00;
+    end
+    else begin 
+        arbiter_mar_reg <= arbiter_mar;
+    end
+end
 
+always @(posedge clk) begin
+    if(!reset) begin 
+        state <= idle;
+    end
+    else begin 
+        case(state) 
+            idle: begin 
+                if(arbiter_mar[0] | arbiter_mar[1]) begin 
+                    state <= busy;
+                end
+            end
+            busy: begin 
 
+            end
+            default: state <= idle;
+
+        endcase
+    end
+end
+
+    //read address channel 
+    output wire ar_valid,
+    input wire ar_ready,
+    output wire [BUS_WIDTH-1:0] ar_addr,//read request address 
+    output wire [2:0]ar_prot, // Access attributes
+
+    //write address channel
+    output wire aw_valid,
+    input wire aw_ready,
+    output wire [BUS_WIDTH-1:0] aw_addr,
+    output wire [2:0]aw_prot,
+    
+    //read data channel 
+    input wire rd_valid,
+    output wire rd_ready,
+    input wire [DATA_WIDTH-1:0] rd_data,
+
+    //write data channel 
+    output wire wd_valid,
+    input wire wd_ready,
+    output wire [DATA_WIDTH-1:0] wd_data,
+    output wire [DATA_WIDTH/8 -1 : 0]wstrb,
+
+    //write respone channel
+    input wire wr_valid,
+    output wire wr_ready,
+    input wire [1:0]wr_breap
 
 
 
