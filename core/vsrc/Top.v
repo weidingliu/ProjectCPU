@@ -3,19 +3,33 @@ module Top (
     input wire clk,
     input wire reset,
     
-    //inst interface
-    input wire [31:0]inst,
-    output wire [31:0]PC,
-    output wire pc_valid,
-    input wire inst_ready,
-    //data interface
-    input wire [31:0]rdata,
-    output wire [31:0]addr,
-    output wire [31:0]wdata,
-    output wire [3:0]wmask,
-    output wire en,
-    output wire we
+    // //inst interface
+    // input wire [31:0]inst,
+    // output wire [31:0]PC,
+    // output wire pc_valid,
+    // input wire inst_ready,
+    // //data interface
+    // input wire [31:0]rdata,
+    // output wire [31:0]addr,
+    // output wire [31:0]wdata,
+    // output wire [3:0]wmask,
+    // output wire en,
+    // output wire we
 );
+    //inst interface
+wire [31:0]inst;
+wire [31:0]PC;
+wire pc_valid;
+wire inst_ready;
+    //data interface
+wire [31:0]rdata;
+wire [31:0]addr;
+wire [31:0]wdata;
+wire [3:0]wmask;
+wire en;
+wire we;
+assign inst_ready = 1'b1;
+
 
 //IF stage signal
 wire [63:0] if_bus;
@@ -207,6 +221,29 @@ WB wb_syage(
     .is_fire(wb_is_fire),
     .fire(1'b1)
 );
+
+Mem IFMEM(
+    .reset(reset),
+    .clk(clk),
+    .addr(PC),
+    .we(1'b0),
+    .ce(1'b1),
+    .wdata(32'h0),
+    .rdata(inst),
+    .wmask(4'h0)
+);
+
+Mem MEM(
+    .reset(reset),
+    .clk(clk),
+    .addr(addr),
+    .we(we),
+    .ce(en),
+    .wdata(wdata),
+    .rdata(rdata),
+    .wmask(wmask)
+);
+
 
 //delay one cycle for difftest
 always @(posedge clk) begin

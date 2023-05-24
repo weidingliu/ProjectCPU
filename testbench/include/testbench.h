@@ -25,8 +25,9 @@ class CpuTestBench {
     VerilatedVcdC *m_trace;
     #endif
     
-    
+    #ifdef INTER_MEM
     Memory *ram = NULL;
+    #endif
 
     void init_testbench(int argc, char** argv);
     void reset_rtl();

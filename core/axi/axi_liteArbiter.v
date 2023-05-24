@@ -2,6 +2,8 @@
 * This module is used to select axi ports from LSU and IFU,
 * and is implemented using priority arbitration. LSUs have higher priority for memory access requests.
 *
+*
+* use a register to save arbiter result for write respone channel and read data channel.
 */
 
 module axi_liteArbiter #(
@@ -136,7 +138,7 @@ always @(posedge clk) begin
                 end
             end
             busy: begin 
-
+                if(rd_valid || wr_valid) state <= idle;
             end
             default: state <= idle;
 
@@ -145,32 +147,49 @@ always @(posedge clk) begin
 end
 
     //read address channel 
-    output wire ar_valid,
-    input wire ar_ready,
-    output wire [BUS_WIDTH-1:0] ar_addr,//read request address 
-    output wire [2:0]ar_prot, // Access attributes
+    assign ar_valid = (arbiter_mar[0])? mem_ar_valid: (arbiter_mar[1])? inst_ar_valid:1'b0;
+
+    assign inst_ar_ready = (arbiter_mar[1]) & ar_ready;
+    assign mem_ar_ready = (arbiter_mar[0]) & ar_ready;
+
+    assign ar_addr = (arbiter_mar[0])? mem_ar_addr: (arbiter_mar[1])? inst_ar_addr:BUS_WIDTH'h0;//read request address 
+    assign ar_prot = (arbiter_mar[0])? mem_ar_prot: (arbiter_mar[1])? inst_ar_prot:2'b0; // Access attributes
 
     //write address channel
-    output wire aw_valid,
-    input wire aw_ready,
-    output wire [BUS_WIDTH-1:0] aw_addr,
-    output wire [2:0]aw_prot,
+    assign aw_valid = (arbiter_mar[0])? mem_aw_valid: (arbiter_mar[1])? inst_aw_valid:1'b0;
+
+    assign inst_aw_ready = (arbiter_mar[1]) & aw_ready;
+    assign mem_aw_ready = (arbiter_mar[0]) & aw_ready;
+
+    assign aw_addr = (arbiter_mar[0])? mem_aw_addr: (arbiter_mar[1])? inst_aw_addr:BUS_WIDTH'h0;
+    assign aw_prot = (arbiter_mar[0])? mem_aw_prot: (arbiter_mar[1])? inst_aw_prot:2'b0;
     
     //read data channel 
-    input wire rd_valid,
-    output wire rd_ready,
-    input wire [DATA_WIDTH-1:0] rd_data,
+    assign inst_rd_valid = (arbiter_mar_reg[1]) & rd_valid;
+    assign mem_rd_valid = (arbiter_mar_reg[0]) & rd_valid;
+
+    assign rd_ready = (arbiter_mar_reg[0])? mem_rd_ready: (arbiter_mar_reg[1])? inst_rd_ready:1'b1;
+    
+    assign inst_rd_data = {DATA_WIDTH{(arbiter_mar_reg[1])}} & rd_data;
+    assign mem_rd_data = {DATA_WIDTH{(arbiter_mar_reg[0])}} & rd_data;
 
     //write data channel 
-    output wire wd_valid,
-    input wire wd_ready,
-    output wire [DATA_WIDTH-1:0] wd_data,
-    output wire [DATA_WIDTH/8 -1 : 0]wstrb,
+    assign wd_valid = (arbiter_mar[0])? mem_ar_valid: (arbiter_mar[1])? inst_ar_valid:1'b0;
+
+    assign inst_wd_ready = arbiter_mar[1] & wd_ready;
+    assign mem_wd_ready = arbiter_mar[0] & wd_ready;
+
+    assign wd_data = (arbiter_mar[0])? mem_wd_data: (arbiter_mar[1])? inst_wd_data:DATA_WIDTH'h0;
+    assign wstrb = (arbiter_mar[0])? mem_wstrb: (arbiter_mar[1])? inst_wstrb:(DATA_WIDTH/8)'h0;
 
     //write respone channel
-    input wire wr_valid,
-    output wire wr_ready,
-    input wire [1:0]wr_breap
+    assign inst_wr_valid = arbiter_mar_reg[1] & wr_valid;
+    assign mem_wr_valid = arbiter_mar_reg[0] & wr_valid;
+
+    assign wr_ready =  (arbiter_mar_reg[0])? mem_wr_ready: (arbiter_mar_reg[1])? inst_wr_ready:1'b1;
+
+    assign inst_wr_breap = {2{arbiter_mar_reg[1]}} & wr_breap;
+    assign mem_wr_breap = {2{arbiter_mar_reg[0]}} & wr_breap;
 
 
 
