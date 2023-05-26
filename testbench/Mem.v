@@ -39,7 +39,11 @@ end
 
 endmodule
 
-module AXIMem (
+module AXIMem #(
+    parameter BUS_WIDTH = 32,
+    parameter DATA_WIDTH = 32,
+    parameter CPU_WIDTH = 32
+)(
     input wire clk,
     input wire reset,
 ///////////////inst channels
@@ -66,9 +70,9 @@ module AXIMem (
     input wire [DATA_WIDTH/8 -1 : 0]wstrb,
 
     //write respone channel
-    output wire inst_wr_valid,
-    input wire inst_wr_ready,
-    output wire [1:0]inst_wr_breap,
+    output wire wr_valid,
+    input wire wr_ready,
+    output wire [1:0]wr_breap
 );
 
 
