@@ -340,11 +340,11 @@ assign wait_write = ~(write_request_state == write_request_empty);
 assign data_rdata = rd_data;
 assign inst_rdata = rd_data;
 
-assign data_rdata_valid = rd_valid & !rid;
-assign inst_rdata_valid = rd_valid &  rid;
+assign data_rdata_valid = rd_valid & !rid & (read_request_state == read_request_ready);
+assign inst_rdata_valid = rd_valid &  rid & (read_request_state == read_request_ready);
 
-assign data_write_finish = wr_valid & !bid;
-assign inst_write_finish = wr_valid &  bid;
+assign data_write_finish = wr_valid & !bid & (write_request_state == write_request_ready);
+assign inst_write_finish = wr_valid &  bid & (write_request_state == write_request_ready);
 
 endmodule
 
