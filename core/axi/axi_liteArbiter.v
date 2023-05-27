@@ -97,8 +97,9 @@ module axi_liteArbiter #(
     output wire wr_ready,
     input wire [1:0]wr_breap
 );
-localparam idle 2'b00
-localparam busy 2'b01
+localparam idle = 2'b00;
+localparam busy = 2'b01;
+
 
 reg [1:0]arbiter_mar;
 reg [1:0]arbiter_mar_reg;
@@ -152,7 +153,7 @@ end
     assign inst_ar_ready = (arbiter_mar[1]) & ar_ready;
     assign mem_ar_ready = (arbiter_mar[0]) & ar_ready;
 
-    assign ar_addr = (arbiter_mar[0])? mem_ar_addr: (arbiter_mar[1])? inst_ar_addr:BUS_WIDTH'h0;//read request address 
+    assign ar_addr = (arbiter_mar[0])? mem_ar_addr: (arbiter_mar[1])? inst_ar_addr:'h0;//read request address 
     assign ar_prot = (arbiter_mar[0])? mem_ar_prot: (arbiter_mar[1])? inst_ar_prot:2'b0; // Access attributes
 
     //write address channel
@@ -161,7 +162,7 @@ end
     assign inst_aw_ready = (arbiter_mar[1]) & aw_ready;
     assign mem_aw_ready = (arbiter_mar[0]) & aw_ready;
 
-    assign aw_addr = (arbiter_mar[0])? mem_aw_addr: (arbiter_mar[1])? inst_aw_addr:BUS_WIDTH'h0;
+    assign aw_addr = (arbiter_mar[0])? mem_aw_addr: (arbiter_mar[1])? inst_aw_addr:'h0;
     assign aw_prot = (arbiter_mar[0])? mem_aw_prot: (arbiter_mar[1])? inst_aw_prot:2'b0;
     
     //read data channel 
@@ -179,8 +180,8 @@ end
     assign inst_wd_ready = arbiter_mar[1] & wd_ready;
     assign mem_wd_ready = arbiter_mar[0] & wd_ready;
 
-    assign wd_data = (arbiter_mar[0])? mem_wd_data: (arbiter_mar[1])? inst_wd_data:DATA_WIDTH'h0;
-    assign wstrb = (arbiter_mar[0])? mem_wstrb: (arbiter_mar[1])? inst_wstrb:(DATA_WIDTH/8)'h0;
+    assign wd_data = (arbiter_mar[0])? mem_wd_data: (arbiter_mar[1])? inst_wd_data:'h0;
+    assign wstrb = (arbiter_mar[0])? mem_wstrb: (arbiter_mar[1])? inst_wstrb:'h0;
 
     //write respone channel
     assign inst_wr_valid = arbiter_mar_reg[1] & wr_valid;

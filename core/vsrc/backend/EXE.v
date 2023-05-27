@@ -110,7 +110,7 @@ assign src2 = (select_src2[1])? PC:
 //     $display("%h   %h   %h",PC,src1,src2);
 // end
 //branch
-assign branch_flag = inst_valid & (
+assign branch_flag = left_valid & inst_valid & (
     branch_op[0] | branch_op[1] | 
     (branch_op[2] & ($signed(bypass_reg1) >= $signed(bypass_reg2))) |
     (branch_op[3] & (bypass_reg1 == bypass_reg2)) |
@@ -206,7 +206,7 @@ always @(posedge clk) begin
                     is_break,//219:219
                     op_mem,//213:218
                     alu_op,//199:212
-                    (inst_valid),//198:198
+                    (left_valid & inst_valid),//198:198
                     Imm,//166:197
                     PC,//134:165
                     Inst,//102:133

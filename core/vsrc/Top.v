@@ -1,7 +1,7 @@
 `include "defines.sv"
 module Top (
     input wire clk,
-    input wire reset,
+    input wire reset
     
     // //inst interface
     // input wire [31:0]inst,
@@ -28,7 +28,7 @@ wire [31:0]wdata;
 wire [3:0]wmask;
 wire en;
 wire we;
-assign inst_ready = 1'b1;
+// assign inst_ready = 1'b1;
 
 
 //IF stage signal
@@ -65,6 +65,8 @@ wire mem_right_valid;
 wire mem_right_ready;
 wire [`bypass_width-1:0] mem_bypass;
 wire mem_is_fire;
+wire rdata_valid;
+wire write_finish;
 
 //WB stage signal
 wire [`mem_ctrl_width-1:0] wb_bus;
@@ -87,6 +89,30 @@ wire    [31:0]  regs[31:0];
 //from bypass
 wire [31:0] bypass_reg1;
 wire [31:0] bypass_reg2;
+
+//for axi mem
+wire ar_valid;
+wire ar_ready;
+wire [31:0]ar_addr;
+wire [2:0]ar_prot;
+
+wire aw_valid;
+wire aw_ready;
+wire [31:0]aw_addr;
+wire [2:0]aw_prot;
+
+wire rd_valid;
+wire rd_ready;
+wire [31:0]rd_data;
+
+wire wd_valid;
+wire wd_ready;
+wire [31:0]wd_data;
+wire [3:0]wd_wmask;
+
+wire wr_valid;
+wire wr_ready;
+wire [1:0]wr_breap;
 
 
 //IF stage
@@ -194,6 +220,8 @@ MEM mem_stage(
     .rdata(rdata),
     .wdata(wdata),
     .we(we),
+    .rdata_valid(rdata_valid),
+    .write_finish(write_finish),
     //bypass 
     .mem_bypass(mem_bypass),
     //shark hand
@@ -222,27 +250,205 @@ WB wb_syage(
     .fire(1'b1)
 );
 
-Mem IFMEM(
-    .reset(reset),
-    .clk(clk),
-    .addr(PC),
-    .we(1'b0),
-    .ce(1'b1),
-    .wdata(32'h0),
-    .rdata(inst),
-    .wmask(4'h0)
+sram2axi4_lite birdge(
+    .aclk(clk),
+    .reset(~reset),//active low
+    //sram port
+        // read request
+    .inst_addr(PC),
+        //read data
+    .inst_rdata(inst),
+    .inst_rdata_valid(inst_ready),
+        //write data
+    .inst_wdata(32'h0),
+    .inst_wmask(4'h0),
+    .inst_write_finish(),
+        //control signal
+    .inst_ce(1'b1),//start a read/write transport 
+    .inst_we(1'b0),// 1'b0 is read  1'b1 is write 
+
+    .data_addr(addr),
+        //read data
+    .data_rdata(rdata),
+    .data_rdata_valid(rdata_valid),
+        //write data
+    .data_wdata(wdata),
+    .data_wmask(wmask),
+    .data_write_finish(write_finish),
+        //control signal
+    .data_ce(en),//start a read/write transport 
+    .data_we(we),// 1'b0 is read  1'b1 is write 
+
+    //read address channel 
+    .ar_valid(ar_valid),
+    .ar_ready(ar_ready),
+    .ar_addr(ar_addr),//read request address 
+    .ar_prot(ar_prot), // Access attributes
+
+    //write address channel
+    .aw_valid(aw_valid),
+    .aw_ready(aw_ready),
+    .aw_addr(aw_addr),
+    .aw_prot(aw_prot),
+    //read data channel 
+    .rd_valid(rd_valid),
+    .rd_ready(rd_ready),
+    .rd_data(rd_data),
+
+    //write data channel 
+    .wd_valid(wd_valid),
+    .wd_ready(wd_ready),
+    .wd_data(wd_data),
+    .wstrb(wd_wmask),
+
+    //write respone channel
+    .wr_valid(wr_valid),
+    .wr_ready(wr_ready),
+    .wr_breap(wr_breap)
 );
 
-Mem MEM(
-    .reset(reset),
+AXIMem Memory(
     .clk(clk),
-    .addr(addr),
-    .we(we),
-    .ce(en),
-    .wdata(wdata),
-    .rdata(rdata),
-    .wmask(wmask)
+    .reset(~reset),
+///////////////inst channels
+    //read address channel 
+    .ar_valid(ar_valid),
+    .ar_ready(ar_ready),
+    .ar_addr(ar_addr),//read request address 
+    .ar_prot(ar_prot), // Access attributes
+
+    //write address channel
+    .aw_valid(aw_valid),
+    .aw_ready(aw_ready),
+    .aw_addr(aw_addr),
+    .aw_prot(aw_prot),
+    //read data channel 
+    .rd_valid(rd_valid),
+    .rd_ready(rd_ready),
+    .rd_data(rd_data),
+
+    //write data channel 
+    .wd_valid(wd_valid),
+    .wd_ready(wd_ready),
+    .wd_data(wd_data),
+    .wstrb(wd_wmask),
+
+    //write respone channel
+    .wr_valid(wr_valid),
+    .wr_ready(wr_ready),
+    .wr_breap(wr_breap)
 );
+
+sram2axi4_lite birdge1(
+    .aclk(clk),
+    .reset(~reset),//active low
+    //sram port
+        // read request
+    .inst_addr(PC),
+        //read data
+    .inst_rdata(inst),
+    .inst_rdata_valid(inst_ready),
+        //write data
+    .inst_wdata(32'h0),
+    .inst_wmask(4'h0),
+    .inst_write_finish(),
+        //control signal
+    .inst_ce(1'b1),//start a read/write transport 
+    .inst_we(1'b0),// 1'b0 is read  1'b1 is write 
+
+    .data_addr(addr),
+        //read data
+    .data_rdata(rdata),
+    .data_rdata_valid(rdata_valid),
+        //write data
+    .data_wdata(wdata),
+    .data_wmask(wmask),
+    .data_write_finish(write_finish),
+        //control signal
+    .data_ce(en),//start a read/write transport 
+    .data_we(we),// 1'b0 is read  1'b1 is write 
+
+    //read address channel 
+    .ar_valid(ar_valid),
+    .ar_ready(ar_ready),
+    .ar_addr(ar_addr),//read request address 
+    .ar_prot(ar_prot), // Access attributes
+
+    //write address channel
+    .aw_valid(aw_valid),
+    .aw_ready(aw_ready),
+    .aw_addr(aw_addr),
+    .aw_prot(aw_prot),
+    //read data channel 
+    .rd_valid(rd_valid),
+    .rd_ready(rd_ready),
+    .rd_data(rd_data),
+
+    //write data channel 
+    .wd_valid(wd_valid),
+    .wd_ready(wd_ready),
+    .wd_data(wd_data),
+    .wstrb(wd_wmask),
+
+    //write respone channel
+    .wr_valid(wr_valid),
+    .wr_ready(wr_ready),
+    .wr_breap(wr_breap)
+);
+
+AXIMem Memory1(
+    .clk(clk),
+    .reset(~reset),
+///////////////inst channels
+    //read address channel 
+    .ar_valid(ar_valid),
+    .ar_ready(ar_ready),
+    .ar_addr(ar_addr),//read request address 
+    .ar_prot(ar_prot), // Access attributes
+
+    //write address channel
+    .aw_valid(aw_valid),
+    .aw_ready(aw_ready),
+    .aw_addr(aw_addr),
+    .aw_prot(aw_prot),
+    //read data channel 
+    .rd_valid(rd_valid),
+    .rd_ready(rd_ready),
+    .rd_data(rd_data),
+
+    //write data channel 
+    .wd_valid(wd_valid),
+    .wd_ready(wd_ready),
+    .wd_data(wd_data),
+    .wstrb(wd_wmask),
+
+    //write respone channel
+    .wr_valid(wr_valid),
+    .wr_ready(wr_ready),
+    .wr_breap(wr_breap)
+);
+
+// Mem IFMEM(
+//     .reset(reset),
+//     .clk(clk),
+//     .addr(PC),
+//     .we(1'b0),
+//     .ce(1'b1),
+//     .wdata(32'h0),
+//     .rdata(inst),
+//     .wmask(4'h0)
+// );
+
+// Mem MEM(
+//     .reset(reset),
+//     .clk(clk),
+//     .addr(addr),
+//     .we(we),
+//     .ce(en),
+//     .wdata(wdata),
+//     .rdata(rdata),
+//     .wmask(wmask)
+// );
 
 
 //delay one cycle for difftest

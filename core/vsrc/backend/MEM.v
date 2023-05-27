@@ -12,6 +12,8 @@ module MEM (
     input wire [31:0]rdata,
     output wire [31:0]wdata,
     output wire we,//read/write enable
+    input wire rdata_valid,
+    input wire write_finish,
     //bypass
     output wire [`bypass_width-1:0]mem_bypass,
     //shark hand
@@ -161,7 +163,7 @@ always @(posedge clk) begin
         if(logic_valid & right_ready) begin 
             bus_temp <= {
                     is_break,//103:103
-                    (inst_valid ),//102:102
+                    (left_valid & inst_valid ),//102:102
                     wreg_index,//97:101
                     wreg_en,//96:96
                     Inst,// 64:95
@@ -173,8 +175,8 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = left_valid;
-assign left_ready=right_ready;
+assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid)) ? 1'b0:1'b1;
+assign left_ready= (en && (we && !write_finish || !we && !rdata_valid)) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign mem_bypass = {mem_result,wreg_index,wreg_en & left_valid};
 assign is_fire = logic_valid & right_ready;

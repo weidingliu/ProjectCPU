@@ -74,7 +74,99 @@ module AXIMem #(
     input wire wr_ready,
     output wire [1:0]wr_breap
 );
+localparam idle = 2'b00;
+localparam ready = 2'b01;
+localparam data_transform = 2'b10;
 
+reg [1:0]read_state;
+reg [1:0]write_state;
+
+reg [1:0]read_next_state;
+reg [1:0]write_next_state;
+
+reg [DATA_WIDTH-1:0] rdata;
+
+always @(posedge clk) begin
+    if(~reset) begin 
+        read_state <= idle;
+        write_state <= idle;
+    end
+    else begin 
+        read_state <= read_next_state;
+        write_state <= write_next_state;
+    end
+end
+
+always @(*) begin 
+    case(read_state)
+        idle: begin 
+            if(ar_valid) begin 
+                read_next_state = ready;
+            end
+            else begin 
+                read_next_state = idle;
+            end
+        end
+        ready: begin 
+            if(rd_valid && rd_ready) begin 
+                read_next_state = idle;
+            end
+            
+        end
+        data_transform: begin 
+            read_next_state = idle;
+        end
+        default: begin 
+            read_next_state = idle;
+        end
+    endcase
+end
+
+always @(*) begin
+    case (write_state)
+        idle: begin 
+            if(aw_valid) begin 
+                write_next_state = ready;
+            end
+            else begin 
+                write_next_state = idle;
+            end
+        end
+        ready: begin 
+            if(wr_valid && wr_ready) begin 
+                write_next_state = idle;
+            end
+        end
+        data_transform: begin 
+            write_next_state = idle;
+        end
+        default: begin 
+            write_next_state = idle;
+        end
+    endcase
+end
+
+always @(posedge clk) begin 
+    if(~reset) begin 
+        //rdata <= 'h0;
+    end
+    else begin 
+        if(read_next_state == ready) begin 
+            pmem_read(ar_addr, rdata);
+        end
+        if(write_next_state == ready) begin 
+            pmem_write(aw_addr, wd_data, wstrb);
+        end
+    end
+end
+
+assign wr_breap = 2'b00;
+assign rd_data = rdata;
+assign ar_ready = (read_state == idle)? 1'b1:1'b0;
+assign aw_ready = (write_state == idle)? 1'b1:1'b0;
+assign wd_ready = (write_state == idle) ? 1'b1:1'b0;
+assign rd_valid = (read_state == ready)? 1'b1:1'b0;
+assign wr_valid = (write_state == ready)? 1'b1:1'b0;
 
 
 endmodule //Mem

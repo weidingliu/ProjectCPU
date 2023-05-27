@@ -312,19 +312,19 @@ assign inst_bgeu      = decoder_op_31_26[6'h1b];
 assign is_sign=inst_mul | inst_mod_w | inst_mulh | inst_div;
 
 //for next stage and difftest
-assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl
+assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl
                     | inst_xor | inst_addi | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_break | inst_b| inst_bge
                     | inst_st_b | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
                     | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
-                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu;
+                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu);
 
 //output logic
 assign ctrl_bus= bus_temp;
 assign reg_index1=rj;
 assign reg_index2=(is_rd)? rd:rk;
 assign wreg_index=(is_r1)? 5'h1:rd;
-assign wreg_en = (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
+assign wreg_en = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
                  inst_ld_w | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu | inst_xori | inst_nor |
                  inst_sltui | inst_mul | inst_mod_w | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh |
                  inst_mulh_u | inst_div | inst_div_wu | inst_mod_wu);
