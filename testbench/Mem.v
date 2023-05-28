@@ -46,6 +46,7 @@ module AXIMem #(
 )(
     input wire clk,
     input wire reset,
+    input wire flush,
 ///////////////inst channels
     //read address channel 
     input wire ar_valid,
@@ -98,6 +99,8 @@ always @(posedge clk) begin
 end
 
 always @(*) begin 
+    if(flush) read_next_state = idle;
+    else begin 
     case(read_state)
         idle: begin 
             if(ar_valid) begin 
@@ -120,6 +123,7 @@ always @(*) begin
             read_next_state = idle;
         end
     endcase
+    end
 end
 
 always @(*) begin

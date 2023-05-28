@@ -122,6 +122,8 @@ module sram2axi4_lite #(
 )(
     input wire aclk,
     input wire reset,//active low
+
+    input wire flush,
     
     //sram port
         // read request
@@ -251,6 +253,7 @@ always @(posedge aclk) begin
             end
 
         endcase
+        if(flush) begin read_request_state <= read_request_empty;ar_valid <= 1'b0;end
     end
 end
 //write respone FSM

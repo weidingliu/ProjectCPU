@@ -114,6 +114,30 @@ wire wr_valid;
 wire wr_ready;
 wire [1:0]wr_breap;
 
+//for axi mem
+wire ar_valid1;
+wire ar_ready1;
+wire [31:0]ar_addr1;
+wire [2:0]ar_prot1;
+
+wire aw_valid1;
+wire aw_ready1;
+wire [31:0]aw_addr1;
+wire [2:0]aw_prot1;
+
+wire rd_valid1;
+wire rd_ready1;
+wire [31:0]rd_data1;
+
+wire wd_valid1;
+wire wd_ready1;
+wire [31:0]wd_data1;
+wire [3:0]wd_wmask1;
+
+wire wr_valid1;
+wire wr_ready1;
+wire [1:0]wr_breap1;
+
 
 //IF stage
 IF if_stage(
@@ -254,17 +278,18 @@ sram2axi4_lite birdge(
     .aclk(clk),
     .reset(~reset),//active low
     //sram port
+    .flush(1'b0),
         // read request
     .inst_addr(PC),
         //read data
     .inst_rdata(inst),
-    .inst_rdata_valid(inst_ready),
+    .inst_rdata_valid(),
         //write data
     .inst_wdata(32'h0),
     .inst_wmask(4'h0),
     .inst_write_finish(),
         //control signal
-    .inst_ce(1'b1),//start a read/write transport 
+    .inst_ce(1'b0),//start a read/write transport 
     .inst_we(1'b0),// 1'b0 is read  1'b1 is write 
 
     .data_addr(addr),
@@ -311,6 +336,7 @@ AXIMem Memory(
     .clk(clk),
     .reset(~reset),
 ///////////////inst channels
+    .flush(1'b0),
     //read address channel 
     .ar_valid(ar_valid),
     .ar_ready(ar_ready),
@@ -339,94 +365,96 @@ AXIMem Memory(
     .wr_breap(wr_breap)
 );
 
-// sram2axi4_lite birdge1(
-//     .aclk(clk),
-//     .reset(~reset),//active low
-//     //sram port
-//         // read request
-//     .inst_addr(PC),
-//         //read data
-//     .inst_rdata(inst),
-//     .inst_rdata_valid(inst_ready),
-//         //write data
-//     .inst_wdata(32'h0),
-//     .inst_wmask(4'h0),
-//     .inst_write_finish(),
-//         //control signal
-//     .inst_ce(1'b1),//start a read/write transport 
-//     .inst_we(1'b0),// 1'b0 is read  1'b1 is write 
+sram2axi4_lite birdge1(
+    .aclk(clk),
+    .reset(~reset),//active low
+    //sram port
+    .flush(flush),
+        // read request
+    .inst_addr(PC),
+        //read data
+    .inst_rdata(inst),
+    .inst_rdata_valid(inst_ready),
+        //write data
+    .inst_wdata(32'h0),
+    .inst_wmask(4'h0),
+    .inst_write_finish(),
+        //control signal
+    .inst_ce(1'b1),//start a read/write transport 
+    .inst_we(1'b0),// 1'b0 is read  1'b1 is write 
 
-//     .data_addr(addr),
-//         //read data
-//     .data_rdata(rdata),
-//     .data_rdata_valid(rdata_valid),
-//         //write data
-//     .data_wdata(wdata),
-//     .data_wmask(wmask),
-//     .data_write_finish(write_finish),
-//         //control signal
-//     .data_ce(en),//start a read/write transport 
-//     .data_we(we),// 1'b0 is read  1'b1 is write 
+    .data_addr(addr),
+        //read data
+    .data_rdata(rdata),
+    .data_rdata_valid(),
+        //write data
+    .data_wdata(wdata),
+    .data_wmask(wmask),
+    .data_write_finish(),
+        //control signal
+    .data_ce(1'b0),//start a read/write transport 
+    .data_we(we),// 1'b0 is read  1'b1 is write 
 
-//     //read address channel 
-//     .ar_valid(ar_valid),
-//     .ar_ready(ar_ready),
-//     .ar_addr(ar_addr),//read request address 
-//     .ar_prot(ar_prot), // Access attributes
+    //read address channel 
+    .ar_valid(ar_valid1),
+    .ar_ready(ar_ready1),
+    .ar_addr(ar_addr1),//read request address 
+    .ar_prot(ar_prot1), // Access attributes
 
-//     //write address channel
-//     .aw_valid(aw_valid),
-//     .aw_ready(aw_ready),
-//     .aw_addr(aw_addr),
-//     .aw_prot(aw_prot),
-//     //read data channel 
-//     .rd_valid(rd_valid),
-//     .rd_ready(rd_ready),
-//     .rd_data(rd_data),
+    //write address channel
+    .aw_valid(aw_valid1),
+    .aw_ready(aw_ready1),
+    .aw_addr(aw_addr1),
+    .aw_prot(aw_prot1),
+    //read data channel 
+    .rd_valid(rd_valid1),
+    .rd_ready(rd_ready1),
+    .rd_data(rd_data1),
 
-//     //write data channel 
-//     .wd_valid(wd_valid),
-//     .wd_ready(wd_ready),
-//     .wd_data(wd_data),
-//     .wstrb(wd_wmask),
+    //write data channel 
+    .wd_valid(wd_valid1),
+    .wd_ready(wd_ready1),
+    .wd_data(wd_data1),
+    .wstrb(wd_wmask1),
 
-//     //write respone channel
-//     .wr_valid(wr_valid),
-//     .wr_ready(wr_ready),
-//     .wr_breap(wr_breap)
-// );
+    //write respone channel
+    .wr_valid(wr_valid1),
+    .wr_ready(wr_ready1),
+    .wr_breap(wr_breap1)
+);
 
-// AXIMem Memory1(
-//     .clk(clk),
-//     .reset(~reset),
-// ///////////////inst channels
-//     //read address channel 
-//     .ar_valid(ar_valid),
-//     .ar_ready(ar_ready),
-//     .ar_addr(ar_addr),//read request address 
-//     .ar_prot(ar_prot), // Access attributes
+AXIMem Memory1(
+    .clk(clk),
+    .reset(~reset),
+    .flush(flush),
+///////////////inst channels
+    //read address channel 
+    .ar_valid(ar_valid1),
+    .ar_ready(ar_ready1),
+    .ar_addr(ar_addr1),//read request address 
+    .ar_prot(ar_prot1), // Access attributes
 
-//     //write address channel
-//     .aw_valid(aw_valid),
-//     .aw_ready(aw_ready),
-//     .aw_addr(aw_addr),
-//     .aw_prot(aw_prot),
-//     //read data channel 
-//     .rd_valid(rd_valid),
-//     .rd_ready(rd_ready),
-//     .rd_data(rd_data),
+    //write address channel
+    .aw_valid(aw_valid1),
+    .aw_ready(aw_ready1),
+    .aw_addr(aw_addr1),
+    .aw_prot(aw_prot1),
+    //read data channel 
+    .rd_valid(rd_valid1),
+    .rd_ready(rd_ready1),
+    .rd_data(rd_data1),
 
-//     //write data channel 
-//     .wd_valid(wd_valid),
-//     .wd_ready(wd_ready),
-//     .wd_data(wd_data),
-//     .wstrb(wd_wmask),
+    //write data channel 
+    .wd_valid(wd_valid1),
+    .wd_ready(wd_ready1),
+    .wd_data(wd_data1),
+    .wstrb(wd_wmask1),
 
-//     //write respone channel
-//     .wr_valid(wr_valid),
-//     .wr_ready(wr_ready),
-//     .wr_breap(wr_breap)
-// );
+    //write respone channel
+    .wr_valid(wr_valid1),
+    .wr_ready(wr_ready1),
+    .wr_breap(wr_breap1)
+);
 
 // Mem IFMEM(
 //     .reset(reset),
