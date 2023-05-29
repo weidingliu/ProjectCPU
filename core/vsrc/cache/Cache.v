@@ -12,8 +12,8 @@ module Cache_Data #(
    parameter Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
    parameter Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num)
 ) (
-    input wire [BUS_WIDTH-1:0] addr,
-    input wire 
+    input wire [BUS_WIDTH-1:0] addr
+    // input wire 
 );
     
 endmodule
@@ -128,4 +128,23 @@ reg state;
 reg [$clog2(Cache_line_wordnum)-1:0]read_count;
 
 endmodule //Cache
+
+/*
+* simulate sram , when clock rising edge read out data or write data
+*
+*/
+
+module Sramlike #(
+    parameter DATA_WIDTH = 32,
+    parameter Addr_len = 6
+    
+    
+    //parameter $pow(2,)
+)(
+    input wire clk,
+    input wire reset
+);
+localparameter Sram_Depth = $pow(2,Addr_len);
+    
+endmodule
 
