@@ -16,6 +16,19 @@ module Top (
     // output wire en,
     // output wire we
 );
+
+//inst bridge
+wire [31 : 0]inst_mem_addr;
+        //read data
+wire [31:0]inst_mem_rdata;
+wire inst_mem_rdata_valid;
+        //write data
+wire [31:0]inst_mem_wdata;
+wire [3:0]inst_mem_wmask;
+wire inst_mem_write_respone;
+wire inst_mem_ce;//start a read/write transport 
+wire inst_mem_we;// 1'b0 is read  1'b1 is write 
+
     //inst interface
 wire [31:0]inst;
 wire [31:0]PC;
@@ -274,6 +287,33 @@ WB wb_syage(
     .fire(1'b1)
 );
 
+ICache ICache(
+    .clk(clk),
+    .reset(reset),
+    .flush(flush),
+    
+    //cpu request
+    .ce(1'b1),
+    .we(1'b0),
+    .addr(PC),
+    .rdata(inst),
+    .rdata_valid(inst_ready),
+    .rdata_ready(pc_valid),
+
+    //mem request
+    .mem_addr(inst_mem_addr),
+        //read data
+    .mem_rdata(inst_mem_rdata),
+    .mem_rdata_valid(inst_mem_rdata_valid),
+        //write data
+    .mem_wdata(),
+    .mem_wmask(),
+    .mem_write_respone(),
+        //control signal
+    .mem_ce(inst_mem_ce),//start a read/write transport 
+    .mem_we(inst_mem_we)// 1'b0 is read  1'b1 is write 
+);
+
 sram2axi4_lite birdge(
     .aclk(clk),
     .reset(~reset),//active low
@@ -371,17 +411,17 @@ sram2axi4_lite birdge1(
     //sram port
     .flush(flush),
         // read request
-    .inst_addr(PC),
+    .inst_addr(inst_mem_addr),
         //read data
-    .inst_rdata(inst),
-    .inst_rdata_valid(inst_ready),
+    .inst_rdata(inst_mem_rdata),
+    .inst_rdata_valid(inst_mem_rdata_valid),
         //write data
     .inst_wdata(32'h0),
     .inst_wmask(4'h0),
     .inst_write_finish(),
         //control signal
-    .inst_ce(1'b1),//start a read/write transport 
-    .inst_we(1'b0),// 1'b0 is read  1'b1 is write 
+    .inst_ce(inst_mem_ce),//start a read/write transport 
+    .inst_we(inst_mem_we),// 1'b0 is read  1'b1 is write 
 
     .data_addr(addr),
         //read data
