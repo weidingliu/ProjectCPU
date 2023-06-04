@@ -134,23 +134,23 @@ assign mem_result=(op_mem[0] & !op_mem[2])?
                   :alu_result;
 
 // assign right_fire=right_ready & right_valid;//data submit finish
+wire valid_temp;
+assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
+ 
+
 //shark hands
 always @(posedge clk) begin
     if(reset == `RestEn) begin
         valid <= `false; 
     end
     else begin 
-        if(fire)begin 
-            valid <= `false;
-        end
-        if(logic_valid & right_ready) begin
-            valid <= `true;
-        end
-        // if(flush) begin
+        // if(fire)begin 
         //     valid <= `false;
         // end
-        
-        
+        // if(logic_valid & right_ready) begin
+        //     valid <= `true;
+        // end
+        valid <= valid_temp;
     end
 end
 

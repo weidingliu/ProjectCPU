@@ -370,9 +370,9 @@ always @(posedge clk) begin
     if(reset == `RestEn) begin 
         bus_temp <= `ctrl_width'h0;
     end
-    else if(flush == 1'b1) begin 
-        bus_temp <= `ctrl_width'h0;
-    end
+    // else if(flush == 1'b1) begin 
+    //     bus_temp <= `ctrl_width'h0;
+    // end
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {

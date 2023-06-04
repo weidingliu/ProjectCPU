@@ -56,6 +56,7 @@ module Scanf_Cache #(
     input wire clk,
     input wire reset,
 
+    input wire left_valid,
     // input wire  [Cache_line_size-1:0] way0_data,
     // input wire  [Cache_line_size-1:0] way1_data,
 
@@ -78,8 +79,8 @@ module Scanf_Cache #(
 
 );
 
-assign hit_way0 = (way0_tag == tag_in) & way0_valid;
-assign hit_way1 = (way1_tag == tag_in) & way1_valid;
+assign hit_way0 = left_valid & (way0_tag == tag_in) & way0_valid;
+assign hit_way1 = left_valid & (way1_tag == tag_in) & way1_valid;
 
 assign index_out = index_in;
 assign offset_out = offset_in;
@@ -139,6 +140,7 @@ reg [$clog2(Cache_line_wordnum):0]read_count;
 reg [$clog2(Cache_line_wordnum):0]write_count;
 wire read_count_ready;
 wire write_count_ready;
+wire scanf_valid;
 
 wire [Tag_size-1:0]tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]cache_data[Cache_way-1:0];
@@ -621,6 +623,7 @@ Scanf_Cache Scanf_Cache(
     .clk(clk),
     .reset(reset),
 
+    .left_valid(scanf_valid),
     // input wire  [Cache_line_size-1:0] way0_data,
     // input wire  [Cache_line_size-1:0] way1_data,
 
@@ -661,7 +664,7 @@ always @(posedge clk) begin
             end
             scanf: begin 
                 if(hit) begin 
-                    state <= idle;
+                    if(rdata_ready) state <= idle;
                 end
                 else begin 
                     // if(dirt[lru]) state <= write_data;
@@ -670,7 +673,7 @@ always @(posedge clk) begin
                 end
             end
             miss: begin 
-                if(read_count_ready) state <= idle;
+                if(read_count_ready && rdata_ready) state <= idle;
             end
             // write_data: begin 
             //     if(write_count_ready) state <= miss;
@@ -752,25 +755,27 @@ Data_mask #(
 
 // generate hit_rdata
 generate
-    for(i=0;i<Cache_way;i++) begin 
+    for(i=0;i<Cache_way;i++) begin :data_select
         Data_mask #(
         .DATA_WIDTH(DATA_WIDTH),
         .Cache_line_size(Cache_line_size)
     )
     Data_mask (
         .offset(offset[Offset_size-1:Word_offset]),
-        .cache_line_data(cache_data[0]),
+        .cache_line_data(cache_data[i]),
         .rdata(hit_rdata[i])
     ); 
     end
 endgenerate
 
-assign write_lru = (state == miss) & (~lru) | ((state == scanf & hit) & hit_way1);
-assign write_lru_we = (state == scanf & hit ) | (state == miss & read_count_ready);
+assign write_lru = (state == miss)? ~lru: 
+                    (state == scanf & hit_way0) ? 1'b1:
+                    (state == scanf & hit_way1)? 1'b0: 1'b1;
+assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready);
 // assign write_dirt_we[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we);
 // assign write_dirt_we[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we);
-assign cache_we[0] = (state == miss & (~lru) & read_count_ready);
-assign cache_we[1] = (state == miss & lru & read_count_ready);
+assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready;
+assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready;
 
 generate
     for(i=0;i<Cache_way;i++) begin 
@@ -779,6 +784,8 @@ generate
         // assign write_dirt = 1'b1;
     end
 endgenerate
+
+assign scanf_valid = state == scanf;
 
 assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) | 
                ({DATA_WIDTH{hit_way1}} & hit_rdata[1]) |

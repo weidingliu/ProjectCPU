@@ -144,8 +144,8 @@ assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
                         ({32{mul_div_op[1]}} & remainder)|
                         ({32{mul_div_op[2]}} & mul_hi)|
                         ({32{mul_div_op[3]}} & quotient); 
-assign is_mul = mul_div_op[0] | mul_div_op[1] | mul_div_op[2];
-assign is_div = mul_div_op[3];
+assign is_mul = mul_div_op[0]  | mul_div_op[2];
+assign is_div = mul_div_op[3]  | mul_div_op[1];
 // booth multiplier
 Booth_MUL MUL(
     .clock(clk),
@@ -178,7 +178,9 @@ DIV DIV(
     .io_out_bits_result_remainder(remainder)
 );
 
-
+wire valid_temp;
+assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
+ 
 
 //shark hands
 always @(posedge clk) begin
@@ -186,12 +188,13 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
-        if(fire)begin 
-            valid <= `false;
-        end
-        if(logic_valid & right_ready) begin
-            valid <= `true;
-        end
+        // if(fire)begin 
+        //     valid <= `false;
+        // end
+        // if(logic_valid & right_ready) begin
+        //     valid <= `true;
+        // end
+        valid <= valid_temp;
     end
 end
 
@@ -226,8 +229,8 @@ assign left_ready= (!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_r
 assign ex_ctrl_bus=ctrl_temp_bus;
 assign ex_bypass = {alu_result,wreg_index,wreg_en & left_valid};
 
-assign is_branch = (branch_flag);
-assign flush = branch_flag;
+assign is_branch = (branch_flag) & left_valid & right_ready;
+assign flush = branch_flag & left_valid & right_ready;
 assign dnpc = alu_result;
 
 assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:alu_result;
