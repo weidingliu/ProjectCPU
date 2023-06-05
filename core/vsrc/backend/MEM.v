@@ -12,16 +12,21 @@ module MEM (
     input wire [31:0]rdata,
     output wire [31:0]wdata,
     output wire we,//read/write enable
+    input wire rdata_valid,
+    input wire write_finish,
     //bypass
     output wire [`bypass_width-1:0]mem_bypass,
     //shark hand
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
     output wire right_valid,//ID stage's data is ready
-    input wire right_ready//EXE stage is allowin
+    input wire right_ready,//EXE stage is allowin
+    output wire is_fire,
+    input wire fire
 );
 //shark hands
-wire right_fire;
+// wire right_fire;
+
 reg valid;
 wire logic_valid;
 //bus REG
@@ -40,7 +45,7 @@ wire [31:0]src2;
 wire [31:0]alu_result;
 wire [5:0] op_mem;
 wire is_break;
-wire Inst_valid;
+// wire Inst_valid;
 
 wire [31:0] byte_temp;
 wire [31:0] half_temp;
@@ -66,7 +71,7 @@ assign {
     alu_result// 0:31
 }=mem_ctrl_bus;
 
-assign Inst_valid = left_valid ? inst_valid:1'b0;
+// assign Inst_valid = left_valid ? inst_valid:1'b0;
 // byte store wdata and wmask
 assign byte_temp = (
     ({32{~alu_result[1] & ~alu_result[0]}} & {24'h0,src2[7:0]}) |
@@ -112,7 +117,7 @@ assign half_load = (
 );
 
 //for sram
-assign en = op_mem[0] & inst_valid;
+assign en = op_mem[0] & inst_valid & left_valid;
 assign we = op_mem[2];
 assign addr = alu_result;
 assign wdata = op_mem[3] ? src2:
@@ -128,22 +133,24 @@ assign mem_result=(op_mem[0] & !op_mem[2])?
                   (op_mem[5])? byte_load:half_load
                   :alu_result;
 
-assign right_fire=right_ready & right_valid;//data submit finish
+// assign right_fire=right_ready & right_valid;//data submit finish
+wire valid_temp;
+assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
+ 
+
 //shark hands
 always @(posedge clk) begin
     if(reset == `RestEn) begin
         valid <= `false; 
     end
     else begin 
-        if(logic_valid & right_ready) begin
-            valid <= `true;
-        end
-        else if(~right_fire)begin 
-            valid <= `false;
-        end
-        else begin 
-            valid <= `false;
-        end
+        // if(fire)begin 
+        //     valid <= `false;
+        // end
+        // if(logic_valid & right_ready) begin
+        //     valid <= `true;
+        // end
+        valid <= valid_temp;
     end
 end
 
@@ -156,7 +163,7 @@ always @(posedge clk) begin
         if(logic_valid & right_ready) begin 
             bus_temp <= {
                     is_break,//103:103
-                    (Inst_valid),//102:102
+                    (left_valid & inst_valid ),//102:102
                     wreg_index,//97:101
                     wreg_en,//96:96
                     Inst,// 64:95
@@ -168,9 +175,10 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = 1'b1;
-assign left_ready=right_ready;
+assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid)) | !left_valid ? 1'b0:1'b1;
+assign left_ready= (en && (we && !write_finish || !we && !rdata_valid)) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
-assign mem_bypass = {mem_result,wreg_index,wreg_en};
+assign mem_bypass = {mem_result,wreg_index,wreg_en & left_valid};
+assign is_fire = logic_valid & right_ready;
 
 endmodule //MEM

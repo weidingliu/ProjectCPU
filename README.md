@@ -36,6 +36,7 @@
 
 ## 关于更简单的仿真框架
 事实上，我认为[chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)提供的仿真框架十分优秀，但是在我进行CPU设计与仿真的时候发现，
+
 直接使用chiplab提供的仿真框架不符合一个CPU设计的流程：我们可能想要在实现完一条或者若干条指令之后立马对这些指令进行测试，但是因为chiplab的框架太集成，
 内部代码太复杂（文档中对于仿真框架的实现细节不是很清晰），当cpu只实现了一两条指令没有实现soc上的axi接口时，比较难chiplab的仿真框架进行流水线的初始验证，而且我还想自己编写一些简单的测试用例时我要花费大量时间修改其中复杂的脚本（大多数都只有简单的注释），因此我参考[一生一芯](https://ysyx.oscc.cc)项目与[南京大学PA](https://ysyx.oscc.cc/docs/ics-pa/)
 做了一个简单的仿真框架，在其中能够编写一些简单的测试用例，当你完成一条指令之后，可以编写相应的c代码对这条指令单独进行测试与验证，将CPU的bug锁定在比较
@@ -69,4 +70,9 @@ difftest来源于[Loongarch-NEMU](https://gitee.com/wwt_panache/la32r-nemu?_from
 [Loongarch-NEMU](https://gitee.com/wwt_panache/la32r-nemu?_from=gitee_search)
 
 [chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)
+
+《龙芯架构32位精简版参考手册》可以从龙芯官网下载。https://www.loongson.cn/FileShow
+
+LA32R 相关工具链请前往龙芯官方的 Chiplab 仓库下载 https://gitee.com/loongson-edu/chiplab 
+
 

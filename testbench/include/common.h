@@ -10,6 +10,7 @@
 #define DIFFTEST
 // #define MTRACE
 #define DIFFTEST_TRACE
+//#define INTER_MEM
 
 extern char* difftest_ref_so;
 #ifndef FIRST_INST_ADDRESS

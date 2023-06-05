@@ -19,9 +19,12 @@ module EXE (
     input wire left_valid,//ID stage's data is ready
     output wire left_ready,//EX stage is allowin
     output wire right_valid,//EX stage's data is ready
-    input wire right_ready//MEM stage is allowin
+    input wire right_ready,//MEM stage is allowin
+    output wire is_fire,
+    input wire fire
 );
-wire right_fire;
+// wire right_fire;
+
 reg valid;
 reg [`ex_ctrl_width-1:0] ctrl_temp_bus;//exe ctrl bus
 wire [31:0]alu_result;
@@ -107,7 +110,7 @@ assign src2 = (select_src2[1])? PC:
 //     $display("%h   %h   %h",PC,src1,src2);
 // end
 //branch
-assign branch_flag = inst_valid & (
+assign branch_flag = left_valid & inst_valid & (
     branch_op[0] | branch_op[1] | 
     (branch_op[2] & ($signed(bypass_reg1) >= $signed(bypass_reg2))) |
     (branch_op[3] & (bypass_reg1 == bypass_reg2)) |
@@ -141,8 +144,8 @@ assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
                         ({32{mul_div_op[1]}} & remainder)|
                         ({32{mul_div_op[2]}} & mul_hi)|
                         ({32{mul_div_op[3]}} & quotient); 
-assign is_mul = mul_div_op[0] | mul_div_op[1] | mul_div_op[2];
-assign is_div = mul_div_op[3];
+assign is_mul = (mul_div_op[0]  | mul_div_op[2]) & right_ready;
+assign is_div = (mul_div_op[3]  | mul_div_op[1]) & right_ready;
 // booth multiplier
 Booth_MUL MUL(
     .clock(clk),
@@ -175,7 +178,9 @@ DIV DIV(
     .io_out_bits_result_remainder(remainder)
 );
 
-
+wire valid_temp;
+assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
+ 
 
 //shark hands
 always @(posedge clk) begin
@@ -183,15 +188,13 @@ always @(posedge clk) begin
         valid <= `false; 
     end
     else begin 
-        if(logic_valid & right_ready) begin
-            valid <= `true;
-        end
-        else if(~right_fire)begin 
-            valid <= `false;
-        end
-        else begin 
-            valid <= `false;
-        end
+        // if(fire)begin 
+        //     valid <= `false;
+        // end
+        // if(logic_valid & right_ready) begin
+        //     valid <= `true;
+        // end
+        valid <= valid_temp;
     end
 end
 
@@ -206,7 +209,7 @@ always @(posedge clk) begin
                     is_break,//219:219
                     op_mem,//213:218
                     alu_op,//199:212
-                    (inst_valid),//198:198
+                    (left_valid & inst_valid),//198:198
                     Imm,//166:197
                     PC,//134:165
                     Inst,//102:133
@@ -221,18 +224,20 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = (!mul_valid && is_mul || !div_valid && is_div)? 1'b0:1'b1;
-assign left_ready=(!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_ready;
+assign logic_valid = !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
+assign left_ready= (!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
-assign ex_bypass = {alu_result,wreg_index,wreg_en};
+assign ex_bypass = {alu_result,wreg_index,wreg_en & left_valid};
 
-assign is_branch = (branch_flag);
-assign flush = branch_flag;
+assign is_branch = (branch_flag) & left_valid & right_ready;
+assign flush = branch_flag & left_valid & right_ready;
 assign dnpc = alu_result;
 
 assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:alu_result;
 
-assign right_fire=right_ready & right_valid;//data submit finish
+assign is_fire = logic_valid & right_ready;
+
+// assign right_fire=right_ready & right_valid;//data submit finish
 // always @(*) begin
 //     $display("666-----%h %h %h %h--%h %h\n",flush,dnpc,PC,inst_valid,src1,src2);
 // end

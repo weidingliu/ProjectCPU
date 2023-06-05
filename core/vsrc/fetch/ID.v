@@ -25,10 +25,13 @@ module ID (
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
     output wire right_valid,//ID stage's data is ready
-    input wire right_ready//EXE stage is allowin
+    input wire right_ready,//EXE stage is allowin
+    output wire is_fire,
+    input wire fire//next stage's data was consumed
 );
+assign is_fire = logic_valid & right_ready;
 
-wire right_fire;
+// wire right_fire;
 reg valid;
 
 wire [13:0] alu_op;//alu opcode
@@ -303,25 +306,25 @@ assign inst_bgeu      = decoder_op_31_26[6'h1b];
 // assign inst_ll_w       = op_31_26_d[6'h08] & ~ds_inst[25] & ~ds_inst[24];
 // assign inst_sc_w       = op_31_26_d[6'h08] & ~ds_inst[25] &  ds_inst[24];
 
-//next stage's data was consumed
-assign right_fire=right_ready & right_valid;//data submit finish
+
+// assign right_fire=right_ready & right_valid;//data submit finish
 // if alu is sign compute 
 assign is_sign=inst_mul | inst_mod_w | inst_mulh | inst_div;
 
 //for next stage and difftest
-assign inst_valid = inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl
+assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_sub | inst_or | inst_jirl
                     | inst_xor | inst_addi | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_break | inst_b| inst_bge
                     | inst_st_b | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
                     | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
-                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu;
+                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu);
 
 //output logic
 assign ctrl_bus= bus_temp;
 assign reg_index1=rj;
 assign reg_index2=(is_rd)? rd:rk;
 assign wreg_index=(is_r1)? 5'h1:rd;
-assign wreg_en = (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
+assign wreg_en = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
                  inst_ld_w | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu | inst_xori | inst_nor |
                  inst_sltui | inst_mul | inst_mod_w | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh |
                  inst_mulh_u | inst_div | inst_div_wu | inst_mod_wu);
@@ -342,34 +345,54 @@ assign Imm = ({32{Imm20_en}} & Imm20) |
 assign src1 = reg_data1;
 assign src2 = reg_data2;
 
+wire valid_temp;
+assign valid_temp = ((fire? 1'b0:valid) | logic_valid & right_ready) & !flush;
+ 
+
 //shark hands
 always @(posedge clk) begin
     if(reset == `RestEn) begin
         valid <= `false; 
     end
     else begin 
-        if(logic_valid & right_ready) begin
-            valid <= `true;
-        end
-        else if(~right_fire)begin 
-            valid <= `false;
-        end
-        else begin 
-            valid <= `false;
-        end
-        
-        
+        // if(fire)begin 
+        //     valid <= `false;
+        // end
+        // if(logic_valid & right_ready) begin
+        //     valid <= `true;
+        // end
+        valid <= valid_temp;
     end
 end
+
+// //shark hands
+// always @(posedge clk) begin
+//     if(reset == `RestEn) begin
+//         valid <= `false; 
+//     end
+//     else begin 
+//         if(fire)begin 
+//             valid <= `false;
+//         end
+//         if(logic_valid & right_ready) begin
+//             valid <= `true;
+//         end
+//         if(flush) begin
+//             valid <= `false;
+//         end
+        
+        
+//     end
+// end
 
 //data block
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         bus_temp <= `ctrl_width'h0;
     end
-    else if(flush == 1'b1) begin 
-        bus_temp <= `ctrl_width'h0;
-    end
+    // else if(flush == 1'b1) begin 
+    //     bus_temp <= `ctrl_width'h0;
+    // end
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
@@ -398,6 +421,6 @@ end
 // shark hands output logic
 assign right_valid=valid;
 assign left_ready=right_ready;
-assign logic_valid = 1'b1;
+assign logic_valid = left_valid;;
 
 endmodule //ID
