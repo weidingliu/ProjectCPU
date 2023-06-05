@@ -144,8 +144,8 @@ assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
                         ({32{mul_div_op[1]}} & remainder)|
                         ({32{mul_div_op[2]}} & mul_hi)|
                         ({32{mul_div_op[3]}} & quotient); 
-assign is_mul = mul_div_op[0]  | mul_div_op[2];
-assign is_div = mul_div_op[3]  | mul_div_op[1];
+assign is_mul = (mul_div_op[0]  | mul_div_op[2]) & right_ready;
+assign is_div = (mul_div_op[3]  | mul_div_op[1]) & right_ready;
 // booth multiplier
 Booth_MUL MUL(
     .clock(clk),

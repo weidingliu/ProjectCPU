@@ -28,6 +28,7 @@ void CpuTestBench :: init_testbench(int argc, char** argv){
     ref = new DiffTest();
     #endif
     // printf("---%s\n",);
+    char * mem_path = argv[2];
     #if defined INTER_MEM
     ram->init_mem(argv[2]);
     pmem_start = ram->mem;
@@ -80,6 +81,7 @@ void CpuTestBench :: eval(){
         // printf("dfgg %ld\n",sim_time);
         if(state==STATE_ABORT || state==STATE_END){
             // printf("adfgdfg\n");
+
             break;
         }
         #endif
@@ -92,6 +94,7 @@ void CpuTestBench :: eval(){
         // if(sim_time > 1000) break;
         sim_time++;
     }
+   
 
     // printf("adfgddddddddddfg\n");
 }
@@ -124,7 +127,8 @@ void CpuTestBench :: end_testbench(){
 
     delete dut;
     delete contextp;
-    exit(EXIT_SUCCESS);
+    if(state == STATE_ABORT)  exit(EXIT_FAILURE);
+    else exit(EXIT_SUCCESS);
 }
 
 

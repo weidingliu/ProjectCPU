@@ -90,6 +90,7 @@ int mem_size=0;
 void init_mem(char *file_path){
     FILE *fp;
     //printf("%x\n",*(uint32_t *)(mem+0x24c));
+    //printf("%s\n",file_path);
     if((fp=fopen(file_path,"rb"))==NULL){
         printf("\033[40;31mload mem fail!\033[0m\n");
         exit(-1);

@@ -538,7 +538,7 @@ assign Tag = addr[BUS_WIDTH-1:Index_size + Offset_size];
 genvar i;
 //tag 
 generate
-    for(i=0;i<Cache_way;i++) begin 
+    for(i=0;i<Cache_way;i++) begin :Cache_tag
         Sramlike#(.DATA_WIDTH(Tag_size),.Addr_len(Index_size)) Tag_way (
            .clk(clk),
            .reset(reset),
@@ -554,7 +554,7 @@ generate
 endgenerate
 //data
 generate
-    for(i=0;i<Cache_way;i++) begin 
+    for(i=0;i<Cache_way;i++) begin :Cache_data
         Sramlike#(.DATA_WIDTH(Cache_line_size),.Addr_len(Index_size)) Data_way (
            .clk(clk),
            .reset(reset),
@@ -571,7 +571,7 @@ generate
 endgenerate
 //valid
 generate
-    for(i=0;i<Cache_way;i++) begin 
+    for(i=0;i<Cache_way;i++) begin :data_valid
         Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) Data_valid (
            .clk(clk),
            .reset(reset),
