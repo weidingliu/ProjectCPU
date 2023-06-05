@@ -1,3 +1,4 @@
+`include "cache_defines.v"
 /*
 * cache data 
 *
@@ -140,7 +141,6 @@ reg [$clog2(Cache_line_wordnum):0]read_count;
 reg [$clog2(Cache_line_wordnum):0]write_count;
 wire read_count_ready;
 wire write_count_ready;
-wire scanf_valid;
 
 wire [Tag_size-1:0]tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]cache_data[Cache_way-1:0];
@@ -155,6 +155,7 @@ wire [Tag_size-1:0] Tag;
 wire hit_way0;
 wire hit_way1;
 wire hit;
+wire scanf_valid;
 
 wire [DATA_WIDTH-1:0]hit_rdata[Cache_way-1:0];
 
@@ -180,13 +181,13 @@ assign write_count_ready = write_count == Cache_line_wordnum;
 
 assign offset = addr[Offset_size-1:0];
 assign index = addr[Index_size + Offset_size-1:Offset_size];
-assign tag = addr[BUS_WIDTH-1:Index_size + Offset_size];
+assign Tag = addr[BUS_WIDTH-1:Index_size + Offset_size];
 
 genvar i;
 //tag 
 generate
-    for(i=0;i<Cache_way;i++) begin 
-        Tag_way#(.DATA_WIDTH(Tag_size),.Addr_len(Index_size)) Sramlike (
+    for(i=0;i<Cache_way;i++) begin :Cache_tag
+        Sramlike#(.DATA_WIDTH(Tag_size),.Addr_len(Index_size)) Tag_way (
            .clk(clk),
            .reset(reset),
 
@@ -195,14 +196,14 @@ generate
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
 
-           .rdata(Tag[i]) 
+           .rdata(tag[i]) 
         );
     end
 endgenerate
 //data
 generate
-    for(i=0;i<Cache_way;i++) begin 
-        Data_way#(.DATA_WIDTH(Cache_line_size),.Addr_len(Index_size)) Sramlike (
+    for(i=0;i<Cache_way;i++) begin :Cache_data
+        Sramlike#(.DATA_WIDTH(Cache_line_size),.Addr_len(Index_size)) Data_way (
            .clk(clk),
            .reset(reset),
 
@@ -218,8 +219,8 @@ generate
 endgenerate
 //valid
 generate
-    for(i=0;i<Cache_way;i++) begin 
-        Data_valid#(.DATA_WIDTH(1),.Addr_len(Index_size)) Sramlike (
+    for(i=0;i<Cache_way;i++) begin :data_valid
+        Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) Data_valid (
            .clk(clk),
            .reset(reset),
 
@@ -234,8 +235,10 @@ generate
 endgenerate
 //dirt
 generate
-    for(i=0;i<Cache_way;i++) begin 
-        Data_dirt#(.DATA_WIDTH(1),.Addr_len(Index_size)) Sramlike (
+    for(i=0;i<Cache_way;i++) begin :Data_dirt
+        defparam  Data_dirt.DATA_WIDTH = 1;
+        defparam  Data_dirt.Addr_len = Index_size;
+        Data_dirt Sramlike (
            .clk(clk),
            .reset(reset),
 
@@ -249,9 +252,7 @@ generate
     end
 endgenerate
 
-defparam  lru_way.DATA_WIDTH = 1;
-defparam  lru_way.Addr_len = Index_size;
-lru_way Sramlike (
+Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) lru_way (
     .clk(clk),
     .reset(reset),
 
@@ -270,18 +271,19 @@ Scanf_Cache Scanf_Cache(
     .clk(clk),
     .reset(reset),
 
+    .left_valid(scanf_valid),
     // input wire  [Cache_line_size-1:0] way0_data,
     // input wire  [Cache_line_size-1:0] way1_data,
 
-    .way0_tag(Tag[0]),
-    .way1_tag(Tag[1]),
+    .way0_tag(tag[0]),
+    .way1_tag(tag[1]),
 
     .way0_valid(valid[0]),
     .way1_valid(valid[1]),
 
     .index_in(index),
     .offset_in(offset),
-    .tag_in(tag),
+    .tag_in(Tag),
 
     .index_out(),
     .offset_out(),
@@ -310,7 +312,7 @@ always @(posedge clk) begin
             end
             scanf: begin 
                 if(hit) begin 
-                    state <= idle;
+                    if(rdata_ready) state <= idle;
                 end
                 else begin 
                     if(dirt[lru]) state <= write_data;
@@ -318,7 +320,7 @@ always @(posedge clk) begin
                 end
             end
             miss: begin 
-                if(read_count_ready) state <= idle;
+                if(read_count_ready && rdata_ready) state <= idle;
             end
             write_data: begin 
                 if(write_count_ready) state <= miss;
@@ -364,7 +366,7 @@ always @(posedge clk) begin
         miss_data <= 0;
         read_count <= 0;
     end
-    else if(read_count_ready & !rdata_ready) begin 
+    else if(read_count_ready && !rdata_ready) begin 
 
     end
     else if(state == idle || read_count_ready) begin 
@@ -388,10 +390,10 @@ always @(posedge clk) begin
         if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
    end
 end
-Miss_data_mask #(
+Data_mask #(
         .DATA_WIDTH(DATA_WIDTH),
         .Cache_line_size(Cache_line_size)
-)Data_mask(
+)Miss_data_mask(
     .offset(offset[Offset_size-1:Word_offset]),
     .cache_line_data(miss_data),
     .rdata(miss_rdata)
@@ -400,34 +402,41 @@ Miss_data_mask #(
 
 // generate hit_rdata
 generate
-    for(i=0;i<Cache_way;i++) begin 
+    for(i=0;i<Cache_way;i++) begin :data_select
         Data_mask #(
         .DATA_WIDTH(DATA_WIDTH),
         .Cache_line_size(Cache_line_size)
     )
     Data_mask (
         .offset(offset[Offset_size-1:Word_offset]),
-        .cache_line_data(cache_data[0]),
+        .cache_line_data(cache_data[i]),
         .rdata(hit_rdata[i])
     ); 
     end
 endgenerate
-
-assign write_lru = (state == miss) & (~lru) | ((state == scanf & hit) & hit_way1);
-assign write_lru_we = (state == scanf & hit ) | (state == miss & read_count_ready);
+//generate lru data and enable
+assign write_lru = (state == miss)? ~lru: 
+                    (state == scanf & hit_way0) ? 1'b1:
+                    (state == scanf & hit_way1)? 1'b0: 1'b1;
+assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready);
+//generate dirt data and enable
 assign write_dirt_we[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we);
 assign write_dirt_we[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we);
-assign cache_we[0] = (state == miss & (~lru) & read_count_ready);
-assign cache_we[1] = (state == miss & lru & read_count_ready);
+assign write_dirt[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)? 1'b1:1'b0;
+assign write_dirt[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we)? 1'b1:1'b0;
+//generate cache meta data and cache data write enable
+assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready;
+assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready;
 
 generate
     for(i=0;i<Cache_way;i++) begin 
-        assign write_cache_data = miss_data;
-        assign write_tag = tag;
-        assign write_dirt = 1'b1;
+        assign write_cache_data[i] = miss_data;
+        assign write_tag[i] = Tag;
     end
 endgenerate
 
+assign scanf_valid = state == scanf;
+//read out data 
 assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) | 
                ({DATA_WIDTH{hit_way1}} & hit_rdata[1]) |
                ({DATA_WIDTH{read_count_ready}} & miss_rdata);
@@ -436,9 +445,17 @@ assign mem_addr = (state == miss)?  miss_addr : {DATA_WIDTH{1'b0}};
 assign mem_ce = state == miss || state == write_data;
 assign mem_we = state == write_data;
 assign mem_wdata = write_back_data[DATA_WIDTH-1:0];
-// assign mem_wmask = 
+assign mem_wmask = 4'hf;
 
 assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
+
+`ifdef display_cache_missinfo
+always @(*) begin
+    if(state == scanf && !hit)begin 
+        $display("DCache Miss! addr %h ,select way %h\n",addr,lru);
+    end
+end
+`endif
 
 endmodule //Cache
 
@@ -508,6 +525,7 @@ wire [Tag_size-1:0] Tag;
 wire hit_way0;
 wire hit_way1;
 wire hit;
+wire scanf_valid;
 
 wire [DATA_WIDTH-1:0]hit_rdata[Cache_way-1:0];
 
@@ -799,42 +817,17 @@ assign mem_we = state == write_data;
 
 assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
 
+`ifdef display_cache_missinfo
+always @(*) begin
+    if(state == scanf && !hit)begin 
+        $display("ICache Miss! addr %h ,select way %h index %h\n",addr,lru,index);
+    end
+end
+`endif
+
 endmodule //Cache
 
-/*
-* simulate sram , when clock rising edge read out data or write data, signal port
-* write first memory
-*/
 
-module Sramlike #(
-    parameter DATA_WIDTH = 32,
-    parameter Addr_len = 6,
-    localparam Sram_Depth = 2**Addr_len
-    //parameter $pow(2,)
-)(
-    input wire clk,
-    input wire reset,
 
-    input wire [Addr_len-1:0] addr,
-    input wire [DATA_WIDTH-1:0] wdata,
-    input wire [Addr_len-1:0] waddr,
-    input wire we,// 1'b0 is read, 1'b1 is write
 
-    output wire [DATA_WIDTH-1:0] rdata
-);
-
-reg [DATA_WIDTH-1:0]Mem[0:Sram_Depth-1];
-reg [Addr_len-1:0]addr_temp;
-
-always @(posedge clk) begin
-    if(we) begin 
-        Mem[waddr] <= wdata;
-    end
-    addr_temp <= addr;
-end
-
-assign rdata = Mem[addr_temp];
-
-    
-endmodule
 

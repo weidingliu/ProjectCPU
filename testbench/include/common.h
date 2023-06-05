@@ -9,7 +9,7 @@
 
 #define DIFFTEST
 // #define MTRACE
-#define DIFFTEST_TRACE
+// #define DIFFTEST_TRACE
 //#define INTER_MEM
 
 extern char* difftest_ref_so;
