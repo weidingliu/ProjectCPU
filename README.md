@@ -3,15 +3,8 @@
 ## 目录结构
 ---------------
 ```
-├── chiplab
-│   ├── chip
-│   ├── docs
-│   ├── fpga
-│   ├── IP
-│   ├── sims
-│   ├── software
-│   └── toolchains
 ├── core
+│   ├── axi
 │   └── vsrc
 ├── cpu-tests
 │   ├── am
