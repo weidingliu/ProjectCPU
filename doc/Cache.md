@@ -6,6 +6,20 @@
 2. 状态机控制的阻塞式cache。
 3. ICACHE大小4KB，DCACHE大小为4KB。
 4. Dcache采用写回法设计。
+5. Word字长为32-bit。
+6. 一个cache行内有16个Word，也就是一个cache line占512-bit。
+7. 单个Cache一共有4KB的空间缓存数据。
+8. ICache 状态机有3个状态，分别为 idle（等待一个读写请求）、 scanf（访问meta data 与 cache data，并且判断是否hit）、 miss（通过axi总线读取缺失的cache line）。
+9. DCache状态机有3个状态，分别为idle（等待一个读写请求）、scanf（访问meta data 与 cache data，并且判断是否hit，替换的cache line是否dirt）、miss（通过axi总线读取缺失的cache line）、write_data（写回将要被替换的dirt块）。
+
+**在本项目提供的测试程序下，Cache命中率如下**
+1. ICache 命中率 98.61%
+2. DCache 命中率 97.89%
+
+**关于仿真环境下提供的一些display的宏**
+**在core/vsrc/include/cache_defines.v**中定义了一些只有在仿真环境下才有效的宏，用于查看cache的工作状态以及统计cache hit与miss的次数。
+1. display_cache_missinfo 用于输出cache miss时的一些信息。
+2. Display_cache_hitrate 用于统计cache hit与miss的次数。
 
 
 ## **下面以二路组相联，一行8个word，大小为8KB的cache为例，介绍cache的各个细节**

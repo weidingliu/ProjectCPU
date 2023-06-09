@@ -29,6 +29,18 @@ wire inst_mem_write_respone;
 wire inst_mem_ce;//start a read/write transport 
 wire inst_mem_we;// 1'b0 is read  1'b1 is write 
 
+//data bridge
+wire [31 : 0]data_mem_addr;
+        //read data
+wire [31:0]data_mem_rdata;
+wire data_mem_rdata_valid;
+        //write data
+wire [31:0]data_mem_wdata;
+wire [3:0]data_mem_wmask;
+wire data_mem_write_respone;
+wire data_mem_ce;//start a read/write transport 
+wire data_mem_we;// 1'b0 is read  1'b1 is write 
+
     //inst interface
 wire [31:0]inst;
 wire [31:0]PC;
@@ -313,6 +325,34 @@ ICache ICache(
     .mem_ce(inst_mem_ce),//start a read/write transport 
     .mem_we(inst_mem_we)// 1'b0 is read  1'b1 is write 
 );
+DCache DCache(
+    .clk(clk),
+    .reset(reset),
+    .flush(1'b0),
+    
+    //cpu request
+    .ce(en),
+    .we(we),
+    .addr(addr),
+    .rdata(rdata),
+    .rdata_valid(rdata_valid),
+    .rdata_ready(1'b1),
+    .wdata(wdata),
+    .wmask(wmask),
+    .write_respone(write_finish),
+    //mem request
+    .mem_addr(data_mem_addr),
+        //read data
+    .mem_rdata(data_mem_rdata),
+    .mem_rdata_valid(data_mem_rdata_valid),
+        //write data
+    .mem_wdata(data_mem_wdata),
+    .mem_wmask(data_mem_wmask),
+    .mem_write_respone(data_mem_write_respone),
+        //control signal
+    .mem_ce(data_mem_ce),//start a read/write transport 
+    .mem_we(data_mem_we)// 1'b0 is read  1'b1 is write 
+);
 
 sram2axi4_lite birdge(
     .aclk(clk),
@@ -333,17 +373,17 @@ sram2axi4_lite birdge(
     .inst_ce(inst_mem_ce),//start a read/write transport 
     .inst_we(inst_mem_we),// 1'b0 is read  1'b1 is write 
 
-    .data_addr(addr),
+    .data_addr(data_mem_addr),
         //read data
-    .data_rdata(rdata),
-    .data_rdata_valid(rdata_valid),
+    .data_rdata(data_mem_rdata),
+    .data_rdata_valid(data_mem_rdata_valid),
         //write data
-    .data_wdata(wdata),
-    .data_wmask(wmask),
-    .data_write_finish(write_finish),
+    .data_wdata(data_mem_wdata),
+    .data_wmask(data_mem_wmask),
+    .data_write_finish(data_mem_write_respone),
         //control signal
-    .data_ce(en),//start a read/write transport 
-    .data_we(we),// 1'b0 is read  1'b1 is write 
+    .data_ce(data_mem_ce),//start a read/write transport 
+    .data_we(data_mem_we),// 1'b0 is read  1'b1 is write 
 
     //read address channel 
     .ar_valid(ar_valid),

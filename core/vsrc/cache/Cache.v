@@ -120,11 +120,11 @@ module DCache #(
     //mem request
     output wire [BUS_WIDTH-1 : 0]mem_addr,
         //read data
-    input wire [CPU_WIDTH-1:0]mem_rdata,
+    input wire [DATA_WIDTH-1:0]mem_rdata,
     input wire mem_rdata_valid,
         //write data
-    output wire [CPU_WIDTH-1:0]mem_wdata,
-    output wire [CPU_WIDTH/8-1:0]mem_wmask,
+    output wire [DATA_WIDTH-1:0]mem_wdata,
+    output wire [DATA_WIDTH/8-1:0]mem_wmask,
     input wire mem_write_respone,
         //control signal
     output wire mem_ce,//start a read/write transport 
@@ -175,6 +175,11 @@ wire write_dirt[Cache_way-1:0];
 wire cache_we[Cache_way-1:0];
 wire write_lru_we;
 wire write_dirt_we[Cache_way-1:0];
+
+wire [Cache_line_size-1:0] mask;
+wire wmask_en;
+wire [Cache_line_size-1:0] new_data;
+wire [Cache_line_size-1:0] old_data;
 
 assign read_count_ready = read_count == Cache_line_wordnum;
 assign write_count_ready = write_count == Cache_line_wordnum;
@@ -236,9 +241,7 @@ endgenerate
 //dirt
 generate
     for(i=0;i<Cache_way;i++) begin :Data_dirt
-        defparam  Data_dirt.DATA_WIDTH = 1;
-        defparam  Data_dirt.Addr_len = Index_size;
-        Data_dirt Sramlike (
+        Sramlike #(.DATA_WIDTH(1),.Addr_len(Index_size))Data_dirt (
            .clk(clk),
            .reset(reset),
 
@@ -414,6 +417,25 @@ generate
     ); 
     end
 endgenerate
+// generate write cache data
+generate
+    for(i=0;i<Cache_line_wordnum;i++) begin 
+        assign new_data[(i+1)*DATA_WIDTH -1 :i*DATA_WIDTH] = wdata;
+    end
+endgenerate
+assign old_data = (state == miss)? miss_data:
+                    (state == scanf && hit_way0)? cache_data[0]:
+                    (state == scanf && hit_way1)? cache_data[1]:'h0;
+
+Cacheline_Mask #(.DATA_WIDTH(DATA_WIDTH),.Cache_line_size(Cache_line_size)) Wmask(
+    .offset(offset[Offset_size-1:2]),
+    .wmask(wmask),
+    .en(wmask_en),
+    .cacheline_mask(mask)
+);
+// write mask generate if we is 0,old data must maintain
+assign wmask_en = we;
+
 //generate lru data and enable
 assign write_lru = (state == miss)? ~lru: 
                     (state == scanf & hit_way0) ? 1'b1:
@@ -425,12 +447,12 @@ assign write_dirt_we[1] = (state == miss & we & lru)    | (state == scanf & hit_
 assign write_dirt[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)? 1'b1:1'b0;
 assign write_dirt[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we)? 1'b1:1'b0;
 //generate cache meta data and cache data write enable
-assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready;
-assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready;
+assign cache_we[0] = (state == miss & (~lru) & read_count_ready | state == scanf & hit_way0 & we) & rdata_ready;
+assign cache_we[1] = (state == miss & lru & read_count_ready | state == scanf & hit_way1 & we) & rdata_ready;
 
 generate
     for(i=0;i<Cache_way;i++) begin 
-        assign write_cache_data[i] = miss_data;
+        assign write_cache_data[i] = (old_data & (~mask) | new_data & (mask));
         assign write_tag[i] = Tag;
     end
 endgenerate
@@ -448,13 +470,30 @@ assign mem_wdata = write_back_data[DATA_WIDTH-1:0];
 assign mem_wmask = 4'hf;
 
 assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
+assign write_respone = (state == scanf & hit) | (state == miss & read_count_ready); 
 
 `ifdef display_cache_missinfo
-always @(*) begin
+always @(posedge clk) begin
     if(state == scanf && !hit)begin 
-        $display("DCache Miss! addr %h ,select way %h\n",addr,lru);
+        $display("DCache Miss! addr %h ,select way %h index %h\n",addr,lru,index);
     end
 end
+`endif
+`ifdef Display_cache_hitrate
+reg [128:0]hit_count;
+reg [128:0]miss_count;
+always @(posedge clk) begin
+    if(reset) begin 
+        hit_count <= 'h0;
+        miss_count <= 'h0;
+    end
+    else begin 
+        if(state == scanf & hit) hit_count <= hit_count + 1'b1;
+        else if(state == scanf & !hit) miss_count <= miss_count + 1'b1;
+    end
+    $display("DCACHE hit rate : hit count %h miss count %h\n",hit_count,miss_count);
+end
+
 `endif
 
 endmodule //Cache
@@ -819,10 +858,26 @@ assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready
 
 `ifdef display_cache_missinfo
 always @(posedge clk) begin
-    if(state == scanf && !hit)begin 
+    if(state == scanf && (~hit))begin 
         $display("ICache Miss! addr %h ,select way %h index %h\n",addr,lru,index);
     end
 end
+`endif
+`ifdef Display_cache_hitrate
+reg [128:0]hit_count;
+reg [128:0]miss_count;
+always @(posedge clk) begin
+    if(reset) begin 
+        hit_count <= 'h0;
+        miss_count <= 'h0;
+    end
+    else begin 
+        if(state == scanf & hit) hit_count <= hit_count + 1'b1;
+        else if(state == scanf & !hit) miss_count <= miss_count + 1'b1;
+    end
+    $display("ICACHE hit rate : hit count %h miss count %h\n",hit_count,miss_count);
+end
+
 `endif
 
 endmodule //Cache
