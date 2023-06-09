@@ -818,7 +818,7 @@ assign mem_we = state == write_data;
 assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
 
 `ifdef display_cache_missinfo
-always @(*) begin
+always @(posedge clk) begin
     if(state == scanf && !hit)begin 
         $display("ICache Miss! addr %h ,select way %h index %h\n",addr,lru,index);
     end

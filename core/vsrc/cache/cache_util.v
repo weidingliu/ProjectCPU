@@ -78,7 +78,7 @@ endmodule //cache_defines
 module Cacheline_Mask #(
     parameter DATA_WIDTH = 32,
     parameter Cache_line_size = 512,
-    localparam Addr_len = $clog2(Cache_line_size/DATA_WIDTH) 
+    localparam Addr_len = $clog2(Cache_line_size/DATA_WIDTH), 
     localparam Mask_len = $clog2(Cache_line_size/DATA_WIDTH) 
 
 )(
