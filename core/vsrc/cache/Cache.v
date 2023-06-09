@@ -363,7 +363,7 @@ always @(posedge clk) begin
     end
 end
 
-// miss state counter
+// miss state counter ,read a word of data cache_line_wordnum times 
 always @(posedge clk) begin
     if(reset) begin 
         miss_data <= 0;
@@ -381,7 +381,7 @@ always @(posedge clk) begin
         miss_data <= {mem_rdata,miss_data[Cache_line_size-1:DATA_WIDTH]};
     end
 end
-//miss mem addr
+//miss mem addr,incremental 
 always @(posedge clk) begin
    if(reset) begin 
       miss_addr <= 0;
@@ -393,6 +393,7 @@ always @(posedge clk) begin
         if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
    end
 end
+// select a word data form a cache line data 
 Data_mask #(
         .DATA_WIDTH(DATA_WIDTH),
         .Cache_line_size(Cache_line_size)
@@ -403,7 +404,7 @@ Data_mask #(
 );
 
 
-// generate hit_rdata
+// generate hit_rdata , select a word data form a cache line data 
 generate
     for(i=0;i<Cache_way;i++) begin :data_select
         Data_mask #(
@@ -547,9 +548,7 @@ localparam write_data = 2'b11;
 
 reg [1:0]state;
 reg [$clog2(Cache_line_wordnum):0]read_count;
-// reg [$clog2(Cache_line_wordnum):0]write_count;
 wire read_count_ready;
-// wire write_count_ready;
 
 wire [Tag_size-1:0]tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]cache_data[Cache_way-1:0];
@@ -573,20 +572,15 @@ wire [DATA_WIDTH-1:0]miss_rdata;
 reg [Cache_line_size-1:0]miss_data;
 reg [BUS_WIDTH-1:0]miss_addr;
 
-// reg [Cache_line_size-1:0]write_back_data;
-// reg [BUS_WIDTH-1:0]write_back_addr;
 
 wire [Tag_size-1:0]write_tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]write_cache_data[Cache_way-1:0];
 wire write_valid[Cache_way-1:0];
 wire write_lru;
-// wire write_dirt[Cache_way-1:0];
 wire cache_we[Cache_way-1:0];
 wire write_lru_we;
-// wire write_dirt_we[Cache_way-1:0];
 
 assign read_count_ready = read_count == Cache_line_wordnum;
-// assign write_count_ready = write_count == Cache_line_wordnum;
 
 assign offset = addr[Offset_size-1:0];
 assign index = addr[Index_size + Offset_size-1:Offset_size];
@@ -642,24 +636,6 @@ generate
         );
     end
 endgenerate
-// //dirt
-// generate
-//     for(i=0;i<Cache_way;i++) begin 
-//         defparam  Data_dirt.DATA_WIDTH = 1;
-//         defparam  Data_dirt.Addr_len = Index_size;
-//         Data_dirt Sramlike (
-//            .clk(clk),
-//            .reset(reset),
-
-//            .addr(index),
-//            .wdata(write_dirt[i]),
-//            .waddr(index),
-//            .we(write_dirt_we[i]),// 1'b0 is read, 1'b1 is write
-
-//            .rdata(dirt[i]) 
-//         );
-//     end
-// endgenerate
 
 Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) lru_way (
     .clk(clk),
@@ -739,36 +715,7 @@ always @(posedge clk) begin
         endcase
     end
 end
-// //write_data counter
 
-// always @(posedge clk) begin
-//     if(reset) begin 
-//         write_count <= 0;
-//         write_back_data <= 0;
-//     end
-//     else if(state == idle || write_count_ready) begin 
-//         write_count <= 0;
-//         write_back_data <= 0;
-//     end
-//     else if(state == write_data & mem_write_respone) begin 
-//         write_count <= write_count + 1'b1;
-//         write_back_data <= {{DATA_WIDTH{1'b0}},write_back_data[Cache_line_size-1:DATA_WIDTH]};
-//     end
-// end
-// //write back data addr
-// always @(posedge clk) begin 
-//     if(reset) begin 
-//         write_back_addr <= 0;
-//     end
-//     else if(state == scanf & !hit & dirt[lru]) begin 
-//         write_back_addr <= {tag[lru],index,{Offset_size{1'b0}}};
-//     end
-//     else if(state == write_data) begin 
-//         if(mem_write_respone) begin 
-//             write_back_addr <= write_back_addr + `h4;
-//         end
-//     end
-// end
 
 // miss state counter
 always @(posedge clk) begin
@@ -800,6 +747,7 @@ always @(posedge clk) begin
         if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
    end
 end
+// select a word data form a cache line data 
 Data_mask #(
         .DATA_WIDTH(DATA_WIDTH),
         .Cache_line_size(Cache_line_size)
@@ -810,7 +758,7 @@ Data_mask #(
 );
 
 
-// generate hit_rdata
+// generate hit_rdata, select a word data form a cache line data 
 generate
     for(i=0;i<Cache_way;i++) begin :data_select
         Data_mask #(
@@ -829,8 +777,6 @@ assign write_lru = (state == miss)? ~lru:
                     (state == scanf & hit_way0) ? 1'b1:
                     (state == scanf & hit_way1)? 1'b0: 1'b1;
 assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready);
-// assign write_dirt_we[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we);
-// assign write_dirt_we[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we);
 assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready;
 assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready;
 

@@ -2,7 +2,7 @@
 ============================================
 
 **设计特征**
-1. 尽最大可能的参数化配置，可以在实例化时进行参数配置，如cache总大小；目前还无法优雅地做到单个CACHE模型屏蔽或者设置可变数量的输入输出接口，因此在提高组相联关联度时需要修改内部接口，目前的替换策略为伪lru，因此只支持两路组相联。
+1. 尽最大可能的参数化配置，可以在实例化时进行参数配置，如cache总大小；目前还无法优雅地做到单个CACHE模型屏蔽或者设置可变数量的输入输出接口，因此在提高组相联关联度时需要修改内部接口，目前的替换策略为伪lru，因此目前只支持两路组相联。
 2. 状态机控制的阻塞式cache。
 3. ICACHE大小4KB，DCACHE大小为4KB。
 4. Dcache采用写回法设计。
@@ -20,6 +20,13 @@
 **在core/vsrc/include/cache_defines.v**中定义了一些只有在仿真环境下才有效的宏，用于查看cache的工作状态以及统计cache hit与miss的次数。
 1. display_cache_missinfo 用于输出cache miss时的一些信息。
 2. Display_cache_hitrate 用于统计cache hit与miss的次数。
+
+**关于cache_util**
+在core/vsrc/cache/cache_util.v中定义了一些模块，其中包括：
+1. **Sramlike** 用于模拟一个同步读写的ram，cache中使用的同步ram都是基于这个模块。
+2. **Data_mask** 用于根据数据地址的offset字段，选取cache line中的word数据。
+3. **mask_extend** 用于拓展mask，例如：本来mask是4位的，用于指示32-bit中的4个字节哪些要写入哪些不写入，这个拓展模块的作用是将byte的写使能拓展为bit的写使能，输出是一个32-bit的bit-mask、
+4. **Cacheline_Mask** 用于得到一个cahce line上的bit-mask，当写cache时，我们需要将写入数据放到cache line的对应位置，在硬件上可以实现为：old_data & (~mask) | new_data & mask，这里mask是一个bit-mask；例如：当我们的**mask**为4'b0011时，**old_data** 为4'b1010,**new_data** 为4'b1111,根据上述方式生成的写入数据为：4'b1011。 
 
 
 ## **下面以二路组相联，一行8个word，大小为8KB的cache为例，介绍cache的各个细节**
