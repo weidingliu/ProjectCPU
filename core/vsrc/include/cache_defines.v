@@ -4,5 +4,5 @@
 // display cache mtrace
 
 //display cache hit rate
-`define Display_cache_hitrate
+// `define Display_cache_hitrate
 
