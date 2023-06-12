@@ -4,40 +4,6 @@ import "DPI-C" function void pmem_read(
 import "DPI-C" function void pmem_write(
   input int waddr, input int wdata, input byte wmask);
 
-module Mem(
-    input wire reset,
-    input wire clk,
-    input wire [31:0] addr,
-    input wire we,
-    input wire ce,
-    input wire [31:0] wdata,
-    output reg [31:0] rdata,
-    input wire [3:0]wmask
-);
-
-always @(*) begin 
-    //$display("-------------%h ----%h",addr,clk);
-    if(reset || clk==1'b1) begin 
-        rdata=32'h0;
-    end
-    else if(ce==1'b1) begin 
-        if(we==1'b1) begin 
-            pmem_write(addr, wdata, wmask);
-            rdata=32'h0;
-        end
-        else begin 
-            pmem_read(addr, rdata);
-            
-        end
-    end
-    else begin 
-        rdata=32'h0;
-    end
-    
-    //$display("-------------%h",rdata);
-end
-
-endmodule
 
 module AXIMem #(
     parameter BUS_WIDTH = 32,
@@ -171,7 +137,12 @@ assign aw_ready = (write_state == idle)? 1'b1:1'b0;
 assign wd_ready = (write_state == idle) ? 1'b1:1'b0;
 assign rd_valid = (read_state == ready)? 1'b1:1'b0;
 assign wr_valid = (write_state == ready)? 1'b1:1'b0;
-
-
 endmodule //Mem
 
+module AXI_FULL_Mem(
+    input wire clk,
+    input wire reset
+);
+
+
+endmodule
