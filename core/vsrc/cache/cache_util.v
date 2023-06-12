@@ -127,18 +127,7 @@ module mask_extend #(
     input wire [Mask_WIDTH-1:0] mask,
     output wire [DATA_WIDTH-1:0] ext_mask
 );
-// genvar i;
-// genvar j;
-// generate
-//     for(j=0;j<Mask_WIDTH;j++) begin 
-//         ext_mask[]
-//         // for(i=0;i<8;i++) begin 
-//         //     if(mask[j]) begin 
-//         //         assign ext_mask[j*8+i] = 1'b1;
-//         //     end
-//         // end
-//     end
-// endgenerate
+
 assign ext_mask = {{8{mask[3]}},{8{mask[2]}},{8{mask[1]}},{8{mask[0]}}};
 
 endmodule
