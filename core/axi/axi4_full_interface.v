@@ -15,29 +15,50 @@ module axi4_full_interface #(
     output wire [2:0] ar_size,
     output wire [BUS_WIDTH-1:0] ar_addr,//read request address 
     output wire [2:0]ar_prot, // Access attributes
+    output wire [1:0]ar_burst,
+    output wire [1:0]ar_lock,
+    output wire [3:0]ar_cache,
     
 
     //write address channel
     output wire aw_valid,
     input wire aw_ready,
+    output wire [3:0]aw_id,
+    output wire [7:0] aw_len,
+    output wire [2:0] aw_size,
     output wire [BUS_WIDTH-1:0] aw_addr,
     output wire [2:0]aw_prot,
+    output wire [1:0]aw_burst,
+    output wire [1:0]aw_lock,
+    output wire [3:0]aw_cache,
+
+
     //read data channel 
     input wire rd_valid,
     output wire rd_ready,
+    input    [ 3:0] rd_id,
     input wire [DATA_WIDTH-1:0] rd_data,
+    input    [ 1:0] rd_resp,
+    input           rd_last,
+
 
     //write data channel 
     output wire wd_valid,
     input wire wd_ready,
+    output wire [3:0]wd_id,
     output wire [DATA_WIDTH-1:0] wd_data,
     output wire [DATA_WIDTH/8 -1 : 0]wstrb,
+    output wire wd_last,
 
     //write respone channel
     input wire wr_valid,
     output wire wr_ready,
-    input wire wr_breap
+    input wire [3:0]wr_id,
+    input wire [1:0]wr_breap
 );
+
+
+
 
 endmodule //axi4_full_interface
 
@@ -117,7 +138,8 @@ localparam write_request_ready = 3'b001;
 // localparam write_addr_ready = 3'b001;
 // localparam write_data_ready = 3'b010;
 // localparam write_all_ready = 3'b011;
-// localparam write_data_transform = 3'b100;
+localparam write_data_transform = 3'b100;
+// localparam read_data_transform = 3'b100;
 // localparam write_data_wait = 3'b101;
 // localparam write_wait_b = 3'b110;
 
