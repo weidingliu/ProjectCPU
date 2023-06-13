@@ -417,7 +417,7 @@ AXIMem Memory(
     .clk(clk),
     .reset(~reset),
 ///////////////inst channels
-    .flush(1'b0),
+    // .flush(1'b0),
     //read address channel 
     .ar_valid(ar_valid),
     .ar_ready(ar_ready),
