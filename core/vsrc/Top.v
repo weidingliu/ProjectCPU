@@ -120,48 +120,42 @@ wire ar_valid;
 wire ar_ready;
 wire [31:0]ar_addr;
 wire [2:0]ar_prot;
+wire [1:0]ar_burst;
+wire [1:0]ar_lock;
+wire [3:0]ar_cache;
+wire [3:0]ar_id;
+wire [7:0] ar_len;
+wire [2:0] ar_size;
 
 wire aw_valid;
 wire aw_ready;
 wire [31:0]aw_addr;
 wire [2:0]aw_prot;
+wire [1:0]aw_burst;
+wire [1:0]aw_lock;
+wire [3:0]aw_cache;
+wire [3:0]aw_id;
+wire [7:0] aw_len;
+wire [2:0] aw_size;
 
 wire rd_valid;
 wire rd_ready;
 wire [31:0]rd_data;
+wire [1:0] rd_resp;
+wire rd_last;
+wire [3:0] rd_id;
 
 wire wd_valid;
 wire wd_ready;
 wire [31:0]wd_data;
 wire [3:0]wd_wmask;
+wire wd_last;
+wire [3:0]wd_id;
 
 wire wr_valid;
 wire wr_ready;
 wire [1:0]wr_breap;
-
-//for axi mem
-wire ar_valid1;
-wire ar_ready1;
-wire [31:0]ar_addr1;
-wire [2:0]ar_prot1;
-
-wire aw_valid1;
-wire aw_ready1;
-wire [31:0]aw_addr1;
-wire [2:0]aw_prot1;
-
-wire rd_valid1;
-wire rd_ready1;
-wire [31:0]rd_data1;
-
-wire wd_valid1;
-wire wd_ready1;
-wire [31:0]wd_data1;
-wire [3:0]wd_wmask1;
-
-wire wr_valid1;
-wire wr_ready1;
-wire [1:0]wr_breap1;
+wire [3:0]wr_id;
 
 
 //IF stage
@@ -354,12 +348,68 @@ DCache DCache(
     .mem_we(data_mem_we)// 1'b0 is read  1'b1 is write 
 );
 
-sram2axi4_lite birdge(
+// sram2axi4_lite birdge(
+//     .aclk(clk),
+//     .reset(~reset),//active low
+//     //sram port
+//     //sram port
+//     .flush(1'b0),
+//         // read request
+//     .inst_addr(inst_mem_addr),
+//         //read data
+//     .inst_rdata(inst_mem_rdata),
+//     .inst_rdata_valid(inst_mem_rdata_valid),
+//         //write data
+//     .inst_wdata(32'h0),
+//     .inst_wmask(4'h0),
+//     .inst_write_finish(),
+//         //control signal
+//     .inst_ce(inst_mem_ce),//start a read/write transport 
+//     .inst_we(inst_mem_we),// 1'b0 is read  1'b1 is write 
+
+//     .data_addr(data_mem_addr),
+//         //read data
+//     .data_rdata(data_mem_rdata),
+//     .data_rdata_valid(data_mem_rdata_valid),
+//         //write data
+//     .data_wdata(data_mem_wdata),
+//     .data_wmask(data_mem_wmask),
+//     .data_write_finish(data_mem_write_respone),
+//         //control signal
+//     .data_ce(data_mem_ce),//start a read/write transport 
+//     .data_we(data_mem_we),// 1'b0 is read  1'b1 is write 
+
+//     //read address channel 
+//     .ar_valid(ar_valid),
+//     .ar_ready(ar_ready),
+//     .ar_addr(ar_addr),//read request address 
+//     .ar_prot(ar_prot), // Access attributes
+
+//     //write address channel
+//     .aw_valid(aw_valid),
+//     .aw_ready(aw_ready),
+//     .aw_addr(aw_addr),
+//     .aw_prot(aw_prot),
+//     //read data channel 
+//     .rd_valid(rd_valid),
+//     .rd_ready(rd_ready),
+//     .rd_data(rd_data),
+
+//     //write data channel 
+//     .wd_valid(wd_valid),
+//     .wd_ready(wd_ready),
+//     .wd_data(wd_data),
+//     .wstrb(wd_wmask),
+
+//     //write respone channel
+//     .wr_valid(wr_valid),
+//     .wr_ready(wr_ready),
+//     .wr_breap(wr_breap)
+// );
+axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(32),.CPU_WIDTH(32)) bridge (
     .aclk(clk),
     .reset(~reset),//active low
     //sram port
-    //sram port
-    .flush(1'b0),
         // read request
     .inst_addr(inst_mem_addr),
         //read data
@@ -372,6 +422,7 @@ sram2axi4_lite birdge(
         //control signal
     .inst_ce(inst_mem_ce),//start a read/write transport 
     .inst_we(inst_mem_we),// 1'b0 is read  1'b1 is write 
+    .inst_transfer_type(3'b000),
 
     .data_addr(data_mem_addr),
         //read data
@@ -384,66 +435,133 @@ sram2axi4_lite birdge(
         //control signal
     .data_ce(data_mem_ce),//start a read/write transport 
     .data_we(data_mem_we),// 1'b0 is read  1'b1 is write 
+    .data_transfer_type(3'b000),
 
     //read address channel 
     .ar_valid(ar_valid),
     .ar_ready(ar_ready),
     .ar_addr(ar_addr),//read request address 
     .ar_prot(ar_prot), // Access attributes
+    .ar_id(ar_id),
+    .ar_len(ar_len),
+    .ar_size(ar_size),
+    .ar_burst(ar_burst),
+    .ar_lock(ar_lock),
+    .ar_cache(ar_cache),
 
     //write address channel
     .aw_valid(aw_valid),
     .aw_ready(aw_ready),
     .aw_addr(aw_addr),
     .aw_prot(aw_prot),
+    .aw_id(aw_id),
+    .aw_len(aw_len),
+    .aw_size(aw_size),
+    .aw_burst(aw_burst),
+    .aw_lock(aw_lock),
+    .aw_cache(aw_cache),
     //read data channel 
     .rd_valid(rd_valid),
     .rd_ready(rd_ready),
     .rd_data(rd_data),
+    .rd_id(rd_id),
+    .rd_resp(rd_resp),
+    .rd_last(rd_last),
 
     //write data channel 
     .wd_valid(wd_valid),
     .wd_ready(wd_ready),
     .wd_data(wd_data),
     .wstrb(wd_wmask),
+    .wd_id(wd_id),
+    .wd_last(wd_last),
 
     //write respone channel
     .wr_valid(wr_valid),
     .wr_ready(wr_ready),
-    .wr_breap(wr_breap)
+    .wr_breap(wr_breap),
+    .wr_id(wr_id)
 );
 
-AXIMem Memory(
+// AXIMem Memory(
+//     .clk(clk),
+//     .reset(~reset),
+//     //read address channel 
+//     .ar_valid(ar_valid),
+//     .ar_ready(ar_ready),
+//     .ar_addr(ar_addr),//read request address 
+//     .ar_prot(ar_prot), // Access attributes
+
+//     //write address channel
+//     .aw_valid(aw_valid),
+//     .aw_ready(aw_ready),
+//     .aw_addr(aw_addr),
+//     .aw_prot(aw_prot),
+//     //read data channel 
+//     .rd_valid(rd_valid),
+//     .rd_ready(rd_ready),
+//     .rd_data(rd_data),
+
+//     //write data channel 
+//     .wd_valid(wd_valid),
+//     .wd_ready(wd_ready),
+//     .wd_data(wd_data),
+//     .wstrb(wd_wmask),
+
+//     //write respone channel
+//     .wr_valid(wr_valid),
+//     .wr_ready(wr_ready),
+//     .wr_breap(wr_breap)
+// );
+
+
+AXI_FULL_Mem#(.BUS_WIDTH(32),.DATA_WIDTH(32),.CPU_WIDTH(32)) Memory(
     .clk(clk),
     .reset(~reset),
-///////////////inst channels
-    // .flush(1'b0),
     //read address channel 
     .ar_valid(ar_valid),
     .ar_ready(ar_ready),
     .ar_addr(ar_addr),//read request address 
     .ar_prot(ar_prot), // Access attributes
+    .ar_id(ar_id),
+    .ar_len(ar_len),
+    .ar_size(ar_size),
+    .ar_burst(ar_burst),
+    .ar_lock(ar_lock),
+    .ar_cache(ar_cache),
 
     //write address channel
     .aw_valid(aw_valid),
     .aw_ready(aw_ready),
     .aw_addr(aw_addr),
     .aw_prot(aw_prot),
+    .aw_id(aw_id),
+    .aw_len(aw_len),
+    .aw_size(aw_size),
+    .aw_burst(aw_burst),
+    .aw_lock(aw_lock),
+    .aw_cache(aw_cache),
     //read data channel 
     .rd_valid(rd_valid),
     .rd_ready(rd_ready),
     .rd_data(rd_data),
+    .rd_id(rd_id),
+    .rd_resp(rd_resp),
+    .rd_last(rd_last),
 
     //write data channel 
     .wd_valid(wd_valid),
     .wd_ready(wd_ready),
     .wd_data(wd_data),
     .wstrb(wd_wmask),
+    .wd_id(wd_id),
+    .wd_last(wd_last),
 
     //write respone channel
     .wr_valid(wr_valid),
     .wr_ready(wr_ready),
-    .wr_breap(wr_breap)
+    .wr_breap(wr_breap),
+    .wr_id(wr_id)
 );
 
 

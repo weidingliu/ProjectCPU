@@ -39,7 +39,7 @@ module axi4_full_interface #(
 
 
     //read address channel 
-    output wire ar_valid,
+    output reg ar_valid,
     input wire ar_ready,
     output wire [3:0]ar_id,
     output reg [7:0] ar_len,
@@ -79,7 +79,7 @@ module axi4_full_interface #(
     output wire [3:0]wd_id,
     output wire [DATA_WIDTH-1:0] wd_data,
     output wire [DATA_WIDTH/8 -1 : 0]wstrb,
-    output reg wd_last,
+    output wire wd_last,
 
     //write respone channel
     input wire wr_valid,
@@ -92,7 +92,7 @@ localparam read_request_empty = 1'b0;
 localparam read_request_ready = 1'b1;
 
 localparam read_respond_empty = 2'b00;
-// localparam read_respond_transfer = 2'b01;
+localparam read_respond_transfer = 2'b01;
 localparam read_respone_ready = 2'b10;
 
 localparam write_respond_empty = 1'b0;
@@ -122,7 +122,7 @@ reg [2:0]write_request_state;
 reg [1:0]read_respone_state;
 reg write_respone_state;
 // brust transform
-reg [BRUST_COUNTER_size-1:0]write_data_count;
+reg [7:0]write_data_count;
 reg [CPU_WIDTH-1:0]write_data_buffer;
 reg [CPU_WIDTH-1:0]read_data_buffer;
 reg [CPU_WIDTH/8-1:0] write_mask_buffer;
@@ -133,7 +133,7 @@ reg bid;
 
 wire wait_write;
 
-assign write_data_last = write_data_count == (CPU_WIDTH/DATA_WIDTH - 1);
+assign write_data_last = (write_data_count == (CPU_WIDTH/DATA_WIDTH - 1));
 // read FSM
 always @(posedge aclk) begin
     if(~reset) begin 
@@ -213,7 +213,7 @@ always @(posedge aclk) begin
     else begin 
         case(read_respone_state)
             read_respond_empty: begin 
-                if(rd_valid && rd_ready) begin 
+                if(ar_valid && ar_ready) begin 
                     read_respone_state <= read_respond_transfer;
                 end
             end
@@ -238,8 +238,8 @@ always @(posedge aclk) begin
     if(~reset) begin 
         write_request_state <= write_request_empty;
         aw_valid <= 1'b0;
-        wd_valid <= 1'b0;
-        wd_last <= 1'b0;
+        // wd_valid <= 1'b0;
+        // wd_last <= 1'b0;
 
         write_data_count <= 'h0;
         write_data_buffer <= 'h0;
@@ -251,80 +251,79 @@ always @(posedge aclk) begin
             write_request_empty: begin 
                  if(data_ce && data_we) begin 
                     aw_valid <= 1'b1;
-                    wd_valid <= 1'b1;
+                    // wd_valid <= 1'b1;
                     aw_addr <= data_addr;
-                    wd_data <= data_wdata[DATA_WIDTH-1:0];
-                    wstrb <= data_wmask[DATA_WIDTH/8-1:0];
+                    // wd_data <= data_wdata[DATA_WIDTH-1:0];
+                    // wstrb <= data_wmask[DATA_WIDTH/8-1:0];
+                    write_data_buffer <= data_wdata;
+                    write_mask_buffer <= data_wmask;
 
                     bid <= 1'b0;
-                    if(data_transfer_type == 3'b100) begin 
-                        write_data_buffer <= {{DATA_WIDTH{1'b0}},data_wdata[CPU_WIDTH-1:DATA_WIDTH]};
-                        write_mask_buffer <= {{DATA_WIDTH/8{1'b0}},data_wmask[CPU_WIDTH/8-1:DATA_WIDTH/8]};
-                    end
+                    // if(data_transfer_type == 3'b100) begin 
+                    //     write_data_buffer <= {{DATA_WIDTH{1'b0}},data_wdata[CPU_WIDTH-1:DATA_WIDTH]};
+                    //     write_mask_buffer <= {{DATA_WIDTH/8{1'b0}},data_wmask[CPU_WIDTH/8-1:DATA_WIDTH/8]};
+                    // end
 
                     if(data_transfer_type == 3'b100) begin 
-                        wd_last <= 1'b0;
+                        // wd_last <= 1'b0;
                         if(aw_ready)  write_request_state <= write_data_transform;
-                        write_data_count <= 'h1;
+                        write_data_count <= 'h0;
                         aw_len <= 8'h10;
                     end
                     else begin 
-                        wd_last <= 1'b1;
-                        if(aw_ready) write_request_state <= write_request_ready;
-                        write_data_count <= 'h1;
+                        // wd_last <= 1'b0;
+                        if(aw_ready) write_request_state <= write_data_transform;
+                        write_data_count <= 'h0;
                         aw_len <= 8'h1;
                     end
 
                  end
                  else if(inst_ce && inst_we) begin 
                     aw_valid <= 1'b1;
-                    wd_valid <= 1'b1;
+                    // wd_valid <= 1'b1;
                     aw_addr <= inst_addr;
-                    wd_data <= inst_wdata[DATA_WIDTH-1:0];
-                    wstrb <= inst_wmask[DATA_WIDTH/8-1:0];
-
+                    // wd_data <= inst_wdata[DATA_WIDTH-1:0];
+                    // wstrb <= inst_wmask[DATA_WIDTH/8-1:0];
+                    write_data_buffer <= inst_wdata;
+                    write_mask_buffer <= inst_wmask;
                     bid <= 1'b1;
-                    if(inst_transfer_type == 3'b100) begin 
-                        write_data_buffer <= {{DATA_WIDTH{1'b0}},inst_wdata[CPU_WIDTH-1:DATA_WIDTH]};
-                        write_mask_buffer <= {{DATA_WIDTH/8{1'b0}},inst_wmask[CPU_WIDTH/8-1:DATA_WIDTH/8]};
-                    end
+                    // if(inst_transfer_type == 3'b100) begin 
+                    //     write_data_buffer <= {{DATA_WIDTH{1'b0}},inst_wdata[CPU_WIDTH-1:DATA_WIDTH]};
+                    //     write_mask_buffer <= {{DATA_WIDTH/8{1'b0}},inst_wmask[CPU_WIDTH/8-1:DATA_WIDTH/8]};
+                    // end
 
                     if(inst_transfer_type == 3'b100) begin 
-                        wd_last <= 1'b0;
+                        // wd_last <= 1'b0;
                         if(aw_ready)  write_request_state <= write_data_transform;
-                        write_data_count <= 'h1;
+                        write_data_count <= 'h0;
+                        aw_len <= 8'h10;
                     end
                     else begin 
-                        wd_last <= 1'b1;
-                        if(aw_ready) write_request_state <= write_request_ready;
-                        write_data_count <= 'h1;
+                        // wd_last <= 1'b0;
+                        if(aw_ready) write_request_state <= write_data_transform;
+                        write_data_count <= 'h0;
+                        aw_len <= 8'h1;
                     end
 
                  end
-                 
             end
             write_request_ready: begin 
                 aw_valid <= 1'b0;
                 if(wr_valid && wr_ready) begin 
                     write_request_state <= write_request_empty;
-                    wd_valid <= 1'b0;
+                    // wd_valid <= 1'b0;
                 end
                 
             end
             write_data_transform: begin 
                 aw_valid <= 1'b0;
+                
                 if(wd_ready) begin 
                     if(wd_last) begin 
                         write_request_state <= write_request_ready;
-                        wd_valid <= 1'b0;
                     end
                     else begin 
-                        if(write_data_last) wd_last <= 1'b1;
-                        wd_valid <= 1'b1;
-                        wd_data <= write_data_buffer[DATA_WIDTH-1:0];
-                        wstrb <= write_mask_buffer[DATA_WIDTH/8-1:0];
-
-                        write_data_count <= writr_data_count + 1'b1;
+                        write_data_count <= write_data_count + 1'b1;
                         write_data_buffer <= {{DATA_WIDTH{1'b0}},write_data_buffer[CPU_WIDTH-1:DATA_WIDTH]};
                         write_mask_buffer <= {{DATA_WIDTH/8{1'b0}},write_mask_buffer[CPU_WIDTH/8-1:DATA_WIDTH/8]};
                     end
@@ -334,6 +333,11 @@ always @(posedge aclk) begin
         endcase
     end
 end
+
+assign wd_data = write_data_buffer[DATA_WIDTH-1:0];
+assign wstrb = write_mask_buffer[DATA_WIDTH/8-1:0];
+assign wd_last = write_data_last;
+assign wd_valid = (write_request_state == write_data_transform)? 1'b1:1'b0;
 
 assign wait_write = ~(write_request_state == write_request_empty);
 
