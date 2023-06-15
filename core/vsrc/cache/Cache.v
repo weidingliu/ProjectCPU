@@ -1431,7 +1431,7 @@ always @(posedge clk) begin
         state <= idle;
     end
     else if(flush) begin 
-        if(state == miss) begin 
+        if(state == miss && !(read_count_ready && rdata_ready)) begin 
             state <= wait_axi_end;
         end
         else state <= idle;
