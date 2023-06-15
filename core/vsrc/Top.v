@@ -1,5 +1,8 @@
 `include "defines.sv"
-module Top (
+module Top #(
+    localparam DATA_WIDTH = 32,
+    localparam CPU_WIDTH = DATA_WIDTH * 16
+ )(
     input wire clk,
     input wire reset
     
@@ -23,23 +26,25 @@ wire [31 : 0]inst_mem_addr;
 wire [31:0]inst_mem_rdata;
 wire inst_mem_rdata_valid;
         //write data
-wire [31:0]inst_mem_wdata;
-wire [3:0]inst_mem_wmask;
+wire [CPU_WIDTH-1:0]inst_mem_wdata;
+wire [CPU_WIDTH/8-1:0]inst_mem_wmask;
 wire inst_mem_write_respone;
 wire inst_mem_ce;//start a read/write transport 
 wire inst_mem_we;// 1'b0 is read  1'b1 is write 
+wire [2:0]inst_transfer_type;
 
 //data bridge
 wire [31 : 0]data_mem_addr;
         //read data
-wire [31:0]data_mem_rdata;
+wire [DATA_WIDTH - 1:0]data_mem_rdata;
 wire data_mem_rdata_valid;
         //write data
-wire [31:0]data_mem_wdata;
-wire [3:0]data_mem_wmask;
+wire [CPU_WIDTH-1:0]data_mem_wdata;
+wire [CPU_WIDTH/8-1:0]data_mem_wmask;
 wire data_mem_write_respone;
 wire data_mem_ce;//start a read/write transport 
 wire data_mem_we;// 1'b0 is read  1'b1 is write 
+wire [2:0]data_transfer_type;
 
     //inst interface
 wire [31:0]inst;
@@ -49,8 +54,8 @@ wire inst_ready;
     //data interface
 wire [31:0]rdata;
 wire [31:0]addr;
-wire [31:0]wdata;
-wire [3:0]wmask;
+wire [DATA_WIDTH-1:0]wdata;
+wire [DATA_WIDTH/8-1:0]wmask;
 wire en;
 wire we;
 // assign inst_ready = 1'b1;
@@ -293,7 +298,7 @@ WB wb_syage(
     .fire(1'b1)
 );
 
-ICache ICache(
+ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .clk(clk),
     .reset(reset),
     .flush(flush),
@@ -315,11 +320,12 @@ ICache ICache(
     .mem_wdata(),
     .mem_wmask(),
     .mem_write_respone(),
+    .data_transform_type(inst_transfer_type),
         //control signal
     .mem_ce(inst_mem_ce),//start a read/write transport 
     .mem_we(inst_mem_we)// 1'b0 is read  1'b1 is write 
 );
-DCache DCache(
+DCache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))DCache(
     .clk(clk),
     .reset(reset),
     .flush(1'b0),
@@ -344,6 +350,7 @@ DCache DCache(
     .mem_wmask(data_mem_wmask),
     .mem_write_respone(data_mem_write_respone),
         //control signal
+    .data_transform_type(data_transfer_type),
     .mem_ce(data_mem_ce),//start a read/write transport 
     .mem_we(data_mem_we)// 1'b0 is read  1'b1 is write 
 );
@@ -406,7 +413,7 @@ DCache DCache(
 //     .wr_ready(wr_ready),
 //     .wr_breap(wr_breap)
 // );
-axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(32),.CPU_WIDTH(32)) bridge (
+axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(DATA_WIDTH),.CPU_WIDTH(CPU_WIDTH)) bridge (
     .aclk(clk),
     .reset(~reset),//active low
     //sram port
@@ -416,13 +423,13 @@ axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(32),.CPU_WIDTH(32)) bridge (
     .inst_rdata(inst_mem_rdata),
     .inst_rdata_valid(inst_mem_rdata_valid),
         //write data
-    .inst_wdata(32'h0),
-    .inst_wmask(4'h0),
+    .inst_wdata({CPU_WIDTH{1'b0}}),
+    .inst_wmask({(CPU_WIDTH/8){1'b0}}),
     .inst_write_finish(),
         //control signal
     .inst_ce(inst_mem_ce),//start a read/write transport 
     .inst_we(inst_mem_we),// 1'b0 is read  1'b1 is write 
-    .inst_transfer_type(3'b000),
+    .inst_transfer_type(inst_transfer_type),
 
     .data_addr(data_mem_addr),
         //read data
@@ -435,7 +442,7 @@ axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(32),.CPU_WIDTH(32)) bridge (
         //control signal
     .data_ce(data_mem_ce),//start a read/write transport 
     .data_we(data_mem_we),// 1'b0 is read  1'b1 is write 
-    .data_transfer_type(3'b000),
+    .data_transfer_type(data_transfer_type),
 
     //read address channel 
     .ar_valid(ar_valid),
@@ -515,7 +522,7 @@ axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(32),.CPU_WIDTH(32)) bridge (
 // );
 
 
-AXI_FULL_Mem#(.BUS_WIDTH(32),.DATA_WIDTH(32),.CPU_WIDTH(32)) Memory(
+AXI_FULL_Mem#(.BUS_WIDTH(32),.DATA_WIDTH(DATA_WIDTH)) Memory(
     .clk(clk),
     .reset(~reset),
     //read address channel 

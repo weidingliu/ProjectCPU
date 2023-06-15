@@ -152,6 +152,7 @@ always @(posedge clk) begin
         // end
         valid <= valid_temp;
     end
+    // $display("%h %h %h %h\n",PC,Inst,en,addr);
 end
 
 //data block

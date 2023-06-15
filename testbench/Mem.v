@@ -141,9 +141,7 @@ endmodule //Mem
 
 module AXI_FULL_Mem#(
     parameter BUS_WIDTH = 32,
-    parameter DATA_WIDTH = 32,
-    parameter CPU_WIDTH = 32,
-    localparam BRUST_COUNTER_size = $clog2(CPU_WIDTH/DATA_WIDTH) + 1 
+    parameter DATA_WIDTH = 32
 )(
     input wire clk,
     input wire reset,
@@ -238,10 +236,11 @@ always @(posedge clk) begin
         if(write_state == idle && write_next_state == data_transform) begin 
             write_addr_buffer <= aw_addr;
         end
-        if(write_state == data_transform && wd_valid && wd_ready) write_addr_buffer <= write_addr_buffer + 'h4;
-        if(read_state == data_transform && rd_valid && rd_ready) begin 
+
+        if(write_state == data_transform && wd_valid && wd_ready && !wd_last) write_addr_buffer <= write_addr_buffer + 'h4;
+        if(read_state == data_transform && rd_valid && rd_ready && !rd_last) begin 
             read_count <= read_count - 1'b1;
-            read_addr_buffer <= ar_addr + 'h4;
+            read_addr_buffer <= read_addr_buffer + 'h4;
         end
     end
 end
@@ -303,11 +302,12 @@ always @(*) begin
     endcase
 end
 
-always @(posedge clk) begin 
+always @(*) begin 
     if(~reset) begin 
         //rdata <= 'h0;
     end
     else begin 
+        // $display("%h %h %h %h %h\n",read_addr_buffer,ar_addr,read_count,ar_valid,read_state);
         if(read_state == data_transform) begin 
             pmem_read(read_addr_buffer, rdata);
         end

@@ -2,8 +2,8 @@
 module axi4_full_interface #(
     parameter BUS_WIDTH = 32,
     parameter DATA_WIDTH = 32,
-    parameter CPU_WIDTH = 32,// cache line size
-    localparam BRUST_COUNTER_size = $clog2(CPU_WIDTH/DATA_WIDTH)+1
+    parameter CPU_WIDTH = 512,// cache line size
+    localparam BRUST_COUNTER_size = $clog2(CPU_WIDTH/DATA_WIDTH)
 )(
     input wire aclk,
     input wire reset,
@@ -12,7 +12,7 @@ module axi4_full_interface #(
         // read request
     input wire [BUS_WIDTH-1 : 0]inst_addr,
         //read data
-    output wire [CPU_WIDTH-1:0]inst_rdata,
+    output wire [DATA_WIDTH-1:0]inst_rdata,
     output wire inst_rdata_valid,
         //write data
     input wire [CPU_WIDTH-1:0]inst_wdata,
@@ -26,7 +26,7 @@ module axi4_full_interface #(
 
     input wire [BUS_WIDTH-1 : 0]data_addr,
         //read data
-    output wire [CPU_WIDTH-1:0]data_rdata,
+    output wire [DATA_WIDTH-1:0]data_rdata,
     output wire data_rdata_valid,
         //write data
     input wire [CPU_WIDTH-1:0]data_wdata,
@@ -93,7 +93,7 @@ localparam read_request_ready = 1'b1;
 
 localparam read_respond_empty = 2'b00;
 localparam read_respond_transfer = 2'b01;
-localparam read_respone_ready = 2'b10;
+// localparam read_respone_ready = 2'b10;
 
 localparam write_respond_empty = 1'b0;
 localparam write_respond_transfer = 1'b1;
@@ -101,6 +101,7 @@ localparam write_respond_transfer = 1'b1;
 localparam write_request_empty = 3'b000;
 localparam write_request_ready = 3'b001;
 localparam write_data_transform = 3'b100;
+localparam write_request_transfer_addr = 3'b010;
 
 assign ar_burst = 2'b1;
 assign ar_lock = 2'b0;
@@ -122,9 +123,9 @@ reg [2:0]write_request_state;
 reg [1:0]read_respone_state;
 reg write_respone_state;
 // brust transform
-reg [7:0]write_data_count;
+reg [31:0]write_data_count;
 reg [CPU_WIDTH-1:0]write_data_buffer;
-reg [CPU_WIDTH-1:0]read_data_buffer;
+// reg [CPU_WIDTH-1:0]read_data_buffer;
 reg [CPU_WIDTH/8-1:0] write_mask_buffer;
 wire write_data_last;//if is last write data
 
@@ -133,7 +134,7 @@ reg bid;
 
 wire wait_write;
 
-assign write_data_last = (write_data_count == (CPU_WIDTH/DATA_WIDTH - 1));
+assign write_data_last = (write_data_count == (CPU_WIDTH/DATA_WIDTH-1));
 // read FSM
 always @(posedge aclk) begin
     if(~reset) begin 
@@ -208,7 +209,7 @@ always @(posedge aclk) begin
     if(~reset) begin 
         read_respone_state <= read_respond_empty;
         rd_ready <= 1'b1;
-        read_data_buffer <= 'h0;
+        // read_data_buffer <= 'h0;
     end
     else begin 
         case(read_respone_state)
@@ -221,9 +222,9 @@ always @(posedge aclk) begin
                 if(rd_last & rd_valid) begin 
                     read_respone_state <= read_respond_empty;
                 end
-                else if(rd_valid) begin 
-                    read_data_buffer <= {read_data_buffer[CPU_WIDTH-DATA_WIDTH-1:DATA_WIDTH],rd_data};
-                end
+                // else if(rd_valid) begin 
+                //     read_data_buffer <= {read_data_buffer[CPU_WIDTH-DATA_WIDTH-1:DATA_WIDTH],rd_data};
+                // end
             end
             // read_respone_ready: begin 
             //     read_respone_state <= read_respond_empty;
@@ -266,13 +267,13 @@ always @(posedge aclk) begin
 
                     if(data_transfer_type == 3'b100) begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready)  write_request_state <= write_data_transform;
+                        if(aw_ready)  write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h10;
                     end
                     else begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready) write_request_state <= write_data_transform;
+                        if(aw_ready) write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h1;
                     end
@@ -294,13 +295,13 @@ always @(posedge aclk) begin
 
                     if(inst_transfer_type == 3'b100) begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready)  write_request_state <= write_data_transform;
+                        if(aw_ready)  write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h10;
                     end
                     else begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready) write_request_state <= write_data_transform;
+                        if(aw_ready) write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h1;
                     end
@@ -330,9 +331,18 @@ always @(posedge aclk) begin
                 end
 
             end
+            write_request_transfer_addr: begin 
+                if(aw_ready) begin 
+                    aw_valid <= 1'b0;
+                    write_request_state <= write_data_transform;
+                end
+            end
         endcase
     end
 end
+// always @(posedge aclk) begin
+//     $display("%h %h %h %h\n",ar_valid,ar_addr,inst_addr,data_addr);
+// end
 
 assign wd_data = write_data_buffer[DATA_WIDTH-1:0];
 assign wstrb = write_mask_buffer[DATA_WIDTH/8-1:0];
@@ -341,11 +351,11 @@ assign wd_valid = (write_request_state == write_data_transform)? 1'b1:1'b0;
 
 assign wait_write = ~(write_request_state == write_request_empty);
 
-assign data_rdata = (data_transfer_type == 3'b100)? {read_data_buffer[CPU_WIDTH-DATA_WIDTH-1:DATA_WIDTH],rd_data}:rd_data;
-assign inst_rdata = (inst_transfer_type == 3'b100)? {read_data_buffer[CPU_WIDTH-DATA_WIDTH-1:DATA_WIDTH],rd_data}:rd_data;
+assign data_rdata = rd_data;
+assign inst_rdata = rd_data;
 
-assign data_rdata_valid = rd_valid & !rid & (read_request_state == read_request_ready) & rd_last;
-assign inst_rdata_valid = rd_valid &  rid & (read_request_state == read_request_ready) & rd_last;
+assign data_rdata_valid = rd_valid & !rid & (read_respone_state == read_respond_transfer);
+assign inst_rdata_valid = rd_valid &  rid & (read_respone_state == read_respond_transfer);
 
 assign data_write_finish = wr_valid & !bid & (write_request_state == write_request_ready);
 assign inst_write_finish = wr_valid &  bid & (write_request_state == write_request_ready);

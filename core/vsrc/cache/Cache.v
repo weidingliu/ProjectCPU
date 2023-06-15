@@ -833,7 +833,8 @@ module DCache #(
    parameter DATA_WIDTH = 32,
    parameter Cache_line_wordnum = 16,
    parameter Max_size = 4096,//4kB
-   
+
+   localparam CPU_WIDTH = DATA_WIDTH * Cache_line_wordnum,
    localparam Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
    localparam Word_offset = $clog2(DATA_WIDTH/8),
    localparam Cache_way = 2,
@@ -862,10 +863,11 @@ module DCache #(
     input wire [DATA_WIDTH-1:0]mem_rdata,
     input wire mem_rdata_valid,
         //write data
-    output wire [DATA_WIDTH-1:0]mem_wdata,
-    output wire [DATA_WIDTH/8-1:0]mem_wmask,
+    output wire [CPU_WIDTH-1:0]mem_wdata,
+    output wire [CPU_WIDTH/8-1:0]mem_wmask,
     input wire mem_write_respone,
         //control signal
+    output wire [2:0] data_transform_type,
     output wire mem_ce,//start a read/write transport 
     output wire mem_we// 1'b0 is read  1'b1 is write 
 
@@ -876,10 +878,10 @@ localparam miss = 2'b10;
 localparam write_data = 2'b11;
 
 reg [1:0]state;
-reg [$clog2(Cache_line_wordnum):0]read_count;
-reg [$clog2(Cache_line_wordnum):0]write_count;
+reg [31:0]read_count;
+reg [31:0]write_count;
 wire read_count_ready;
-wire write_count_ready;
+// wire write_count_ready;
 
 wire [Tag_size-1:0]tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]cache_data[Cache_way-1:0];
@@ -921,7 +923,7 @@ wire [Cache_line_size-1:0] new_data;
 wire [Cache_line_size-1:0] old_data;
 
 assign read_count_ready = read_count == Cache_line_wordnum;
-assign write_count_ready = write_count == Cache_line_wordnum;
+// assign write_count_ready = write_count == Cache_line_wordnum;
 
 assign offset = addr[Offset_size-1:0];
 assign index = addr[Index_size + Offset_size-1:Offset_size];
@@ -1065,7 +1067,7 @@ always @(posedge clk) begin
                 if(read_count_ready && rdata_ready) state <= idle;
             end
             write_data: begin 
-                if(write_count_ready) state <= miss;
+                if(mem_write_respone) state <= miss;
             end 
             default: state <= idle;
         endcase
@@ -1078,14 +1080,17 @@ always @(posedge clk) begin
         write_count <= 0;
         write_back_data <= 0;
     end
-    else if(state == idle || write_count_ready) begin 
-        write_count <= 0;
+    else if(state == idle) begin 
+        // write_count <= 0;
         write_back_data <= 0;
     end
-    else if(state == write_data & mem_write_respone) begin 
-        write_count <= write_count + 1'b1;
-        write_back_data <= {{DATA_WIDTH{1'b0}},write_back_data[Cache_line_size-1:DATA_WIDTH]};
+    else if(state == scanf & !hit & dirt[lru]) begin 
+        write_back_data <= (lru)? cache_data[1]:cache_data[0];
     end
+    // else if(state == write_data & mem_write_respone) begin 
+    //     write_count <= write_count + 1'b1;
+    //     write_back_data <= {{DATA_WIDTH{1'b0}},write_back_data[Cache_line_size-1:DATA_WIDTH]};
+    // end
 end
 //write back data addr
 always @(posedge clk) begin 
@@ -1095,11 +1100,11 @@ always @(posedge clk) begin
     else if(state == scanf & !hit & dirt[lru]) begin 
         write_back_addr <= {tag[lru],index,{Offset_size{1'b0}}};
     end
-    else if(state == write_data) begin 
-        if(mem_write_respone) begin 
-            write_back_addr <= write_back_addr + 'h4;
-        end
-    end
+    // else if(state == write_data) begin 
+    //     if(mem_write_respone) begin 
+    //         write_back_addr <= write_back_addr + 'h4;
+    //     end
+    // end
 end
 
 // miss state counter ,read a word of data cache_line_wordnum times 
@@ -1128,9 +1133,9 @@ always @(posedge clk) begin
    else if(state == scanf) begin 
       miss_addr <= {addr[BUS_WIDTH-1:Offset_size],{Offset_size{1'b0}}};
    end
-   else if(state == miss) begin 
-        if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
-   end
+//    else if(state == miss) begin 
+//         if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
+//    end
 end
 // select a word data form a cache line data 
 Data_mask #(
@@ -1203,19 +1208,20 @@ assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) |
                ({DATA_WIDTH{hit_way1}} & hit_rdata[1]) |
                ({DATA_WIDTH{read_count_ready}} & miss_rdata);
 
-assign mem_addr = (state == miss)?  miss_addr : {DATA_WIDTH{1'b0}};
-assign mem_ce = state == miss || state == write_data;
+assign mem_addr = (state == miss)?  miss_addr : (state == write_data)? write_back_addr: 'h0;
+assign mem_ce = (state == miss && read_count != Cache_line_wordnum) || state == write_data;
 assign mem_we = state == write_data;
-assign mem_wdata = write_back_data[DATA_WIDTH-1:0];
-assign mem_wmask = 4'hf;
+assign mem_wdata = write_back_data;
+assign mem_wmask = {(CPU_WIDTH/8){1'b1}};
 
 assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
 assign write_respone = (state == scanf & hit) | (state == miss & read_count_ready); 
+assign data_transform_type = 3'b100;
 
 `ifdef display_cache_missinfo
 always @(posedge clk) begin
     if(state == scanf && !hit)begin 
-        $display("DCache Miss! addr %h ,select way %h index %h\n",addr,lru,index);
+        $display("DCache Miss! addr %h ,select way %h index %h dirt %h\n",addr,lru,index,dirt[lru]);
     end
 end
 `endif
@@ -1274,19 +1280,19 @@ module ICache #(
     output wire [DATA_WIDTH-1:0]mem_wdata,
     output wire [DATA_WIDTH/8-1:0]mem_wmask,
     input wire mem_write_respone,
+    output wire [2:0]data_transform_type,
         //control signal
     output wire mem_ce,//start a read/write transport 
     output wire mem_we// 1'b0 is read  1'b1 is write 
-
-
 );
-localparam idle = 2'b00;
-localparam scanf = 2'b01;
-localparam miss = 2'b10;
-localparam write_data = 2'b11;
+localparam idle = 3'b000;
+localparam scanf = 3'b001;
+localparam miss = 3'b010;
+localparam write_data = 3'b011;
+localparam wait_axi_end = 3'b100;
 
-reg [1:0]state;
-reg [$clog2(Cache_line_wordnum):0]read_count;
+reg [2:0]state;
+reg [31:0]read_count;
 wire read_count_ready;
 
 wire [Tag_size-1:0]tag[Cache_way-1:0];
@@ -1425,7 +1431,10 @@ always @(posedge clk) begin
         state <= idle;
     end
     else if(flush) begin 
-        state <= idle;
+        if(state == miss) begin 
+            state <= wait_axi_end;
+        end
+        else state <= idle;
     end
     else begin 
         case (state)
@@ -1450,6 +1459,9 @@ always @(posedge clk) begin
             // write_data: begin 
             //     if(write_count_ready) state <= miss;
             // end 
+            wait_axi_end: begin 
+                if(read_count_ready && rdata_ready) state <= idle;
+            end
             default: state <= idle;
         endcase
     end
@@ -1469,7 +1481,7 @@ always @(posedge clk) begin
         miss_data <= 0;
         read_count <= 0;
     end
-    else if(state == miss & mem_rdata_valid) begin 
+    else if((state == wait_axi_end || state == miss) & mem_rdata_valid) begin 
         read_count <= read_count + 1'b1;
         miss_data <= {mem_rdata,miss_data[Cache_line_size-1:DATA_WIDTH]};
     end
@@ -1482,9 +1494,9 @@ always @(posedge clk) begin
    else if(state == scanf) begin 
       miss_addr <= {addr[BUS_WIDTH-1:Offset_size],{Offset_size{1'b0}}};
    end
-   else if(state == miss) begin 
-        if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
-   end
+//    else if(state == miss) begin 
+//         if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
+//    end
 end
 // select a word data form a cache line data 
 Data_mask #(
@@ -1534,10 +1546,11 @@ assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) |
                ({DATA_WIDTH{read_count_ready}} & miss_rdata);
 
 assign mem_addr = (state == miss)?  miss_addr : {DATA_WIDTH{1'b0}};
-assign mem_ce = state == miss || state == write_data;
+assign mem_ce = (state == miss && read_count != Cache_line_wordnum) || state == write_data;
 assign mem_we = state == write_data;
 // assign mem_wdata = write_back_data[DATA_WIDTH-1:0];
 // assign mem_wmask = 
+assign data_transform_type = 3'b100;
 
 assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
 
