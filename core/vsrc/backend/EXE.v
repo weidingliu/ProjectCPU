@@ -147,7 +147,22 @@ assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
 assign is_mul = (mul_div_op[0]  | mul_div_op[2]) & right_ready;
 assign is_div = (mul_div_op[3]  | mul_div_op[1]) & right_ready;
 // booth multiplier
-Booth_MUL MUL(
+// Booth_MUL MUL(
+//     .clock(clk),
+//     .reset(reset),
+//     .io_in_ready(),
+//     .io_in_valid(is_mul),
+//     .io_in_bits_ctrl_flow_flush(1'b0),
+//     .io_in_bits_ctrl_flow_mulw(1'b0),
+//     .io_in_bits_ctrl_flow_mul_sign({~is_sign,~is_sign}),
+//     .io_in_bits_ctrl_data_src1(src1),
+//     .io_in_bits_ctrl_data_src2(src2),
+//     .io_out_ready(1'b1),
+//     .io_out_valid(mul_valid),//is mul end
+//     .io_out_bits_result_result_hi(mul_hi),//hight 32-bit
+//     .io_out_bits_result_result_lo(mul_lo)// low 32-bit
+// );
+Booth_Walloc_MUL MUL(
     .clock(clk),
     .reset(reset),
     .io_in_ready(),

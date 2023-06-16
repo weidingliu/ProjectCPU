@@ -15,13 +15,13 @@
     ├── build
     └── include
 ```
-------------
+-----------------------------------
 ## 项目特征
 本项目中的CPU实现了Loongarch32R非特权架构中的全部整数指令（特权架构与总线正在紧张推进中），目前完成了整数指令的仿真与测试。
 
 **流水线握手**采用流水级之间握手机制实现分布式的阻塞控制。
 
-**乘法器**为Booth-2位乘法器，计算32位乘法需要18个周期（后续可能会改进）。
+**乘法器**有两种实现，分别为：基于移位乘法器实现的Booth-2位乘法器，计算32位乘法需要18个周期;Booth-2 + Walloc 压缩部分积的高性能华莱士树乘法器，每次计算32-bit乘法需要2个周期。
 
 **除法器**为一位恢复余数绝对值除法，计算32位除法需要33个周期。
 
@@ -57,6 +57,17 @@ difftest来源于[Loongarch-NEMU](https://gitee.com/wwt_panache/la32r-nemu?_from
 ## 对Hit xxx Trap”的说明
 
 在测试结束时仿真环境会产生一个‘Hit xxx Trap’的信息，当产生的是‘Hit GOOD Trap’时表示仿真程序运行到了结尾，并且运行中没有产生错误。
+
+## 仿真环境以及工具版本
+Verilator -> 4.227
+
+GTKWave -> v3.3.104
+
+GCC -> [chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)中toolchain给出仓库中的realease最新版即可。
+
+NEMU -> [chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)中toolchain给出仓库中的realease最新版即可。
+
+除了上述工具之外，还需要搭建chiplab环境，具体步骤可见[chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)仓库，其中请配置好NEMU以及GCC，具体的步骤在chiplab官方仓库中也有。
 
 ## 参考项目
 [一生一芯](https://ysyx.oscc.cc)项目
