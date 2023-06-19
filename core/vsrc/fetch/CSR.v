@@ -1,4 +1,5 @@
 `include "defines.sv"
+`include "csr_defines.v"
 
 module CSR (
     input wire clk,
@@ -16,7 +17,6 @@ module CSR (
     input wire [31:0]era_in,
     input wire [5:0]ecode_in,
     input wire [8:0]esubcode_in
-
 
 );
 localparam CRMD  = 14'h0;
@@ -92,6 +92,12 @@ reg [31:0]era;
 reg [31:0]badv;
 reg [31:0]eentry;
 reg [31:0]cpuid;
+reg [31:0]csr_save0;
+reg [31:0]csr_save1;
+reg [31:0]csr_save2;
+reg [31:0]csr_save3;
+reg csr_llbit;
+reg [31:0]csr_llbctl;
 
 //crmd
 always @(posedge clk) begin
@@ -206,6 +212,39 @@ end
 always @(posedge clk) begin 
     if(reset) begin 
         cpuid <= 32'h0;
+    end
+end
+//save0
+always @(posedge clk) begin
+    if (save0_wen) begin
+        csr_save0 <= wr_data;
+    end 
+end
+//save1
+always @(posedge clk) begin
+    if (save1_wen) begin
+        csr_save1 <= wr_data;
+    end 
+end
+//save2 
+always @(posedge clk) begin
+    if (save2_wen) begin
+        csr_save2 <= wr_data;
+    end 
+end
+//save3
+always @(posedge clk) begin
+    if (save3_wen) begin
+        csr_save3 <= wr_data;
+    end 
+end
+
+// llbit
+always @(posedge clk) begin
+    if(reset) begin 
+        csr_llbctl[`KLO] <= 1'b0;
+        csr_llbctl[31:3] <= 29'b0;
+        csr_llbit <= 1'b0;
     end
 end
 

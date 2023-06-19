@@ -29,4 +29,10 @@
 //cpuid
 `define CoreID 8:0
 
+//llbit
+
+`define ROLLB 0:0
+`define WCLLB 1:1
+`define KLO 2:2
+
 
