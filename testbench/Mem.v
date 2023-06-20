@@ -316,7 +316,7 @@ always @(*) begin
         end
     end
 end
-assign rd_last = (read_count == 'h1) & (read_state == data_transform);
+assign rd_last = (read_count == 'h0) & (read_state == data_transform);
 assign wr_breap = 2'b00;
 assign rd_data = rdata;
 assign ar_ready = (read_state == idle)? 1'b1:1'b0;

@@ -134,7 +134,7 @@ reg bid;
 
 wire wait_write;
 
-assign write_data_last = (write_data_count == (CPU_WIDTH/DATA_WIDTH-1));
+assign write_data_last = (write_data_count == (CPU_WIDTH/DATA_WIDTH));
 // read FSM
 always @(posedge aclk) begin
     if(~reset) begin 
@@ -159,7 +159,7 @@ always @(posedge aclk) begin
                         ar_valid <= 1'b1;
                         ar_addr <= data_addr;
                     end
-                    if(data_transfer_type == 3'b100) ar_len <= 8'h10;
+                    if(data_transfer_type == 3'b100) ar_len <= 8'hf;
                     else ar_len <= 8'h1;
                 end 
                 else if(inst_ce && !inst_we) begin 
@@ -177,7 +177,7 @@ always @(posedge aclk) begin
                         ar_valid <= 1'b1;
                         ar_addr <= inst_addr;
                     end
-                    if(inst_transfer_type == 3'b100) ar_len <= 8'h10;
+                    if(inst_transfer_type == 3'b100) ar_len <= 8'hf;
                     else ar_len <= 8'h1;
                 end
             end

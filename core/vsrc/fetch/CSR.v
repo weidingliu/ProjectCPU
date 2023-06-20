@@ -16,7 +16,36 @@ module CSR (
     input wire excp_flush,
     input wire [31:0]era_in,
     input wire [5:0]ecode_in,
-    input wire [8:0]esubcode_in
+    input wire [8:0]esubcode_in,
+
+
+        // csr regs for diff
+    output [31:0]                   csr_crmd_diff,
+    output [31:0]                   csr_prmd_diff,
+    output [31:0]                   csr_ectl_diff,
+    output [31:0]                   csr_estat_diff,
+    output [31:0]                   csr_era_diff,
+    output [31:0]                   csr_badv_diff,
+    output [31:0]                   csr_eentry_diff,
+    output [31:0]                   csr_tlbidx_diff,
+    output [31:0]                   csr_tlbehi_diff,
+    output [31:0]                   csr_tlbelo0_diff,
+    output [31:0]                   csr_tlbelo1_diff,
+    output [31:0]                   csr_asid_diff,
+    output [31:0]                   csr_save0_diff,
+    output [31:0]                   csr_save1_diff,
+    output [31:0]                   csr_save2_diff,
+    output [31:0]                   csr_save3_diff,
+    output [31:0]                   csr_tid_diff,
+    output [31:0]                   csr_tcfg_diff,
+    output [31:0]                   csr_tval_diff,
+    output [31:0]                   csr_ticlr_diff,
+    output [31:0]                   csr_llbctl_diff,
+    output [31:0]                   csr_tlbrentry_diff,
+    output [31:0]                   csr_dmw0_diff,
+    output [31:0]                   csr_dmw1_diff,
+    output [31:0]                   csr_pgdl_diff,
+    output [31:0]                   csr_pgdh_diff
 
 );
 localparam CRMD  = 14'h0;
@@ -52,37 +81,37 @@ localparam BRK = 14'h100;
 localparam DISABLE_CACHE = 14'h101;
 
 
-wire crmd_wen   = csr_wr_en & (wr_addr == CRMD);
-wire prmd_wen   = csr_wr_en & (wr_addr == PRMD);
-wire ecfg_wen   = csr_wr_en & (wr_addr == ECTL);
-wire estat_wen  = csr_wr_en & (wr_addr == ESTAT);
-wire era_wen    = csr_wr_en & (wr_addr == ERA);
-wire badv_wen   = csr_wr_en & (wr_addr == BADV);
-wire eentry_wen = csr_wr_en & (wr_addr == EENTRY);
-wire tlbidx_wen = csr_wr_en & (wr_addr == TLBIDX);
-wire tlbehi_wen = csr_wr_en & (wr_addr == TLBEHI);
-wire tlbelo0_wen= csr_wr_en & (wr_addr == TLBELO0);
-wire tlbelo1_wen= csr_wr_en & (wr_addr == TLBELO1);
-wire asid_wen   = csr_wr_en & (wr_addr == ASID);
-wire pgdl_wen   = csr_wr_en & (wr_addr == PGDL);
-wire pgdh_wen   = csr_wr_en & (wr_addr == PGDH);
-wire pgd_wen    = csr_wr_en & (wr_addr == PGD);
-wire cpuid_wen  = csr_wr_en & (wr_addr == CPUID);
-wire save0_wen  = csr_wr_en & (wr_addr == SAVE0);
-wire save1_wen  = csr_wr_en & (wr_addr == SAVE1);
-wire save2_wen  = csr_wr_en & (wr_addr == SAVE2);
-wire save3_wen  = csr_wr_en & (wr_addr == SAVE3);
-wire tid_wen    = csr_wr_en & (wr_addr == TID);
-wire tcfg_wen   = csr_wr_en & (wr_addr == TCFG);
-wire tval_wen   = csr_wr_en & (wr_addr == TVAL);
-wire cntc_wen   = csr_wr_en & (wr_addr == CNTC);
-wire ticlr_wen  = csr_wr_en & (wr_addr == TICLR);
-wire llbctl_wen = csr_wr_en & (wr_addr == LLBCTL);
-wire tlbrentry_wen = csr_wr_en & (wr_addr == TLBRENTRY);
-wire DMW0_wen   = csr_wr_en & (wr_addr == DMW0);
-wire DMW1_wen   = csr_wr_en & (wr_addr == DMW1);
-wire BRK_wen    = csr_wr_en & (wr_addr == BRK);
-wire disable_cache_wen = csr_wr_en & (wr_addr == DISABLE_CACHE);
+wire crmd_wen   = csr_wr_en & (csr_waddr == CRMD);
+wire prmd_wen   = csr_wr_en & (csr_waddr == PRMD);
+wire ecfg_wen   = csr_wr_en & (csr_waddr == ECTL);
+wire estat_wen  = csr_wr_en & (csr_waddr == ESTAT);
+wire era_wen    = csr_wr_en & (csr_waddr == ERA);
+wire badv_wen   = csr_wr_en & (csr_waddr == BADV);
+wire eentry_wen = csr_wr_en & (csr_waddr == EENTRY);
+wire tlbidx_wen = csr_wr_en & (csr_waddr == TLBIDX);
+wire tlbehi_wen = csr_wr_en & (csr_waddr == TLBEHI);
+wire tlbelo0_wen= csr_wr_en & (csr_waddr == TLBELO0);
+wire tlbelo1_wen= csr_wr_en & (csr_waddr == TLBELO1);
+wire asid_wen   = csr_wr_en & (csr_waddr == ASID);
+wire pgdl_wen   = csr_wr_en & (csr_waddr == PGDL);
+wire pgdh_wen   = csr_wr_en & (csr_waddr == PGDH);
+wire pgd_wen    = csr_wr_en & (csr_waddr == PGD);
+wire cpuid_wen  = csr_wr_en & (csr_waddr == CPUID);
+wire save0_wen  = csr_wr_en & (csr_waddr == SAVE0);
+wire save1_wen  = csr_wr_en & (csr_waddr == SAVE1);
+wire save2_wen  = csr_wr_en & (csr_waddr == SAVE2);
+wire save3_wen  = csr_wr_en & (csr_waddr == SAVE3);
+wire tid_wen    = csr_wr_en & (csr_waddr == TID);
+wire tcfg_wen   = csr_wr_en & (csr_waddr == TCFG);
+wire tval_wen   = csr_wr_en & (csr_waddr == TVAL);
+wire cntc_wen   = csr_wr_en & (csr_waddr == CNTC);
+wire ticlr_wen  = csr_wr_en & (csr_waddr == TICLR);
+wire llbctl_wen = csr_wr_en & (csr_waddr == LLBCTL);
+wire tlbrentry_wen = csr_wr_en & (csr_waddr == TLBRENTRY);
+wire DMW0_wen   = csr_wr_en & (csr_waddr == DMW0);
+wire DMW1_wen   = csr_wr_en & (csr_waddr == DMW1);
+wire BRK_wen    = csr_wr_en & (csr_waddr == BRK);
+wire disable_cache_wen = csr_wr_en & (csr_waddr == DISABLE_CACHE);
 
 reg [31:0]crmd;
 reg [31:0]prmd;
@@ -98,6 +127,7 @@ reg [31:0]csr_save2;
 reg [31:0]csr_save3;
 reg csr_llbit;
 reg [31:0]csr_llbctl;
+// reg[31:0] csr_era;
 
 //crmd
 always @(posedge clk) begin
@@ -113,8 +143,8 @@ always @(posedge clk) begin
     end
     else begin 
         if (excp_flush) begin
-            csr_crmd[ `PLV] <=  2'b0;
-            csr_crmd[  `IE] <=  1'b0;
+            crmd[ `PLV] <=  2'b0;
+            crmd[  `IE] <=  1'b0;
          end
         else if(crmd_wen) begin 
             crmd[ `PLV] <= csr_wdata[ `PLV];
@@ -138,8 +168,8 @@ always @(posedge clk) begin
     end
     else begin 
         if (excp_flush) begin
-            csr_prmd[`PPLV] <= csr_crmd[`PLV];
-            csr_prmd[ `PIE] <= csr_crmd[`IE ];
+            prmd[`PPLV] <= crmd[`PLV];
+            prmd[ `PIE] <= crmd[`IE ];
         end
         else if(crmd_wen) begin 
             prmd[ `PPLV] <=  csr_wdata[ `PPLV];
@@ -171,8 +201,8 @@ always @(posedge clk) begin
     else begin 
 
         if (excp_flush) begin
-            csr_estat[   `Ecode] <= ecode_in;
-            csr_estat[`EsubCode] <= esubcode_in;
+            estat[   `Ecode] <= ecode_in;
+            estat[`EsubCode] <= esubcode_in;
         end
         else if(ecfg_wen) begin 
             estat[ `IS1] <=  csr_wdata[ `IS1];
@@ -184,10 +214,10 @@ end
 //era
 always @(posedge clk) begin
     if (excp_flush) begin
-        csr_era <= era_in;
+        era <= era_in;
     end
     else if (era_wen) begin
-        csr_era <= wr_data;
+        era <= csr_wdata;
     end
 end
 
@@ -217,25 +247,25 @@ end
 //save0
 always @(posedge clk) begin
     if (save0_wen) begin
-        csr_save0 <= wr_data;
+        csr_save0 <= csr_wdata;
     end 
 end
 //save1
 always @(posedge clk) begin
     if (save1_wen) begin
-        csr_save1 <= wr_data;
+        csr_save1 <= csr_wdata;
     end 
 end
 //save2 
 always @(posedge clk) begin
     if (save2_wen) begin
-        csr_save2 <= wr_data;
+        csr_save2 <= csr_wdata;
     end 
 end
 //save3
 always @(posedge clk) begin
     if (save3_wen) begin
-        csr_save3 <= wr_data;
+        csr_save3 <= csr_wdata;
     end 
 end
 
@@ -245,6 +275,9 @@ always @(posedge clk) begin
         csr_llbctl[`KLO] <= 1'b0;
         csr_llbctl[31:3] <= 29'b0;
         csr_llbit <= 1'b0;
+    end
+    else begin 
+
     end
 end
 
