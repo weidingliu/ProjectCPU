@@ -18,8 +18,11 @@ module CSR (
     input wire [5:0]ecode_in,
     input wire [8:0]esubcode_in,
 
+    //interrupt
+    input wire[7:0]interrupt,
+    output wire has_int,
 
-        // csr regs for diff
+    // csr regs for diff
     output [31:0]                   csr_crmd_diff,
     output [31:0]                   csr_prmd_diff,
     output [31:0]                   csr_ectl_diff,
@@ -193,18 +196,20 @@ always @(posedge clk) begin
     end
 end
 
-//estat
+//estat for interrupt 
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         estat <=  32'h0;
     end
     else begin 
 
+
+        estat[`IS2] <= interrupt;
         if (excp_flush) begin
             estat[   `Ecode] <= ecode_in;
             estat[`EsubCode] <= esubcode_in;
         end
-        else if(ecfg_wen) begin 
+        else if(estat_wen) begin 
             estat[ `IS1] <=  csr_wdata[ `IS1];
             // estat[ `Ecode] <=  csr_wdata[ `Ecode];
             // estat[ `EsubCode] <=  csr_wdata[ `EsubCode];

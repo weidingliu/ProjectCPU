@@ -107,7 +107,7 @@ assign ar_burst = 2'b1;
 assign ar_lock = 2'b0;
 assign ar_cache = 4'b0;
 assign ar_prot = 3'b0;
-assign ar_size = 3'b100;
+assign ar_size = 3'b010;
 assign ar_id = 4'b1;
 
 assign aw_id = 4'b1;
@@ -115,7 +115,7 @@ assign aw_burst = 2'b1;
 assign aw_lock = 2'b0;
 assign aw_cache = 4'b0;
 assign aw_prot = 3'b0;
-assign aw_size = 3'b100;
+assign aw_size = 3'b010;
 
 
 reg read_request_state;
@@ -182,10 +182,14 @@ always @(posedge aclk) begin
                 end
             end
             read_request_ready: begin 
-                ar_valid <= 1'b0;
+                if(ar_ready) ar_valid <= 1'b0;
                 if(rd_valid && rd_ready && rd_last) begin 
                     read_request_state <= read_request_empty;
                 end
+            end
+            default: begin
+                read_request_state <= read_request_empty;
+                ar_valid <= 1'b0;
             end
 
         endcase
@@ -229,6 +233,10 @@ always @(posedge aclk) begin
             // read_respone_ready: begin 
             //     read_respone_state <= read_respond_empty;
             // end
+            default: begin 
+                read_respone_state <= read_respond_empty;
+                rd_ready <= 1'b1;
+            end
         endcase
     end
 end
@@ -267,13 +275,13 @@ always @(posedge aclk) begin
 
                     if(data_transfer_type == 3'b100) begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready)  write_request_state <= write_request_transfer_addr;
+                        write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h10;
                     end
                     else begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready) write_request_state <= write_request_transfer_addr;
+                        write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h1;
                     end
@@ -295,13 +303,13 @@ always @(posedge aclk) begin
 
                     if(inst_transfer_type == 3'b100) begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready)  write_request_state <= write_request_transfer_addr;
+                        write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h10;
                     end
                     else begin 
                         // wd_last <= 1'b0;
-                        if(aw_ready) write_request_state <= write_request_transfer_addr;
+                        write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
                         aw_len <= 8'h1;
                     end
@@ -336,6 +344,16 @@ always @(posedge aclk) begin
                     aw_valid <= 1'b0;
                     write_request_state <= write_data_transform;
                 end
+            end
+            default: begin 
+                write_request_state <= write_request_empty;
+                aw_valid <= 1'b0;
+        // wd_valid <= 1'b0;
+        // wd_last <= 1'b0;
+
+                write_data_count <= 'h0;
+                write_data_buffer <= 'h0;
+                write_mask_buffer <= 'h0;
             end
         endcase
     end

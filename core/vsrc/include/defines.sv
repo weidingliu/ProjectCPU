@@ -6,3 +6,6 @@
 `define ctrl_width 215
 `define ex_ctrl_width 220
 `define mem_ctrl_width 104
+
+`define id_csr_ctrl_width 49
+`define ex_csr_ctrl_width 47

@@ -5,6 +5,10 @@ module MEM (
     //ctrl bus
     input wire [`ex_ctrl_width-1:0] mem_ctrl_bus,
     output wire [`mem_ctrl_width-1:0] wb_ctrl_bus,
+
+        //csr
+    input wire [`ex_csr_ctrl_width-1:0] mem_csr_bus,
+    output wire [`ex_csr_ctrl_width-1:0] wb_csr_bus,
     //mem interface
     output wire [31:0]addr,//read/write address
     output wire en,//mem enable
@@ -31,6 +35,7 @@ reg valid;
 wire logic_valid;
 //bus REG
 reg [`mem_ctrl_width-1:0] bus_temp;//
+reg [`ex_csr_ctrl_width-1:0] csr_bus_temp;
 //decompone bus
 wire [31:0]mem_result;
 wire [13:0]alu_op;
@@ -159,6 +164,7 @@ end
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         bus_temp <= `mem_ctrl_width'h0;
+        csr_bus_temp <= `ex_csr_ctrl_width'h0;
     end
     else begin 
         if(logic_valid & right_ready) begin 
@@ -171,6 +177,7 @@ always @(posedge clk) begin
                     PC,// 32:63
                     mem_result// 0:31
                     };
+            csr_bus_temp <= mem_csr_bus;
         end
     end
 end
@@ -179,6 +186,7 @@ assign right_valid=valid;
 assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid)) | !left_valid ? 1'b0:1'b1;
 assign left_ready= (en && (we && !write_finish || !we && !rdata_valid)) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
+assign wb_csr_bus = csr_bus_temp;
 assign mem_bypass = {mem_result,wreg_index,wreg_en & left_valid};
 assign is_fire = logic_valid & right_ready;
 

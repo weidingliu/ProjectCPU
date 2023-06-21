@@ -4,7 +4,9 @@ module Top #(
     localparam CPU_WIDTH = DATA_WIDTH * 16
  )(
     input wire clk,
-    input wire reset
+    input wire reset,
+
+    input    [ 7:0] intrpt
     
     // //inst interface
     // input wire [31:0]inst,
@@ -70,6 +72,7 @@ wire if_right_ready;
 
 //ID stage signal
 wire [`ctrl_width-1:0] id_bus;
+wire [`id_csr_ctrl_width-1:0] id_csr_bus;
 wire [4:0] reg_index1;
 wire [4:0] reg_index2;
 wire [31:0] reg_data1;
@@ -78,6 +81,8 @@ wire id_right_valid;
 wire id_right_ready;
 wire is_break;
 wire id_is_fire;
+wire [13:0] rd_csr_addr;
+wire [31:0] rd_csr_data;
 
 //EXE stage signal
 wire [`ex_ctrl_width-1:0] ex_bus;
@@ -88,6 +93,7 @@ wire flush;
 wire is_branch;
 wire [31:0]dnpc;
 wire exe_is_fire;
+wire [`ex_csr_ctrl_width-1:0]ex_csr_bus;
 
 //MEM stage signal
 wire [`mem_ctrl_width-1:0] mem_bus;
@@ -97,12 +103,14 @@ wire [`bypass_width-1:0] mem_bypass;
 wire mem_is_fire;
 wire rdata_valid;
 wire write_finish;
+wire [`ex_csr_ctrl_width-1:0] mem_csr_bus;
 
 //WB stage signal
 wire [`mem_ctrl_width-1:0] wb_bus;
 wire [`bypass_width-1:0] wb_bypass;
 wire wb_is_fire;
 wire wb_valid;
+wire [`ex_csr_ctrl_width-1:0] wb_csr_bus;
 
 //difftest
 reg [`mem_ctrl_width-1:0] difftest_bus;
@@ -113,6 +121,35 @@ wire [31:0] difftest_Inst;
 wire [31:0] difftest_PC;
 wire [31:0]difftest_result;
 wire diifftest_is_break;
+
+// for csr 
+// from csr
+wire    [31:0]  csr_crmd_diff_0     ;
+wire    [31:0]  csr_prmd_diff_0     ;
+wire    [31:0]  csr_ectl_diff_0     ;
+wire    [31:0]  csr_estat_diff_0    ;
+wire    [31:0]  csr_era_diff_0      ;
+wire    [31:0]  csr_badv_diff_0     ;
+wire	[31:0]  csr_eentry_diff_0   ;
+wire 	[31:0]  csr_tlbidx_diff_0   ;
+wire 	[31:0]  csr_tlbehi_diff_0   ;
+wire 	[31:0]  csr_tlbelo0_diff_0  ;
+wire 	[31:0]  csr_tlbelo1_diff_0  ;
+wire 	[31:0]  csr_asid_diff_0     ;
+wire 	[31:0]  csr_save0_diff_0    ;
+wire 	[31:0]  csr_save1_diff_0    ;
+wire 	[31:0]  csr_save2_diff_0    ;
+wire 	[31:0]  csr_save3_diff_0    ;
+wire 	[31:0]  csr_tid_diff_0      ;
+wire 	[31:0]  csr_tcfg_diff_0     ;
+wire 	[31:0]  csr_tval_diff_0     ;
+wire 	[31:0]  csr_ticlr_diff_0    ;
+wire 	[31:0]  csr_llbctl_diff_0   ;
+wire 	[31:0]  csr_tlbrentry_diff_0;
+wire 	[31:0]  csr_dmw0_diff_0     ;
+wire 	[31:0]  csr_dmw1_diff_0     ;
+wire 	[31:0]  csr_pgdl_diff_0     ;
+wire 	[31:0]  csr_pgdh_diff_0     ;
 
 // from regfile
 wire    [31:0]  regs[31:0];
@@ -198,6 +235,10 @@ ID id_stage(
     .is_break(is_break),
     //ctrl flower
     .ctrl_bus(id_bus),//ctrl bus
+    //csr
+    .id_csr_ctrl(id_csr_bus),
+    .rd_csr_addr(rd_csr_addr),
+    .rd_csr_data(rd_csr_data),
     //shark hand
     // input wire right_fire,//right data consumed
     .left_valid(if_right_valid),//IF stage's data is ready
@@ -238,6 +279,9 @@ EXE exe_stage(
     .id_ctrl_bus(id_bus), //ctrl flower
 
     .ex_ctrl_bus(ex_bus),
+    //csr bus
+    .id_csr_ctrl_bus(id_csr_bus),
+    .ex_csr_ctrl_bus(ex_csr_bus),
     //bypass
     .ex_bypass(ex_bypass),
     //mem_bypass
@@ -261,6 +305,9 @@ MEM mem_stage(
     //ctrl bus
     .mem_ctrl_bus(ex_bus),
     .wb_ctrl_bus(mem_bus),
+    //csr bus 
+    .mem_csr_bus(ex_csr_bus),
+    .wb_csr_bus(mem_csr_bus),
     //mem interface
     .addr(addr),//read/write address
     .en(en),//read/write enable
@@ -287,6 +334,10 @@ WB wb_syage(
     //ctrl flower
     .mem_ctrl_bus(mem_bus),
     .wb_ctrl_bus(wb_bus),
+    //csr bus 
+    .mem_csr_bus(mem_csr_bus),
+    .wb_csr_bus(wb_csr_bus),
+
     //bypass 
     .wb_bypass(wb_bypass),
     //shark hand
@@ -296,6 +347,57 @@ WB wb_syage(
     .right_ready(1'b1),//EXE stage is allowin
     .is_fire(wb_is_fire),
     .fire(1'b1)
+);
+
+CSR CSR(
+    .clk(clk),
+    .reset(reset),
+    //read bus
+    .csr_raddr(rd_csr_addr),
+    .csr_rdata(rd_csr_data),
+    //write bus
+    .csr_wr_en(wb_csr_bus[46:46]),
+    .csr_waddr(wb_csr_bus[45:32]),
+    .csr_wdata(wb_csr_bus[31:0]),
+
+    //excp
+    .excp_flush(),
+    .era_in(),
+    .ecode_in(),
+    .esubcode_in(),
+
+    //interrupt
+    .interrupt(intrpt),
+    .has_int(),
+
+    // csr regs for diff
+    .csr_crmd_diff      (csr_crmd_diff_0    ),
+    .csr_prmd_diff      (csr_prmd_diff_0    ),
+    .csr_ectl_diff      (csr_ectl_diff_0    ),
+    .csr_estat_diff     (csr_estat_diff_0   ),
+    .csr_era_diff       (csr_era_diff_0     ),
+    .csr_badv_diff      (csr_badv_diff_0    ),
+    .csr_eentry_diff    (csr_eentry_diff_0  ),
+    .csr_tlbidx_diff    (csr_tlbidx_diff_0  ),
+    .csr_tlbehi_diff    (csr_tlbehi_diff_0  ),
+    .csr_tlbelo0_diff   (csr_tlbelo0_diff_0 ),
+    .csr_tlbelo1_diff   (csr_tlbelo1_diff_0 ),
+    .csr_asid_diff      (csr_asid_diff_0    ),
+    .csr_save0_diff     (csr_save0_diff_0   ),
+    .csr_save1_diff     (csr_save1_diff_0   ),
+    .csr_save2_diff     (csr_save2_diff_0   ),
+    .csr_save3_diff     (csr_save3_diff_0   ),
+    .csr_tid_diff       (csr_tid_diff_0     ),
+    .csr_tcfg_diff      (csr_tcfg_diff_0    ),
+    .csr_tval_diff      (csr_tval_diff_0    ),
+    .csr_ticlr_diff     (csr_ticlr_diff_0   ),
+    .csr_llbctl_diff    (csr_llbctl_diff_0  ),
+    .csr_tlbrentry_diff (csr_tlbrentry_diff_0),
+    .csr_dmw0_diff      (csr_dmw0_diff_0    ),
+    .csr_dmw1_diff      (csr_dmw1_diff_0    ),
+    .csr_pgdl_diff      (csr_pgdl_diff_0    ),
+    .csr_pgdh_diff      (csr_pgdh_diff_0    )
+
 );
 
 ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
@@ -614,6 +716,38 @@ DifftestInstrCommit DifftestInstrCommit(
     .wdata(difftest_result),
     .csr_rstat(0),
     .csr_data(0)
+);
+
+DifftestCSRRegState DifftestCSRRegState(
+    .clock              (clk               ),
+    .coreid             (0                  ),
+    .crmd               (csr_crmd_diff_0    ),
+    .prmd               (csr_prmd_diff_0    ),
+    .euen               (0                  ),
+    .ecfg               (csr_ectl_diff_0    ),
+    .estat              (csr_estat_diff_0   ),
+    .era                (csr_era_diff_0     ),
+    .badv               (csr_badv_diff_0    ),
+    .eentry             (csr_eentry_diff_0  ),
+    .tlbidx             (csr_tlbidx_diff_0  ),
+    .tlbehi             (csr_tlbehi_diff_0  ),
+    .tlbelo0            (csr_tlbelo0_diff_0 ),
+    .tlbelo1            (csr_tlbelo1_diff_0 ),
+    .asid               (csr_asid_diff_0    ),
+    .pgdl               (csr_pgdl_diff_0    ),
+    .pgdh               (csr_pgdh_diff_0    ),
+    .save0              (csr_save0_diff_0   ),
+    .save1              (csr_save1_diff_0   ),
+    .save2              (csr_save2_diff_0   ),
+    .save3              (csr_save3_diff_0   ),
+    .tid                (csr_tid_diff_0     ),
+    .tcfg               (csr_tcfg_diff_0    ),
+    .tval               (csr_tval_diff_0    ),
+    .ticlr              (csr_ticlr_diff_0   ),
+    .llbctl             (csr_llbctl_diff_0  ),
+    .tlbrentry          (csr_tlbrentry_diff_0),
+    .dmw0               (csr_dmw0_diff_0    ),
+    .dmw1               (csr_dmw1_diff_0    )
 );
 
 DifftestGRegState DifftestGRegState(

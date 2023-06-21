@@ -3,8 +3,10 @@ module EXE (
     input wire clk,//clock
     input wire reset,//global reset
     input wire [`ctrl_width-1:0]id_ctrl_bus, //ctrl flower
+    input wire [`id_csr_ctrl_width-1:0]id_csr_ctrl_bus,
 
     output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
+    output wire [`ex_csr_ctrl_width-1:0]ex_csr_ctrl_bus,
     //bypass
     output wire [`bypass_width-1:0]ex_bypass,
 
@@ -71,6 +73,17 @@ wire div_valid;
 wire [31:0]quotient;
 wire [31:0]remainder;
 
+//csr
+wire csr_we;//csr write enable
+wire [13:0]csr_idx;//csr write and read addr
+wire csr_mask_en;// csr mask enbale
+wire [31:0]csr_data;// csr read data
+wire rd_from_csr;// rd result is from csr_data
+
+wire [31:0]wr_csr_data;
+wire [31:0]wr_csr_mask;
+
+reg [`ex_csr_ctrl_width-1:0]csr_bus_temp;
 
 wire branch_flag;
 //mem_bypass 
@@ -99,6 +112,14 @@ assign {
     reg1,// 32:63
     Imm// 0:31
 }=id_ctrl_bus;
+
+assign {
+    csr_we,//49:49
+    csr_idx,//48:34
+    csr_mask_en,//33:33
+    csr_data,//32:1
+    rd_from_csr//0:0
+} = id_csr_ctrl_bus;
 
 assign src1 = (select_src1[1])? PC:
               (select_src1[0])? Imm:
@@ -146,6 +167,10 @@ assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
                         ({32{mul_div_op[3]}} & quotient); 
 assign is_mul = (mul_div_op[0]  | mul_div_op[2]) & right_ready;
 assign is_div = (mul_div_op[3]  | mul_div_op[1]) & right_ready;
+//csr 
+assign wr_csr_data = (src2 & wr_csr_mask) | (csr_data & ~wr_csr_data);
+assign wr_csr_mask = (csr_mask_en)? src1:32'hffffffff;
+
 // booth multiplier
 // Booth_MUL MUL(
 //     .clock(clk),
@@ -217,6 +242,7 @@ end
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         ctrl_temp_bus <= `ex_ctrl_width'h0;
+        csr_bus_temp <= `ex_csr_ctrl_width'h0;
     end
     else begin 
         if(logic_valid & right_ready) begin 
@@ -234,6 +260,11 @@ always @(posedge clk) begin
                     bypass_reg1,// 32:63
                     write_data// 0:31
                     };
+            csr_bus_temp <= {
+                csr_we,//46:46
+                csr_idx,//45:32
+                wr_csr_data//31:0
+            };
         end
     end
 end
@@ -242,13 +273,15 @@ assign right_valid=valid;
 assign logic_valid = !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
 assign left_ready= (!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
+assign ex_csr_ctrl_bus = csr_bus_temp;
 assign ex_bypass = {alu_result,wreg_index,wreg_en & left_valid};
 
 assign is_branch = (branch_flag) & left_valid & right_ready;
 assign flush = branch_flag & left_valid & right_ready;
 assign dnpc = alu_result;
 
-assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:alu_result;
+assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:
+                    rd_from_csr ? csr_data:alu_result;
 
 assign is_fire = logic_valid & right_ready;
 

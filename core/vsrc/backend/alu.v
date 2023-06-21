@@ -61,7 +61,7 @@ assign sll_result = adder_a << adder_b[4:0];
 assign srl_result = adder_a >> adder_b[4:0];
 assign sltu_result = (adder_a < adder_b) ? 32'h1:32'h0;
 assign nor_result = ~(adder_a | adder_b);
-assign sltu_result = ($signed(adder_a) < $signed(adder_b)) ? 32'h1:32'h0;
+assign slt_result = ($signed(adder_a) < $signed(adder_b)) ? 32'h1:32'h0;
 
 
 assign alu_result = ({32{op_add | op_sub}} & adder_result) | 
@@ -73,6 +73,7 @@ assign alu_result = ({32{op_add | op_sub}} & adder_result) |
                     ({32{op_sll}} & sll_result) |
                     ({32{op_srl}} & srl_result) |
                     ({32{op_sltu}} & sltu_result) |
-                    ({32{op_nor}} & nor_result);
+                    ({32{op_nor}} & nor_result) |
+                    ({32{op_slt}} & slt_result);
 
 endmodule //alu
