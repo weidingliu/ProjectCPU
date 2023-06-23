@@ -21,6 +21,10 @@ module ID (
     output [13:0] rd_csr_addr,
     input  [31:0] rd_csr_data,
     output wire [`id_csr_ctrl_width-1:0] id_csr_ctrl,
+    // excp bus and some sign for excp
+    output wire [`id_excp_width-1:0] id_excp_bus,
+    input wire excp_flush,
+    input wire [1:0]plv,
 
     //ctrl flower
     output wire [`ctrl_width-1:0]ctrl_bus,//ctrl bus
@@ -150,6 +154,7 @@ wire inst_mod_wu;
 wire inst_csrrd;
 wire inst_csrwr;
 wire inst_csrxchg;
+wire inst_syscall;
 
 wire logic_valid;
 wire is_sign_extend;
@@ -160,6 +165,14 @@ wire csr_mask_en;// csr mask enbale
 wire [31:0]csr_data;// csr read data
 wire rd_from_csr;// rd result is from csr_data
 reg [`id_csr_ctrl_width-1:0]csr_ctrl_temp;
+
+// excp and interrupt
+wire excp;
+wire [8:0]excp_num;
+reg [`id_excp_width-1:0]excp_bus_temp;
+wire excp_ine;
+wire excp_ipe;
+wire is_kernel_inst;
 
 /*
 *    op_mem[0] is mem inst
@@ -326,9 +339,10 @@ assign inst_bltu      = decoder_op_31_26[6'h1a];
 assign inst_bgeu      = decoder_op_31_26[6'h1b];
 // assign inst_ll_w       = op_31_26_d[6'h08] & ~ds_inst[25] & ~ds_inst[24];
 // assign inst_sc_w       = op_31_26_d[6'h08] & ~ds_inst[25] &  ds_inst[24];
-assign inst_csrrd      = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5'h00];
-assign inst_csrwr      = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5'h01];
-assign inst_csrxchg    = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & (~rj_d[5'h00] & ~rj_d[5'h01]);  //rj != 0,1
+assign inst_csrrd     = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5'h00];
+assign inst_csrwr     = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5'h01];
+assign inst_csrxchg   = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & (~rj_d[5'h00] & ~rj_d[5'h01]);  //rj != 0,1
+assign inst_syscall   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h16];
 
 
 
@@ -342,11 +356,12 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                     | inst_st_b | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
                     | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
-                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg);
+                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_syscall);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
 assign ctrl_bus= bus_temp;
+assign id_excp_bus = excp_bus_temp;
 assign reg_index1=rj;
 assign reg_index2=(is_rd)? rd:rk;
 assign wreg_index=(is_r1)? 5'h1:rd;
@@ -367,6 +382,14 @@ assign csr_data = rd_csr_data;
 assign rd_csr_addr = csr_idx;
 assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg;
 
+// for excp 
+assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg;
+assign excp_ine = ~inst_valid & left_valid;// inst is invalid
+assign excp_ipe = is_kernel_inst & (plv == 2'b11); // privilege level is falut
+assign excp = excp_ine | excp_ipe | inst_syscall | inst_break;
+assign excp_num = {excp_ipe,excp_ine,inst_break,inst_syscall,4'b0,1'b0};
+
+
 
 //op number decoder
 // assign src1 = (select_src1[1])? PC:
@@ -384,7 +407,7 @@ assign valid_temp = ((fire? 1'b0:valid) | logic_valid & right_ready) & !flush;
 
 //shark hands
 always @(posedge clk) begin
-    if(reset == `RestEn) begin
+    if(reset == `RestEn || excp_flush) begin
         valid <= `false; 
     end
     else begin 
@@ -423,6 +446,7 @@ always @(posedge clk) begin
     if(reset == `RestEn) begin 
         bus_temp <= `ctrl_width'h0;
         csr_ctrl_temp <= `id_csr_ctrl_width'h0;
+        excp_bus_temp <= `id_excp_width'h0;
     end
     // else if(flush == 1'b1) begin 
     //     bus_temp <= `ctrl_width'h0;
@@ -455,6 +479,10 @@ always @(posedge clk) begin
                 csr_mask_en,//33:33
                 csr_data,//32:1
                 rd_from_csr//0:0
+            };
+            excp_bus_temp <= {
+                excp_num,//9:2
+                excp//0:0
             };
         end
     end

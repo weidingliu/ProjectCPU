@@ -2,6 +2,7 @@
 module MEM (
     input wire clk,//clock
     input wire reset,//global reset
+    input wire excp_flush,
     //ctrl bus
     input wire [`ex_ctrl_width-1:0] mem_ctrl_bus,
     output wire [`mem_ctrl_width-1:0] wb_ctrl_bus,
@@ -9,6 +10,10 @@ module MEM (
         //csr
     input wire [`ex_csr_ctrl_width-1:0] mem_csr_bus,
     output wire [`ex_csr_ctrl_width-1:0] wb_csr_bus,
+    //excp 
+    input wire [`ex_excp_width-1:0]ex_excp_bus,
+    output wire [`mem_excp_width-1:0]mem_excp_bus,
+
     //mem interface
     output wire [31:0]addr,//read/write address
     output wire en,//mem enable
@@ -30,6 +35,9 @@ module MEM (
 );
 //shark hands
 // wire right_fire;
+//excp 
+
+reg [`mem_excp_width-1:0]excp_temp;
 
 reg valid;
 wire logic_valid;
@@ -122,7 +130,7 @@ assign half_load = (
 );
 
 //for sram
-assign en = op_mem[0] & inst_valid & left_valid;
+assign en = op_mem[0] & inst_valid & left_valid & !excp_flush;
 assign we = op_mem[2];
 assign addr = alu_result;
 assign wdata = op_mem[3] ? src2:
@@ -145,7 +153,7 @@ assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
 
 //shark hands
 always @(posedge clk) begin
-    if(reset == `RestEn) begin
+    if(reset == `RestEn || excp_flush) begin
         valid <= `false; 
     end
     else begin 
@@ -165,6 +173,7 @@ always @(posedge clk) begin
     if(reset == `RestEn) begin 
         bus_temp <= `mem_ctrl_width'h0;
         csr_bus_temp <= `ex_csr_ctrl_width'h0;
+        excp_temp <= `mem_excp_width'h0;
     end
     else begin 
         if(logic_valid & right_ready) begin 
@@ -178,6 +187,7 @@ always @(posedge clk) begin
                     mem_result// 0:31
                     };
             csr_bus_temp <= mem_csr_bus;
+            excp_temp <= ex_excp_bus;
         end
     end
 end
@@ -187,6 +197,7 @@ assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid)) | !lef
 assign left_ready= (en && (we && !write_finish || !we && !rdata_valid)) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
+assign mem_excp_bus = excp_temp;
 assign mem_bypass = {mem_result,wreg_index,wreg_en & left_valid};
 assign is_fire = logic_valid & right_ready;
 

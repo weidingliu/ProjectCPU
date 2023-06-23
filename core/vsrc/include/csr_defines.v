@@ -36,3 +36,20 @@
 `define KLO 2:2
 
 
+`define ECODE_INT  6'h0
+`define ECODE_PIL  6'h1
+`define ECODE_PIS  6'h2
+`define ECODE_PIF  6'h3
+`define ECODE_PME  6'h4
+`define ECODE_PPI  6'h7
+`define ECODE_ADEF 6'h8
+`define ECODE_ALE  6'h9
+`define ECODE_SYS  6'hb
+`define ECODE_BRK  6'hc
+`define ECODE_INE  6'hd
+`define ECODE_IPE  6'he
+`define ECODE_FPD  6'hf
+`define ECODE_TLBR 6'h3f
+
+`define ESUBCODE_ADEF  9'h0
+

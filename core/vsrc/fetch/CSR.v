@@ -18,6 +18,12 @@ module CSR (
     input wire [5:0]ecode_in,
     input wire [8:0]esubcode_in,
 
+    //for if 
+    output wire [31:0]eentry_out,
+
+    //for generate
+    output wire [1:0] plv_out,
+
     //interrupt
     input wire[7:0]interrupt,
     output wire has_int,
@@ -128,9 +134,15 @@ reg [31:0]csr_save0;
 reg [31:0]csr_save1;
 reg [31:0]csr_save2;
 reg [31:0]csr_save3;
-reg csr_llbit;
-reg [31:0]csr_llbctl;
+reg llbit;
+reg [31:0]llbctl;
 // reg[31:0] csr_era;
+
+assign plv_out = {2{excp_flush}} & 2'b0            |
+                //  {2{ertn_flush}} & csr_prmd[`PPLV] |
+                 {2{crmd_wen  }} & csr_wdata[`PLV];   //|
+                //  {2{!excp_flush && !ertn_flush && !crmd_wen}} & csr_crmd[`PLV];
+assign eentry_out = eentry;
 
 //crmd
 always @(posedge clk) begin
@@ -277,15 +289,43 @@ end
 // llbit
 always @(posedge clk) begin
     if(reset) begin 
-        csr_llbctl[`KLO] <= 1'b0;
-        csr_llbctl[31:3] <= 29'b0;
-        csr_llbit <= 1'b0;
+        llbctl[`KLO] <= 1'b0;
+        llbctl[31:3] <= 29'b0;
+        llbit <= 1'b0;
     end
     else begin 
 
     end
 end
 
+
+//difftest
+assign csr_crmd_diff        = crmd;
+assign csr_prmd_diff        = prmd;
+assign csr_ectl_diff        = ecfg;
+assign csr_estat_diff       = estat;
+assign csr_era_diff         = era;
+assign csr_badv_diff        = badv;
+assign csr_eentry_diff      = eentry;
+// assign csr_tlbidx_diff      = tlbidx;
+// assign csr_tlbehi_diff      = tlbehi;
+// assign csr_tlbelo0_diff     = tlbelo0;
+// assign csr_tlbelo1_diff     = tlbelo1;
+// assign csr_asid_diff        = asid;
+assign csr_save0_diff       = csr_save0;
+assign csr_save1_diff       = csr_save1;
+assign csr_save2_diff       = csr_save2;
+assign csr_save3_diff       = csr_save3;
+// assign csr_tid_diff         = tid;
+// assign csr_tcfg_diff        = tcfg;
+// assign csr_tval_diff        = tval;
+// assign csr_ticlr_diff       = ticlr;
+// assign csr_llbctl_diff      = {llbctl[31:1], llbit};
+// assign csr_tlbrentry_diff   = tlbrentry;
+// assign csr_dmw0_diff        = dmw0;
+// assign csr_dmw1_diff        = dmw1;
+// assign csr_pgdl_diff        = pgdl;
+// assign csr_pgdh_diff        = pgdh;
 
 endmodule //CSR
 

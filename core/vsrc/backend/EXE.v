@@ -4,9 +4,15 @@ module EXE (
     input wire reset,//global reset
     input wire [`ctrl_width-1:0]id_ctrl_bus, //ctrl flower
     input wire [`id_csr_ctrl_width-1:0]id_csr_ctrl_bus,
+    input wire excp_flush,
 
     output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
+    //csr
     output wire [`ex_csr_ctrl_width-1:0]ex_csr_ctrl_bus,
+    //excp
+    input wire [`id_excp_width-1:0]id_excp_bus,
+    output wire [`ex_excp_width-1:0]ex_excp_bus,
+
     //bypass
     output wire [`bypass_width-1:0]ex_bypass,
 
@@ -84,6 +90,8 @@ wire [31:0]wr_csr_data;
 wire [31:0]wr_csr_mask;
 
 reg [`ex_csr_ctrl_width-1:0]csr_bus_temp;
+//excp
+reg [`ex_excp_width-1:0] excp_temp;
 
 wire branch_flag;
 //mem_bypass 
@@ -168,7 +176,7 @@ assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
 assign is_mul = (mul_div_op[0]  | mul_div_op[2]) & right_ready;
 assign is_div = (mul_div_op[3]  | mul_div_op[1]) & right_ready;
 //csr 
-assign wr_csr_data = (src2 & wr_csr_mask) | (csr_data & ~wr_csr_data);
+assign wr_csr_data = (src2 & wr_csr_mask) | (csr_data & ~wr_csr_mask);
 assign wr_csr_mask = (csr_mask_en)? src1:32'hffffffff;
 
 // booth multiplier
@@ -224,7 +232,7 @@ assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
 
 //shark hands
 always @(posedge clk) begin
-    if(reset == `RestEn) begin
+    if(reset == `RestEn || excp_flush) begin
         valid <= `false; 
     end
     else begin 
@@ -243,6 +251,7 @@ always @(posedge clk) begin
     if(reset == `RestEn) begin 
         ctrl_temp_bus <= `ex_ctrl_width'h0;
         csr_bus_temp <= `ex_csr_ctrl_width'h0;
+        excp_temp <= `ex_excp_width'h0;
     end
     else begin 
         if(logic_valid & right_ready) begin 
@@ -265,6 +274,7 @@ always @(posedge clk) begin
                 csr_idx,//45:32
                 wr_csr_data//31:0
             };
+            excp_temp <= id_excp_bus;
         end
     end
 end
@@ -274,6 +284,7 @@ assign logic_valid = !left_valid | (left_valid & (!mul_valid && is_mul || !div_v
 assign left_ready= (!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
 assign ex_csr_ctrl_bus = csr_bus_temp;
+assign ex_excp_bus = excp_temp;
 assign ex_bypass = {alu_result,wreg_index,wreg_en & left_valid};
 
 assign is_branch = (branch_flag) & left_valid & right_ready;

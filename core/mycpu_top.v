@@ -114,9 +114,10 @@ wire [63:0] if_bus;
 wire if_right_valid;
 wire if_right_ready;
 
-///ID stage signal
+//ID stage signal
 wire [`ctrl_width-1:0] id_bus;
 wire [`id_csr_ctrl_width-1:0] id_csr_bus;
+wire [`id_excp_width-1:0] id_excp_bus;
 wire [4:0] reg_index1;
 wire [4:0] reg_index2;
 wire [31:0] reg_data1;
@@ -130,6 +131,7 @@ wire [31:0] rd_csr_data;
 
 //EXE stage signal
 wire [`ex_ctrl_width-1:0] ex_bus;
+wire [`ex_excp_width-1:0]ex_excp_bus;
 wire ex_right_valid;
 wire ex_right_ready;
 wire [`bypass_width-1:0] ex_bypass;
@@ -141,6 +143,7 @@ wire [`ex_csr_ctrl_width-1:0]ex_csr_bus;
 
 //MEM stage signal
 wire [`mem_ctrl_width-1:0] mem_bus;
+wire [`mem_excp_width-1:0] mem_excp_bus;
 wire mem_right_valid;
 wire mem_right_ready;
 wire [`bypass_width-1:0] mem_bypass;
@@ -155,6 +158,10 @@ wire [`bypass_width-1:0] wb_bypass;
 wire wb_is_fire;
 wire wb_valid;
 wire [`ex_csr_ctrl_width-1:0] wb_csr_bus;
+wire excp_flush;
+wire [31:0]excp_era;
+wire [8:0]esubcode;
+wire [5:0]ecode;
 
 //difftest
 reg [`mem_ctrl_width-1:0] difftest_bus;
@@ -250,6 +257,9 @@ IF if_stage(
     .PC(PC), //inst addr
     .Inst(inst),//inst
     .data_bus(if_bus),
+    //excp 
+    .excp_flush(excp_flush),
+    .eentry(eentry_out),
     //branch 
     .flush(flush),
     .is_branch(is_branch),
@@ -282,6 +292,10 @@ ID id_stage(
     .id_csr_ctrl(id_csr_bus),
     .rd_csr_addr(rd_csr_addr),
     .rd_csr_data(rd_csr_data),
+    //excp
+    .id_excp_bus(id_excp_bus),
+    .excp_flush(excp_flush),
+    .plv(plv_out),
     //shark hand
     // input wire right_fire,//right data consumed
     .left_valid(if_right_valid),//IF stage's data is ready
@@ -325,6 +339,10 @@ EXE exe_stage(
     //csr bus
     .id_csr_ctrl_bus(id_csr_bus),
     .ex_csr_ctrl_bus(ex_csr_bus),
+    //excp
+    .id_excp_bus(id_excp_bus),
+    .ex_excp_bus(ex_excp_bus),
+    .excp_flush(excp_flush),
     //bypass
     .ex_bypass(ex_bypass),
     //mem_bypass
@@ -351,6 +369,10 @@ MEM mem_stage(
     //csr bus 
     .mem_csr_bus(ex_csr_bus),
     .wb_csr_bus(mem_csr_bus),
+    //excp 
+    .ex_excp_bus(ex_excp_bus),
+    .mem_excp_bus(mem_excp_bus),
+    .excp_flush(excp_flush),
     //mem interface
     .addr(addr),//read/write address
     .en(en),//read/write enable
@@ -380,6 +402,12 @@ WB wb_syage(
     //csr bus 
     .mem_csr_bus(mem_csr_bus),
     .wb_csr_bus(wb_csr_bus),
+    //excp
+    .mem_excp_bus(mem_excp_bus),
+    .excp_flush(excp_flush),
+    .excp_era(excp_era),
+    .esubcode(esubcode),
+    .ecode(ecode),
 
     //bypass 
     .wb_bypass(wb_bypass),
@@ -404,10 +432,15 @@ CSR CSR(
     .csr_wdata(wb_csr_bus[31:0]),
 
     //excp
-    .excp_flush(),
-    .era_in(),
-    .ecode_in(),
-    .esubcode_in(),
+    .excp_flush(excp_flush),
+    .era_in(excp_era),
+    .ecode_in(ecode),
+    .esubcode_in(esubcode),
+
+    .eentry_out(eentry_out),
+
+    //for generate
+    .plv_out(plv_out),
 
     //interrupt
     .interrupt(intrpt),

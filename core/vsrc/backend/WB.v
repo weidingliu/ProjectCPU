@@ -1,3 +1,5 @@
+`include "csr_defines.v"
+
 module WB (
     input wire clk,//clock
     input wire reset,//global reset
@@ -8,6 +10,12 @@ module WB (
     //csr
     input wire [`ex_csr_ctrl_width-1:0] mem_csr_bus,
     output wire [`ex_csr_ctrl_width-1:0] wb_csr_bus,
+    //exception
+    input wire [`mem_excp_width-1:0]mem_excp_bus,
+    output wire excp_flush,
+    output wire [31:0]excp_era,
+    output wire [8:0]esubcode,
+    output wire [5:0]ecode,
 
     //bypass
     output wire [`bypass_width-1:0]wb_bypass,
@@ -26,10 +34,64 @@ reg valid;
 reg [`mem_ctrl_width-1:0]bus_temp;
 reg [`ex_csr_ctrl_width-1:0] csr_bus_temp;
 wire logic_valid;
+wire is_break;
+wire inst_valid;
+wire [4:0]wreg_index;
+wire wreg_en;
+wire [31:0]Inst;
+wire [31:0]PC;
+wire [31:0]mem_result;
 // wire inst_valid;
 
-// assign inst_valid = left_valid? mem_ctrl_bus[102:102]:1'b0;
+assign {
+        is_break,//103:103
+        inst_valid,//102:102
+        wreg_index,//97:101
+        wreg_en,//96:96
+        Inst,// 64:95
+        PC,// 32:63
+        mem_result// 0:31
+} = mem_ctrl_bus;
 
+//excp
+wire ms_excp;
+wire [8:0]excp_num;
+
+assign {
+    excp_num,
+    ms_excp 
+} = mem_excp_bus;
+
+
+assign excp_flush = ms_excp & inst_valid & left_valid;
+/*
+excp_num[0]  int
+        [1]  adef
+        [2]  tlbr    |inst tlb exceptions
+        [3]  pif     |
+        [4]  ppi     |
+        [5]  syscall
+        [6]  brk
+        [7]  ine
+        [8]  ipe
+        [9]  ale
+        [10] <null>
+        [11] tlbr    |
+        [12] pme     |data tlb exceptions
+        [13] ppi     |
+        [14] pis     |
+        [15] pil     |
+        
+*/
+assign {
+    ecode,
+    esubcode
+} = excp_num[5] ? {`ECODE_SYS , 9'b0} :
+    excp_num[6] ? {`ECODE_BRK , 9'b0} :
+    excp_num[7] ? {`ECODE_INE , 9'b0} :
+    excp_num[8] ? {`ECODE_IPE , 9'b0} : 15'b0;
+
+assign excp_era = PC;
 
 
 // assign right_fire=right_ready & right_valid;//data submit finish
