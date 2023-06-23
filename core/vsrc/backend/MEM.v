@@ -25,6 +25,7 @@ module MEM (
     input wire write_finish,
     //bypass
     output wire [`bypass_width-1:0]mem_bypass,
+    output wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass,
     //shark hand
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
@@ -198,6 +199,7 @@ assign left_ready= (en && (we && !write_finish || !we && !rdata_valid)) ? 1'b0:1
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
 assign mem_excp_bus = excp_temp;
+assign mem_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
 assign mem_bypass = {mem_result,wreg_index,wreg_en & left_valid};
 assign is_fire = logic_valid & right_ready;
 

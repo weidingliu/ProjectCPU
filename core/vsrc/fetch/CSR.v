@@ -186,7 +186,7 @@ always @(posedge clk) begin
             prmd[`PPLV] <= crmd[`PLV];
             prmd[ `PIE] <= crmd[`IE ];
         end
-        else if(crmd_wen) begin 
+        else if(prmd_wen) begin 
             prmd[ `PPLV] <=  csr_wdata[ `PPLV];
             prmd[  `PIE] <=  csr_wdata[  `PIE];
         end
@@ -326,6 +326,37 @@ assign csr_save3_diff       = csr_save3;
 // assign csr_dmw1_diff        = dmw1;
 // assign csr_pgdl_diff        = pgdl;
 // assign csr_pgdh_diff        = pgdh;
+
+assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
+                    {32{csr_raddr == CRMD  }}  & crmd    |
+                   {32{csr_raddr == PRMD  }}  & prmd    |
+                   {32{csr_raddr== ECTL  }}  & ecfg    |
+                    {32{csr_raddr == ESTAT }}  & estat   |
+                    {32{csr_raddr == ERA   }}  & era	    |
+                    // {32{csr_raddr == BADV  }}  & csr_badv    |
+                    {32{csr_raddr == EENTRY}}  & eentry  |
+                    // {32{csr_raddr == TLBIDX}}  & csr_tlbidx  |
+                    // {32{csr_raddr == TLBEHI}}  & csr_tlbehi  |
+                    // {32{csr_raddr == TLBELO0}} & csr_tlbelo0 |
+                    // {32{csr_raddr == TLBELO1}} & csr_tlbelo1 |
+                    // {32{csr_raddr == ASID  }}  & csr_asid    |
+                    // {32{csr_raddr == PGDL  }}  & csr_pgdl    |
+                    // {32{csr_raddr == PGDH  }}  & csr_pgdh    |
+                    // {32{csr_raddr == PGD   }}  & csr_pgd     |
+                    {32{csr_raddr == CPUID }}  & cpuid   |
+                    {32{csr_raddr == SAVE0 }}  & csr_save0   |
+                    {32{csr_raddr == SAVE1 }}  & csr_save1   |
+                    {32{csr_raddr == SAVE2 }}  & csr_save2   |
+                    {32{csr_raddr == SAVE3 }}  & csr_save3;//   |
+                    // {32{csr_raddr == TID   }}  & csr_tid     |
+                    // {32{csr_raddr == TCFG  }}  & csr_tcfg    |
+                    // {32{csr_raddr == CNTC  }}  & csr_cntc    |
+                    // {32{csr_raddr == TICLR }}  & csr_ticlr   |
+                    // {32{csr_raddr == LLBCTL}}  & {csr_llbctl[31:1], llbit} |
+                    // {32{csr_raddr == TVAL  }}  & csr_tval    |
+                    // {32{csr_raddr == TLBRENTRY}} & csr_tlbrentry   |
+                    // {32{csr_raddr == DMW0}}    & csr_dmw0    |
+                    // {32{csr_raddr == DMW1}}    & csr_dmw1    ;
 
 endmodule //CSR
 

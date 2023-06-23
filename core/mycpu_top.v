@@ -151,6 +151,7 @@ wire mem_is_fire;
 wire rdata_valid;
 wire write_finish;
 wire [`ex_csr_ctrl_width-1:0] mem_csr_bus;
+wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass;
 
 //WB stage signal
 wire [`mem_ctrl_width-1:0] wb_bus;
@@ -162,6 +163,13 @@ wire excp_flush;
 wire [31:0]excp_era;
 wire [8:0]esubcode;
 wire [5:0]ecode;
+wire [`ex_csr_ctrl_width-1:0]wb_csr_bypass;
+
+// csr
+wire [31:0]eentry_out;
+
+    //for generate
+wire [1:0] plv_out;
 
 //difftest
 reg [`mem_ctrl_width-1:0] difftest_bus;
@@ -347,6 +355,10 @@ EXE exe_stage(
     .ex_bypass(ex_bypass),
     //mem_bypass
     .mem_bypass(mem_bypass),
+    //csr bypass
+    .mem_csr_bypass(mem_csr_bypass),
+    .wb_csr_bypass(wb_csr_bypass),
+
     //branch
     .flush(flush),
     .is_branch(is_branch),
@@ -384,6 +396,7 @@ MEM mem_stage(
     .write_finish(write_finish),
     //bypass 
     .mem_bypass(mem_bypass),
+    .mem_csr_bypass(mem_csr_bypass),
     //shark hand
     .left_valid(ex_right_valid),//EX stage's data is ready
     .left_ready(ex_right_ready),//MEM stage is allowin
@@ -411,6 +424,7 @@ WB wb_syage(
 
     //bypass 
     .wb_bypass(wb_bypass),
+    .wb_csr_bypass(wb_csr_bypass),
     //shark hand
     .left_valid(mem_right_valid),//IF stage's data is ready
     .left_ready(mem_right_ready),//ID stage is allowin

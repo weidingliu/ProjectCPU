@@ -17,6 +17,9 @@ module EXE (
     output wire [`bypass_width-1:0]ex_bypass,
 
     input wire [`bypass_width-1:0]mem_bypass,
+
+    input wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass,
+    input wire [`ex_csr_ctrl_width-1:0]wb_csr_bypass,
     
     //branch
     output wire is_branch,
@@ -99,6 +102,29 @@ assign bypass_en1 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index1) & 
 assign bypass_en2 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index2) & (mem_bypass[5:1] != 5'h0); 
 assign bypass_reg1 = bypass_en1 ? mem_bypass[37:6]:reg1;
 assign bypass_reg2 = bypass_en2 ? mem_bypass[37:6]:reg2;
+//csr bypass
+wire mem_bypass_csr_we;
+wire [13:0]mem_bypass_csr_idx;
+wire [31:0]mem_bypass_csr_data;
+wire wb_bypass_csr_we;
+wire [13:0]wb_bypass_csr_idx;
+wire [31:0]wb_bypass_csr_data;
+wire [31:0]real_csr_data;
+assign  {
+                mem_bypass_csr_we,//46:46
+                mem_bypass_csr_idx,//45:32
+                mem_bypass_csr_data//31:0
+} = mem_csr_bypass;
+assign  {
+                wb_bypass_csr_we,//46:46
+                wb_bypass_csr_idx,//45:32
+                wb_bypass_csr_data//31:0
+} = wb_csr_bypass;
+
+assign real_csr_data = (wb_bypass_csr_we & (wb_bypass_csr_idx == csr_idx)) ? wb_bypass_csr_data :
+                        (mem_bypass_csr_we & (mem_bypass_csr_idx == csr_idx)) ? mem_bypass_csr_data :csr_data;
+                        
+
 //bus
 assign {
     mul_div_op,//211:214
@@ -176,7 +202,7 @@ assign mul_div_result = ({32{mul_div_op[0]}} & mul_lo)|
 assign is_mul = (mul_div_op[0]  | mul_div_op[2]) & right_ready;
 assign is_div = (mul_div_op[3]  | mul_div_op[1]) & right_ready;
 //csr 
-assign wr_csr_data = (src2 & wr_csr_mask) | (csr_data & ~wr_csr_mask);
+assign wr_csr_data = (src2 & wr_csr_mask) | (real_csr_data & ~wr_csr_mask);
 assign wr_csr_mask = (csr_mask_en)? src1:32'hffffffff;
 
 // booth multiplier
@@ -292,7 +318,7 @@ assign flush = branch_flag & left_valid & right_ready;
 assign dnpc = alu_result;
 
 assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:
-                    rd_from_csr ? csr_data:alu_result;
+                    rd_from_csr ? real_csr_data:alu_result;
 
 assign is_fire = logic_valid & right_ready;
 

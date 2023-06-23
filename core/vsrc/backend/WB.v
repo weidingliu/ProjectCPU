@@ -19,6 +19,7 @@ module WB (
 
     //bypass
     output wire [`bypass_width-1:0]wb_bypass,
+    output wire [`ex_csr_ctrl_width-1:0]wb_csr_bypass,
     //shark hand
     input wire left_valid,//IF stage's data is ready
     output wire left_ready,//ID stage is allowin
@@ -132,6 +133,7 @@ assign logic_valid = left_valid;
 assign left_ready=right_ready;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
+assign wb_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
 assign wb_bypass = {mem_ctrl_bus[31:0],mem_ctrl_bus[101:97],mem_ctrl_bus[96:96] & left_valid};
 
 endmodule //WB
