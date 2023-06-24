@@ -3,6 +3,7 @@ module MEM (
     input wire clk,//clock
     input wire reset,//global reset
     input wire excp_flush,
+    input wire ertn_flush,
     //ctrl bus
     input wire [`ex_ctrl_width-1:0] mem_ctrl_bus,
     output wire [`mem_ctrl_width-1:0] wb_ctrl_bus,
@@ -154,7 +155,7 @@ assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
 
 //shark hands
 always @(posedge clk) begin
-    if(reset == `RestEn || excp_flush) begin
+    if(reset == `RestEn || excp_flush  || ertn_flush) begin
         valid <= `false; 
     end
     else begin 

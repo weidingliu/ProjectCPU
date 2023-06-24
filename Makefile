@@ -31,5 +31,11 @@ update:
 clean_chiplab:
 	rm -rf $(OBJ_DIR)/*
 
+count_line:
+	@echo "total code line:"
+	@git ls-files | xargs cat | wc -l
+	@echo "total commit num:"
+	@git log --author='liuweidin' --since="2022-01-01" | grep -e 'commit [a-zA-Z0-9]*' | wc -l
+
 
 .PHONY: gitcommit update clean_chiplab

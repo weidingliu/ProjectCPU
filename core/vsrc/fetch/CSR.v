@@ -17,9 +17,12 @@ module CSR (
     input wire [31:0]era_in,
     input wire [5:0]ecode_in,
     input wire [8:0]esubcode_in,
+    input wire ertn_flush,
+    input wire [31:0]pc,
 
     //for if 
     output wire [31:0]eentry_out,
+    output wire [31:0]era_out,
 
     //for generate
     output wire [1:0] plv_out,
@@ -139,10 +142,11 @@ reg [31:0]llbctl;
 // reg[31:0] csr_era;
 
 assign plv_out = {2{excp_flush}} & 2'b0            |
-                //  {2{ertn_flush}} & csr_prmd[`PPLV] |
-                 {2{crmd_wen  }} & csr_wdata[`PLV];   //|
-                //  {2{!excp_flush && !ertn_flush && !crmd_wen}} & csr_crmd[`PLV];
+                 {2{ertn_flush}} & prmd[`PPLV] |
+                 {2{crmd_wen  }} & csr_wdata[`PLV] |
+                 {2{!excp_flush && !ertn_flush && !crmd_wen}} & crmd[`PLV];
 assign eentry_out = eentry;
+assign era_out = era;
 
 //crmd
 always @(posedge clk) begin
@@ -160,6 +164,10 @@ always @(posedge clk) begin
         if (excp_flush) begin
             crmd[ `PLV] <=  2'b0;
             crmd[  `IE] <=  1'b0;
+         end
+         else if(ertn_flush) begin 
+            crmd[ `PLV] <=  prmd[ `PLV];
+            crmd[  `IE] <=  prmd[  `IE];
          end
         else if(crmd_wen) begin 
             crmd[ `PLV] <= csr_wdata[ `PLV];
@@ -232,6 +240,9 @@ end
 always @(posedge clk) begin
     if (excp_flush) begin
         era <= era_in;
+    end
+    else if(excp_flush) begin 
+        era <= pc;
     end
     else if (era_wen) begin
         era <= csr_wdata;

@@ -120,9 +120,12 @@ wire [31:0]excp_era;
 wire [8:0]esubcode;
 wire [5:0]ecode;
 wire [`ex_csr_ctrl_width-1:0]wb_csr_bypass;
+wire ertn_flush;
+wire [31:0]wb_pc;
 
 // csr
 wire [31:0]eentry_out;
+wire [31:0]era_out;
 
     //for generate
 wire [1:0] plv_out;
@@ -224,7 +227,9 @@ IF if_stage(
     .data_bus(if_bus),
     //excp 
     .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
     .eentry(eentry_out),
+    .era(era_out),
     //branch 
     .flush(flush),
     .is_branch(is_branch),
@@ -260,6 +265,7 @@ ID id_stage(
     //excp
     .id_excp_bus(id_excp_bus),
     .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
     .plv(plv_out),
     //shark hand
     // input wire right_fire,//right data consumed
@@ -308,6 +314,7 @@ EXE exe_stage(
     .id_excp_bus(id_excp_bus),
     .ex_excp_bus(ex_excp_bus),
     .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
     //bypass
     .ex_bypass(ex_bypass),
     //mem_bypass
@@ -342,6 +349,7 @@ MEM mem_stage(
     .ex_excp_bus(ex_excp_bus),
     .mem_excp_bus(mem_excp_bus),
     .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
     //mem interface
     .addr(addr),//read/write address
     .en(en),//read/write enable
@@ -375,9 +383,11 @@ WB wb_syage(
     //excp
     .mem_excp_bus(mem_excp_bus),
     .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
     .excp_era(excp_era),
     .esubcode(esubcode),
     .ecode(ecode),
+    .pc(wb_pc),
 
     //bypass 
     .wb_bypass(wb_bypass),
@@ -407,8 +417,11 @@ CSR CSR(
     .era_in(excp_era),
     .ecode_in(ecode),
     .esubcode_in(esubcode),
-
+    .ertn_flush(ertn_flush),
+    .pc(wb_pc),
+    //for if
     .eentry_out(eentry_out),
+    .era_out(era_out),
 
     //for generate
     .plv_out(plv_out),
@@ -450,7 +463,7 @@ CSR CSR(
 ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .clk(clk),
     .reset(reset),
-    .flush(flush),
+    .flush((flush || excp_flush || ertn_flush)),
     
     //cpu request
     .ce(1'b1),

@@ -5,6 +5,7 @@ module EXE (
     input wire [`ctrl_width-1:0]id_ctrl_bus, //ctrl flower
     input wire [`id_csr_ctrl_width-1:0]id_csr_ctrl_bus,
     input wire excp_flush,
+    input wire ertn_flush,
 
     output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
     //csr
@@ -258,7 +259,7 @@ assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
 
 //shark hands
 always @(posedge clk) begin
-    if(reset == `RestEn || excp_flush) begin
+    if(reset == `RestEn || excp_flush || ertn_flush) begin
         valid <= `false; 
     end
     else begin 

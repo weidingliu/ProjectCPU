@@ -8,10 +8,13 @@ module IF (
     input reset,
     //excp
     input wire excp_flush,
+    input wire ertn_flush,
     input wire [31:0]eentry,
+    input wire [31:0]era,
     output wire[31:0] PC, //inst addr
     input wire [31:0]Inst,//inst
     output wire [63:0]data_bus,
+
 
     //branch
     input wire is_branch,
@@ -38,6 +41,9 @@ always @(posedge clk) begin
   end
   else if(excp_flush) begin 
     temp <= eentry;
+  end
+  else if(ertn_flush) begin 
+    temp <= era;
   end
   else if(is_branch == 1'b1) begin 
       temp <= dnpc;

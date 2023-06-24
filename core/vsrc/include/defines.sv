@@ -10,6 +10,6 @@
 `define id_csr_ctrl_width 49
 `define ex_csr_ctrl_width 47
 // for excp and interrupt
-`define id_excp_width 10
-`define ex_excp_width 10
-`define mem_excp_width 10
+`define id_excp_width 11
+`define ex_excp_width 11
+`define mem_excp_width 11

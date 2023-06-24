@@ -13,9 +13,11 @@ module WB (
     //exception
     input wire [`mem_excp_width-1:0]mem_excp_bus,
     output wire excp_flush,
+    output wire ertn_flush,
     output wire [31:0]excp_era,
     output wire [8:0]esubcode,
     output wire [5:0]ecode,
+    output wire [31:0]pc,
 
     //bypass
     output wire [`bypass_width-1:0]wb_bypass,
@@ -57,14 +59,18 @@ assign {
 //excp
 wire ms_excp;
 wire [8:0]excp_num;
+wire ertn;
 
 assign {
+    ertn,
     excp_num,
     ms_excp 
 } = mem_excp_bus;
 
 
 assign excp_flush = ms_excp & inst_valid & left_valid;
+assign ertn_flush = ertn & inst_valid & left_valid;
+assign pc = PC;
 /*
 excp_num[0]  int
         [1]  adef

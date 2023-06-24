@@ -24,6 +24,7 @@ module ID (
     // excp bus and some sign for excp
     output wire [`id_excp_width-1:0] id_excp_bus,
     input wire excp_flush,
+    input wire ertn_flush,
     input wire [1:0]plv,
 
     //ctrl flower
@@ -155,6 +156,7 @@ wire inst_csrrd;
 wire inst_csrwr;
 wire inst_csrxchg;
 wire inst_syscall;
+wire inst_ertn;
 
 wire logic_valid;
 wire is_sign_extend;
@@ -173,6 +175,7 @@ reg [`id_excp_width-1:0]excp_bus_temp;
 wire excp_ine;
 wire excp_ipe;
 wire is_kernel_inst;
+wire refetch;
 
 /*
 *    op_mem[0] is mem inst
@@ -343,7 +346,7 @@ assign inst_csrrd     = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5
 assign inst_csrwr     = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5'h01];
 assign inst_csrxchg   = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & (~rj_d[5'h00] & ~rj_d[5'h01]);  //rj != 0,1
 assign inst_syscall   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h16];
-
+assign inst_ertn      = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h10] & rk_d[5'h0e] & rj_d[5'h00] & rd_d[5'h00];
 
 
 // assign right_fire=right_ready & right_valid;//data submit finish
@@ -356,7 +359,7 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                     | inst_st_b | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
                     | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
-                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_syscall);
+                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_syscall | inst_ertn);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
@@ -383,13 +386,12 @@ assign rd_csr_addr = csr_idx;
 assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg;
 
 // for excp 
-assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg;
+assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn;
 assign excp_ine = ~inst_valid & left_valid;// inst is invalid
 assign excp_ipe = is_kernel_inst & (plv == 2'b11); // privilege level is falut
 assign excp = excp_ine | excp_ipe | inst_syscall | inst_break;
 assign excp_num = {excp_ipe,excp_ine,inst_break,inst_syscall,4'b0,1'b0};
-
-
+// assign refetch = (inst_ertn) & left_valid;
 
 //op number decoder
 // assign src1 = (select_src1[1])? PC:
@@ -407,7 +409,7 @@ assign valid_temp = ((fire? 1'b0:valid) | logic_valid & right_ready) & !flush;
 
 //shark hands
 always @(posedge clk) begin
-    if(reset == `RestEn || excp_flush) begin
+    if(reset == `RestEn || excp_flush || ertn_flush) begin
         valid <= `false; 
     end
     else begin 
@@ -481,6 +483,8 @@ always @(posedge clk) begin
                 rd_from_csr//0:0
             };
             excp_bus_temp <= {
+                // ertn,//11:11
+                inst_ertn,//10:10
                 excp_num,//9:2
                 excp//0:0
             };
