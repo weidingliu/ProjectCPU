@@ -408,7 +408,7 @@ CSR CSR(
     .csr_raddr(rd_csr_addr),
     .csr_rdata(rd_csr_data),
     //write bus
-    .csr_wr_en(wb_csr_bus[46:46]),
+    .csr_wr_en(wb_csr_bus[46:46] & wb_valid),
     .csr_waddr(wb_csr_bus[45:32]),
     .csr_wdata(wb_csr_bus[31:0]),
 

@@ -140,6 +140,10 @@ reg [31:0]csr_save3;
 reg llbit;
 reg [31:0]llbctl;
 // reg[31:0] csr_era;
+reg [31:0]tid;
+reg [31:0]tcfg;
+reg [31:0]tval;
+reg [31:0]ticlr;
 
 assign plv_out = {2{excp_flush}} & 2'b0            |
                  {2{ertn_flush}} & prmd[`PPLV] |
@@ -308,6 +312,44 @@ always @(posedge clk) begin
 
     end
 end
+// tid
+always @(posedge clk) begin
+    if(reset) begin 
+        tid <= 32'h0;
+    end
+    else begin 
+        if(tid_wen) begin 
+            tid <= csr_wdata;
+        end
+    end
+end
+//tcfg
+always @(posedge clk) begin
+    if (reset) begin
+        tcfg[`EN] <= 1'b0;
+    end
+    else if (tcfg_wen) begin
+        tcfg[      `EN] <= wr_data[      `EN];
+        tcfg[`PERIODIC] <= wr_data[`PERIODIC];
+        tcfg[ `INITVAL] <= wr_data[ `INITVAL];
+    end
+end
+
+//tval
+always @(posedge clk) begin
+    if (tcfg_wen) begin
+        tval <= {wr_data[ `INITVAL], 2'b0};
+    end
+    else if (timer_en) begin
+        if (tval != 32'b0) begin
+            tval <= tval - 32'b1;
+        end
+        else if (tval == 32'b0) begin
+            tval <= tcfg[`PERIODIC] ? {tcfg[`INITVAL], 2'b0} : 32'hffffffff;
+        end
+    end
+end
+
 
 
 //difftest
@@ -327,10 +369,10 @@ assign csr_save0_diff       = csr_save0;
 assign csr_save1_diff       = csr_save1;
 assign csr_save2_diff       = csr_save2;
 assign csr_save3_diff       = csr_save3;
-// assign csr_tid_diff         = tid;
-// assign csr_tcfg_diff        = tcfg;
-// assign csr_tval_diff        = tval;
-// assign csr_ticlr_diff       = ticlr;
+assign csr_tid_diff         = tid;
+assign csr_tcfg_diff        = tcfg;
+assign csr_tval_diff        = tval;
+assign csr_ticlr_diff       = ticlr;
 // assign csr_llbctl_diff      = {llbctl[31:1], llbit};
 // assign csr_tlbrentry_diff   = tlbrentry;
 // assign csr_dmw0_diff        = dmw0;

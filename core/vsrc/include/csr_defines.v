@@ -35,7 +35,7 @@
 `define WCLLB 1:1
 `define KLO 2:2
 
-
+//encode
 `define ECODE_INT  6'h0
 `define ECODE_PIL  6'h1
 `define ECODE_PIS  6'h2
@@ -52,4 +52,9 @@
 `define ECODE_TLBR 6'h3f
 
 `define ESUBCODE_ADEF  9'h0
+
+//tcfg 
+`define EN        0
+`define PERIODIC  1
+`define INITVAL   31:2
 
