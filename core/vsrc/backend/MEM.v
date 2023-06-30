@@ -152,7 +152,6 @@ assign mem_result=(op_mem[0] & !op_mem[2])?
 wire valid_temp;
 assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
  
-
 //shark hands
 always @(posedge clk) begin
     if(reset == `RestEn || excp_flush  || ertn_flush) begin

@@ -24,6 +24,7 @@ module CSR (
     output wire [31:0]eentry_out,
     output wire [31:0]era_out,
 
+
     //for generate
     output wire [1:0] plv_out,
 
