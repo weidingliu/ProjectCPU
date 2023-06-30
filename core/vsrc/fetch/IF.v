@@ -60,7 +60,7 @@ assign PC=temp;
 
 //shark hands
 always @(posedge clk) begin 
-    if(reset == `RestEn | excp_flush) begin 
+    if(reset == `RestEn | excp_flush | ertn_flush) begin 
       valid <= `false;
     end
     else if(flush) begin 

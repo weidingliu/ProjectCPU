@@ -68,8 +68,8 @@ assign {
 } = mem_excp_bus;
 
 
-assign excp_flush = ms_excp & inst_valid & left_valid;
-assign ertn_flush = ertn & inst_valid & left_valid;
+assign excp_flush = ms_excp & left_valid;
+assign ertn_flush = ertn & left_valid;
 assign pc = PC;
 /*
 excp_num[0]  int
@@ -93,7 +93,8 @@ excp_num[0]  int
 assign {
     ecode,
     esubcode
-} = excp_num[5] ? {`ECODE_SYS , 9'b0} :
+} = excp_num[0] ? {`ECODE_INT , 9'b0} :
+    excp_num[5] ? {`ECODE_SYS , 9'b0} :
     excp_num[6] ? {`ECODE_BRK , 9'b0} :
     excp_num[7] ? {`ECODE_INE , 9'b0} :
     excp_num[8] ? {`ECODE_IPE , 9'b0} : 15'b0;
@@ -103,42 +104,45 @@ assign excp_era = PC;
 
 // assign right_fire=right_ready & right_valid;//data submit finish
 //shark hands
-always @(posedge clk) begin
-    if(reset == `RestEn) begin
-        valid <= `false; 
-    end
-    else begin 
-        if(fire)begin 
-            valid <= `false;
-        end
-        if(logic_valid & right_ready) begin
-            valid <= `true;
-        end
-        // if(flush) begin
-        //     valid <= `false;
-        // end
-    end
-end
+// always @(posedge clk) begin
+//     if(reset == `RestEn) begin
+//         valid <= `false; 
+//     end
+//     else begin 
+//         if(fire)begin 
+//             valid <= `false;
+//         end
+//         if(logic_valid & right_ready) begin
+//             valid <= `true;
+//         end
+//         // if(flush) begin
+//         //     valid <= `false;
+//         // end
+//     end
+// end
 
-//data block
-always @(posedge clk) begin
-    if(reset == `RestEn) begin 
-        bus_temp <= `mem_ctrl_width'h0;
-        csr_bus_temp <= `ex_csr_ctrl_width'h0;
-    end
-    else begin 
-        if(logic_valid & right_ready) begin 
-            bus_temp <= mem_ctrl_bus;//{mem_ctrl_bus[103:103],inst_valid,mem_ctrl_bus[101:0]};
-            csr_bus_temp <= mem_csr_bus;
-        end
-    end
-end
+// //data block
+// always @(posedge clk) begin
+//     if(reset == `RestEn) begin 
+//         bus_temp <= `mem_ctrl_width'h0;
+//         csr_bus_temp <= `ex_csr_ctrl_width'h0;
+//     end
+//     else begin 
+//         if(logic_valid & right_ready) begin 
+//             bus_temp <= mem_ctrl_bus;//{mem_ctrl_bus[103:103],inst_valid,mem_ctrl_bus[101:0]};
+//             csr_bus_temp <= mem_csr_bus;
+//         end
+//     end
+// end
 // output logic
-assign right_valid=valid;
+// assign right_valid=valid;
+assign right_valid = logic_valid;
 assign logic_valid = left_valid;
 assign left_ready=right_ready;
-assign wb_ctrl_bus=bus_temp;
-assign wb_csr_bus = csr_bus_temp;
+// assign wb_ctrl_bus=bus_temp;
+// assign wb_csr_bus = csr_bus_temp;
+assign wb_ctrl_bus={mem_ctrl_bus[103:103],(mem_ctrl_bus[102] & ~ms_excp),mem_ctrl_bus[101:0]};;
+assign wb_csr_bus = mem_csr_bus;
 assign wb_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
 assign wb_bypass = {mem_ctrl_bus[31:0],mem_ctrl_bus[101:97],mem_ctrl_bus[96:96] & left_valid};
 

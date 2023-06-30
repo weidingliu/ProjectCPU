@@ -21,6 +21,8 @@ module ID (
     output [13:0] rd_csr_addr,
     input  [31:0] rd_csr_data,
     output wire [`id_csr_ctrl_width-1:0] id_csr_ctrl,
+    //interrupt
+    input wire has_int,
     // excp bus and some sign for excp
     output wire [`id_excp_width-1:0] id_excp_bus,
     input wire excp_flush,
@@ -389,8 +391,8 @@ assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg;
 assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn;
 assign excp_ine = ~inst_valid & left_valid;// inst is invalid
 assign excp_ipe = is_kernel_inst & (plv == 2'b11); // privilege level is falut
-assign excp = excp_ine | excp_ipe | inst_syscall | inst_break;
-assign excp_num = {excp_ipe,excp_ine,inst_break,inst_syscall,4'b0,1'b0};
+assign excp = excp_ine | excp_ipe | inst_syscall | inst_break | has_int;
+assign excp_num = {excp_ipe,excp_ine,inst_break,inst_syscall,4'b0,has_int};
 // assign refetch = (inst_ertn) & left_valid;
 
 //op number decoder

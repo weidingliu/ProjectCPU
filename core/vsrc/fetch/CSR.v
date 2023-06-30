@@ -144,6 +144,7 @@ reg [31:0]tid;
 reg [31:0]tcfg;
 reg [31:0]tval;
 reg [31:0]ticlr;
+reg timer_en;
 
 assign plv_out = {2{excp_flush}} & 2'b0            |
                  {2{ertn_flush}} & prmd[`PPLV] |
@@ -151,6 +152,8 @@ assign plv_out = {2{excp_flush}} & 2'b0            |
                  {2{!excp_flush && !ertn_flush && !crmd_wen}} & crmd[`PLV];
 assign eentry_out = eentry;
 assign era_out = era;
+
+assign has_int = ((ecfg[12:0] & estat[12:0]) != 13'b0) & crmd[`IE];
 
 //crmd
 always @(posedge clk) begin
@@ -224,9 +227,19 @@ end
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         estat <=  32'h0;
+        timer_en <= 1'b0;
     end
     else begin 
-
+        if (ticlr_wen && csr_wdata[`CLR]) begin
+            estat[11] <= 1'b0;
+        end
+        else if (tcfg_wen) begin
+            timer_en <= csr_wdata[`EN];
+        end
+        else if (timer_en && (tval == 32'b0)) begin
+            estat[11] <= 1'b1;
+            timer_en      <= tcfg[`PERIODIC];
+        end
 
         estat[`IS2] <= interrupt;
         if (excp_flush) begin
@@ -245,9 +258,9 @@ always @(posedge clk) begin
     if (excp_flush) begin
         era <= era_in;
     end
-    else if(excp_flush) begin 
-        era <= pc;
-    end
+    // else if(excp_flush) begin 
+    //     era <= pc;
+    // end
     else if (era_wen) begin
         era <= csr_wdata;
     end
@@ -329,16 +342,16 @@ always @(posedge clk) begin
         tcfg[`EN] <= 1'b0;
     end
     else if (tcfg_wen) begin
-        tcfg[      `EN] <= wr_data[      `EN];
-        tcfg[`PERIODIC] <= wr_data[`PERIODIC];
-        tcfg[ `INITVAL] <= wr_data[ `INITVAL];
+        tcfg[      `EN] <= csr_wdata[      `EN];
+        tcfg[`PERIODIC] <= csr_wdata[`PERIODIC];
+        tcfg[ `INITVAL] <= csr_wdata[ `INITVAL];
     end
 end
 
 //tval
 always @(posedge clk) begin
     if (tcfg_wen) begin
-        tval <= {wr_data[ `INITVAL], 2'b0};
+        tval <= {csr_wdata[ `INITVAL], 2'b0};
     end
     else if (timer_en) begin
         if (tval != 32'b0) begin
@@ -347,6 +360,12 @@ always @(posedge clk) begin
         else if (tval == 32'b0) begin
             tval <= tcfg[`PERIODIC] ? {tcfg[`INITVAL], 2'b0} : 32'hffffffff;
         end
+    end
+end
+//ticlr
+always @(posedge clk) begin
+    if (reset) begin
+        ticlr <= 32'b0;
     end
 end
 
@@ -400,13 +419,13 @@ assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                     {32{csr_raddr == SAVE0 }}  & csr_save0   |
                     {32{csr_raddr == SAVE1 }}  & csr_save1   |
                     {32{csr_raddr == SAVE2 }}  & csr_save2   |
-                    {32{csr_raddr == SAVE3 }}  & csr_save3;//   |
-                    // {32{csr_raddr == TID   }}  & csr_tid     |
-                    // {32{csr_raddr == TCFG  }}  & csr_tcfg    |
+                    {32{csr_raddr == SAVE3 }}  & csr_save3   |
+                    {32{csr_raddr == TID   }}  & tid     |
+                    {32{csr_raddr == TCFG  }}  & tcfg    |
                     // {32{csr_raddr == CNTC  }}  & csr_cntc    |
-                    // {32{csr_raddr == TICLR }}  & csr_ticlr   |
+                    {32{csr_raddr == TICLR }}  & ticlr   |
                     // {32{csr_raddr == LLBCTL}}  & {csr_llbctl[31:1], llbit} |
-                    // {32{csr_raddr == TVAL  }}  & csr_tval    |
+                    {32{csr_raddr == TVAL  }}  & tval    ;
                     // {32{csr_raddr == TLBRENTRY}} & csr_tlbrentry   |
                     // {32{csr_raddr == DMW0}}    & csr_dmw0    |
                     // {32{csr_raddr == DMW1}}    & csr_dmw1    ;

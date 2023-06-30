@@ -58,3 +58,6 @@
 `define PERIODIC  1
 `define INITVAL   31:2
 
+//TICLR
+`define CLR       0
+

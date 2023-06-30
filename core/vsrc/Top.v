@@ -126,6 +126,7 @@ wire [31:0]wb_pc;
 // csr
 wire [31:0]eentry_out;
 wire [31:0]era_out;
+wire has_int;
 
     //for generate
 wire [1:0] plv_out;
@@ -262,6 +263,7 @@ ID id_stage(
     .id_csr_ctrl(id_csr_bus),
     .rd_csr_addr(rd_csr_addr),
     .rd_csr_data(rd_csr_data),
+    .has_int(has_int),
     //excp
     .id_excp_bus(id_excp_bus),
     .excp_flush(excp_flush),
@@ -295,7 +297,7 @@ Regfile Regfile(
     .reg_index2(reg_index2),//reg addr2
     .data1(reg_data1),//data out
     .data2(reg_data2),//data out
-    .wreg_en(wb_bus[96:96]),//write enable
+    .wreg_en(wb_bus[96:96] & wb_valid),//write enable
     .wdata(wb_bus[31:0]),//write data
     .wreg_index(wb_bus[101:97]),//write addr
     .rf_o(regs)
@@ -419,6 +421,7 @@ CSR CSR(
     .esubcode_in(esubcode),
     .ertn_flush(ertn_flush),
     .pc(wb_pc),
+
     //for if
     .eentry_out(eentry_out),
     .era_out(era_out),
@@ -428,7 +431,7 @@ CSR CSR(
 
     //interrupt
     .interrupt(intrpt),
-    .has_int(),
+    .has_int(has_int),
 
     // csr regs for diff
     .csr_crmd_diff      (csr_crmd_diff_0    ),

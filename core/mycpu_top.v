@@ -170,6 +170,7 @@ wire [31:0]wb_pc;
 // csr
 wire [31:0]eentry_out;
 wire [31:0]era_out;
+wire has_int;
 
     //for generate
 wire [1:0] plv_out;
@@ -305,6 +306,7 @@ ID id_stage(
     .id_csr_ctrl(id_csr_bus),
     .rd_csr_addr(rd_csr_addr),
     .rd_csr_data(rd_csr_data),
+    .has_int(has_int),
     //excp
     .id_excp_bus(id_excp_bus),
     .excp_flush(excp_flush),
@@ -338,7 +340,7 @@ Regfile Regfile(
     .reg_index2(reg_index2),//reg addr2
     .data1(reg_data1),//data out
     .data2(reg_data2),//data out
-    .wreg_en(wb_bus[96:96]),//write enable
+    .wreg_en(wb_bus[96:96] & wb_valid),//write enable
     .wdata(wb_bus[31:0]),//write data
     .wreg_index(wb_bus[101:97]),//write addr
     .rf_o(regs)
@@ -471,7 +473,7 @@ CSR CSR(
 
     //interrupt
     .interrupt(intrpt),
-    .has_int(),
+    .has_int(has_int),
 
     // csr regs for diff
     .csr_crmd_diff      (csr_crmd_diff_0    ),
@@ -776,16 +778,24 @@ axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(DATA_WIDTH),.CPU_WIDTH(CPU_WIDTH
 //     .wr_id(wr_id)
 // );
 
-
+reg difftest_excp_flush;
+reg difftest_ertn_flush;
+reg [5:0]difftest_ecode;
 
 
 //delay one cycle for difftest
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
         difftest_bus <= `mem_ctrl_width'h0;
+        difftest_excp_flush <= 1'b0;
+        difftest_ertn_flush <= 1'b0;
+        difftest_ecode <= 6'h0;
     end
     else begin 
         difftest_bus <= wb_bus & {`mem_ctrl_width{wb_valid}};
+        difftest_excp_flush <= excp_flush;
+        difftest_ertn_flush <= ertn_flush;
+        difftest_ecode <= ecode;
     end
 end
 assign {     
@@ -821,6 +831,27 @@ DifftestInstrCommit DifftestInstrCommit(
     .csr_rstat(0),
     .csr_data(0)
 );
+
+DifftestExcpEvent DifftestExcpEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .excp_valid         (difftest_excp_flush ),
+    .eret               (difftest_ertn_flush       ),
+    .intrNo             (csr_estat_diff_0[12:2]),
+    .cause              (difftest_ecode  ),
+    .exceptionPC        (difftest_PC         ),
+    .exceptionInst      (difftest_Inst       )
+);
+
+// DifftestTrapEvent DifftestTrapEvent(
+//     .clock              (clk           ),
+//     .coreid             (0              ),
+//     .valid              (trap           ),
+//     .code               (trap_code      ),
+//     .pc                 (cmt_pc         ),
+//     .cycleCnt           (cycleCnt       ),
+//     .instrCnt           (instrCnt       )
+// );
 
 DifftestCSRRegState DifftestCSRRegState(
     .clock              (clk               ),
