@@ -69,6 +69,15 @@ wire [63:0] if_bus;
 // wire inst_ready;
 wire if_right_valid;
 wire if_right_ready;
+// wire [63:0] if_bus;
+
+//inst_buffer
+wire [63:0] ib_bus;
+wire ib_is_fire;
+wire ib_fire;
+
+wire id_ib_valid;
+wire id_ib_ready;
 
 //ID stage signal
 wire [`ctrl_width-1:0] id_bus;
@@ -127,6 +136,9 @@ wire [31:0]wb_pc;
 wire [31:0]eentry_out;
 wire [31:0]era_out;
 wire has_int;
+`ifdef NEXT_SOFT_INT
+wire soft_int;
+`endif
 
     //for generate
 wire [1:0] plv_out;
@@ -240,14 +252,38 @@ IF if_stage(
     .inst_ready(inst_ready),//ID stage is allowin
     .right_valid(if_right_valid),//ID stage's data is ready
     .right_ready(if_right_ready),//EXE stage is allowin
-    .fire(id_is_fire)
+    .fire(ib_is_fire)
+);
+
+fetch_buffer fetch_buff(
+    .clk(clk),
+    .reset(reset),
+    .flush(flush),
+    //excption
+    .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
+    //inst
+    // input wire [31:0]inst_in,
+    // input wire [31:0]pc_in,
+    .bus_i(if_bus),
+
+    .bus_o(ib_bus),
+
+    //handshark
+    .left_valid(if_right_valid),
+    .left_ready(if_right_ready),
+
+    .right_valid(id_ib_valid),
+    .right_ready(id_ib_ready),
+    .fire(id_is_fire),
+    .is_fire(ib_is_fire)
 );
 
 ID id_stage(
     .clk(clk),//clock
     .reset(reset),//global reset
-    .Inst(if_bus[31:0]),//inst from inst ram
-    .PC(if_bus[63:32]),//inst addr
+    .Inst(ib_bus[31:0]),//inst from inst ram
+    .PC(ib_bus[63:32]),//inst addr
     //for regfile
     .reg_index1(reg_index1),//read REG index1
     .reg_index2(reg_index2),//read REG index2
@@ -271,8 +307,8 @@ ID id_stage(
     .plv(plv_out),
     //shark hand
     // input wire right_fire,//right data consumed
-    .left_valid(if_right_valid),//IF stage's data is ready
-    .left_ready(if_right_ready),//ID stage is allowin
+    .left_valid(id_ib_valid),//IF stage's data is ready
+    .left_ready(id_ib_ready),//ID stage is allowin
     .right_valid(id_right_valid),//ID stage's data is ready
     .right_ready(id_right_ready),//EXE stage is allowin
     .is_fire(id_is_fire),
@@ -324,6 +360,9 @@ EXE exe_stage(
     //csr bypass
     .mem_csr_bypass(mem_csr_bypass),
     .wb_csr_bypass(wb_csr_bypass),
+    `ifdef NEXT_SOFT_INT
+    .soft_int(soft_int),
+    `endif
 
     //branch
     .flush(flush),
@@ -361,6 +400,9 @@ MEM mem_stage(
     .we(we),
     .rdata_valid(rdata_valid),
     .write_finish(write_finish),
+    `ifdef NEXT_SOFT_INT
+    .soft_int(soft_int),
+    `endif
     //bypass 
     .mem_bypass(mem_bypass),
     .mem_csr_bypass(mem_csr_bypass),
@@ -390,6 +432,9 @@ WB wb_syage(
     .esubcode(esubcode),
     .ecode(ecode),
     .pc(wb_pc),
+    `ifdef NEXT_SOFT_INT
+    .soft_int(soft_int),
+    `endif
 
     //bypass 
     .wb_bypass(wb_bypass),
@@ -410,7 +455,7 @@ CSR CSR(
     .csr_raddr(rd_csr_addr),
     .csr_rdata(rd_csr_data),
     //write bus
-    .csr_wr_en(wb_csr_bus[46:46] & wb_valid),
+    .csr_wr_en(wb_csr_bus[46:46]),
     .csr_waddr(wb_csr_bus[45:32]),
     .csr_wdata(wb_csr_bus[31:0]),
 
@@ -421,7 +466,6 @@ CSR CSR(
     .esubcode_in(esubcode),
     .ertn_flush(ertn_flush),
     .pc(wb_pc),
-
     //for if
     .eentry_out(eentry_out),
     .era_out(era_out),
@@ -432,6 +476,9 @@ CSR CSR(
     //interrupt
     .interrupt(intrpt),
     .has_int(has_int),
+    `ifdef NEXT_SOFT_INT
+    .soft_int(soft_int),
+    `endif
 
     // csr regs for diff
     .csr_crmd_diff      (csr_crmd_diff_0    ),

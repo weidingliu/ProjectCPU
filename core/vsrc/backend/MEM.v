@@ -34,6 +34,10 @@ module MEM (
     input wire right_ready,//EXE stage is allowin
     output wire is_fire,
     input wire fire
+    `ifdef NEXT_SOFT_INT
+    ,
+    input wire soft_int
+    `endif 
 );
 //shark hands
 // wire right_fire;
@@ -188,7 +192,12 @@ always @(posedge clk) begin
                     mem_result// 0:31
                     };
             csr_bus_temp <= mem_csr_bus;
+
+            `ifdef NEXT_SOFT_INT
+            excp_temp <= {ex_excp_bus[`ex_excp_width-1:2],soft_int ,ex_excp_bus[0] | soft_int};
+            `else
             excp_temp <= ex_excp_bus;
+            `endif
         end
     end
 end

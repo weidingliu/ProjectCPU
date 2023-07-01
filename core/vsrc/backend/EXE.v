@@ -34,6 +34,11 @@ module EXE (
     input wire right_ready,//MEM stage is allowin
     output wire is_fire,
     input wire fire
+
+    `ifdef NEXT_SOFT_INT
+    ,
+    input wire soft_int
+    `endif 
 );
 // wire right_fire;
 
@@ -301,7 +306,12 @@ always @(posedge clk) begin
                 csr_idx,//45:32
                 wr_csr_data//31:0
             };
+            `ifdef NEXT_SOFT_INT
+            excp_temp <= {id_excp_bus[`id_excp_width-1:2],soft_int ,id_excp_bus[0] | soft_int};
+            `else
             excp_temp <= id_excp_bus;
+            `endif
+            
         end
     end
 end

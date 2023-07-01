@@ -60,6 +60,11 @@ module CSR (
     output [31:0]                   csr_pgdl_diff,
     output [31:0]                   csr_pgdh_diff
 
+    `ifdef NEXT_SOFT_INT
+    ,
+    output wire soft_int
+    `endif 
+
 );
 localparam CRMD  = 14'h0;
 localparam PRMD  = 14'h1;
@@ -147,6 +152,10 @@ reg [31:0]tval;
 reg [31:0]ticlr;
 reg timer_en;
 
+`ifdef NEXT_SOFT_INT
+assign soft_int = ((estat[`IS1] & ecfg[`IS1]) != 2'b0) & crmd[`IE];
+`endif
+
 assign plv_out = {2{excp_flush}} & 2'b0            |
                  {2{ertn_flush}} & prmd[`PPLV] |
                  {2{crmd_wen  }} & csr_wdata[`PLV] |
@@ -195,7 +204,6 @@ always @(posedge clk) begin
         prmd[ `PPLV] <=  2'b0;
         prmd[  `PIE] <=  1'b0;
         prmd[  31:3] <=  29'h0;
-
     end
     else begin 
         if (excp_flush) begin

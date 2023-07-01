@@ -31,7 +31,7 @@ wire [31:0]slt_result;
 //adder 
 wire [31:0]adder_a;
 wire [31:0]adder_b;
-wire adder_cin;
+wire [31:0]adder_cin;
 wire adder_cout;
 
 // control code decomposition
@@ -50,7 +50,7 @@ assign op_slt = alu_op[11];
 
 assign adder_a = alu_src1;
 assign adder_b = alu_op[3] ? ~alu_src2:alu_src2;
-assign adder_cin = alu_op[3] ? 1'b1:1'b0;
+assign adder_cin = alu_op[3] ? 32'h1:32'h0;
 
 assign {adder_cout,adder_result} = adder_a + adder_b + adder_cin;
 assign or_result = adder_a | adder_b;

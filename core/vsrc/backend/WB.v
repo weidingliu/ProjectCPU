@@ -29,6 +29,10 @@ module WB (
     input wire right_ready,//EXE stage is allowin
     output wire is_fire,
     input wire fire
+    `ifdef NEXT_SOFT_INT
+    ,
+    input wire soft_int
+    `endif 
 );
 
 // wire right_fire;
@@ -67,8 +71,11 @@ assign {
     ms_excp 
 } = mem_excp_bus;
 
-
+`ifdef NEXT_SOFT_INT
+assign excp_flush = (ms_excp | soft_int) & left_valid;
+`else 
 assign excp_flush = ms_excp & left_valid;
+`endif
 assign ertn_flush = ertn & left_valid;
 assign pc = PC;
 /*
@@ -90,6 +97,16 @@ excp_num[0]  int
         [15] pil     |
         
 */
+`ifdef NEXT_SOFT_INT
+assign {
+    ecode,
+    esubcode
+} = (excp_num[0] | soft_int) ? {`ECODE_INT , 9'b0} :
+    excp_num[5] ? {`ECODE_SYS , 9'b0} :
+    excp_num[6] ? {`ECODE_BRK , 9'b0} :
+    excp_num[7] ? {`ECODE_INE , 9'b0} :
+    excp_num[8] ? {`ECODE_IPE , 9'b0} : 15'b0;
+`else 
 assign {
     ecode,
     esubcode
@@ -98,6 +115,8 @@ assign {
     excp_num[6] ? {`ECODE_BRK , 9'b0} :
     excp_num[7] ? {`ECODE_INE , 9'b0} :
     excp_num[8] ? {`ECODE_IPE , 9'b0} : 15'b0;
+`endif
+
 
 assign excp_era = PC;
 
