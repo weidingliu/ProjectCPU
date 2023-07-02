@@ -22,21 +22,29 @@ module addr_trans (
     output wire [31:0]data_paddr
 );
 
-// localparam trans_map = 2'b00;
-// localparam direct_trans = 2'b01;
-// // localparam page_map = 2'b10;
-
-// wire [1:0]translate_mod; 
-
-// assign translate_mod = (DAPG == 2'b10) ? direct_trans:
-//                         (DAPG == 2'b01) ? trans_map:direct_trans;
 
 wire inst_trans_en;
 wire data_trans_en;
 
+wire inst_dmw0_en;
+wire inst_dmw1_en;
+
+wire data_dmw0_en;
+wire data_dmw1_en;
+// adress translate mod
 assign inst_trans_en =  DAPG == 2'b01;
 assign data_trans_en = DAPG == 2'b01;
+// dmw driect address translate enable 
+assign inst_dmw0_en = (DMW0[31:29] == inst_vaddr);
+assign inst_dmw1_en = (DMW1[31:29] == inst_vaddr);
 
+assign data_dmw0_en = (DMW0[31:29] == data_vaddr);
+assign data_dmw1_en = (DMW1[31:29] == data_vaddr);
+
+
+// vaddr
+assign inst_paddr = inst_trans_en? 32'h0:inst_vaddr;
+assign data_paddr = data_trans_en? 32'h0:data_vaddr;
 
 
 endmodule //addr_trans
