@@ -34,8 +34,8 @@ module addr_trans (
 wire inst_trans_en;
 wire data_trans_en;
 
-// assign inst_trans_en = 
-
+assign inst_trans_en =  DAPG == 2'b01;
+assign data_trans_en = DAPG == 2'b01;
 
 
 

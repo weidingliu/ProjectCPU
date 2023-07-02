@@ -1,6 +1,4 @@
 
-
-
 COMMIT_PATH=$(path)
 COMMIT_MESSAGE=$(m)
 
@@ -24,7 +22,7 @@ OBJ_DIR = $(CHIPLAB_HOME)/IP/myCPU
 
 VSRC += $(shell find $(Core_DIR) -name '*.v' -o -name '*.sv' | grep -v Top.v)
 VSRC += $(shell find $(Axi_DIR) -name '*.v' -o -name '*.sv')
-VSRC += /home/liuweiding/ProjectCPU/core/mycpu_top.v
+VSRC += $(DIR)/core/mycpu_top.v
 
 ##OBJS = $(addprefix $(CURRENT_DIR)/,$(notdir $(VSRC)))
 update:
