@@ -4,6 +4,8 @@
 COMMIT_PATH=$(path)
 COMMIT_MESSAGE=$(m)
 
+DIR = $(shell pwd)
+
 ifeq ($(COMMIT_PATH),)
 COMMIT_PATH:=.
 endif
@@ -15,8 +17,8 @@ gitcommit:
 	git commit -m "$(COMMIT_MESSAGE)"
 	git push	
 
-Core_DIR = /home/liuweiding/ProjectCPU/core/vsrc
-Axi_DIR = /home/liuweiding/ProjectCPU/core/axi
+Core_DIR = $(DIR)/core/vsrc
+Axi_DIR = $(DIR)/core/axi
 
 OBJ_DIR = $(CHIPLAB_HOME)/IP/myCPU
 

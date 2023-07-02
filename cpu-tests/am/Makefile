@@ -2,7 +2,7 @@
 
 BUILD_DIR := ./build
 $(shell mkdir -p $(BUILD_DIR))
-#DIR := $(shell pwd)
+DIR := $(shell pwd)
 
 CROSS_COMPILE := loongarch32r-linux-gnusf-
 ASFLAGS       += -O0 -mabi=ilp32d
@@ -19,7 +19,7 @@ OBJS += $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(basename $(ASRC))))
 
 LIB := $(wildcard $(CHIPLAB_HOME)/toolchains/system_newlib/*.a)
 CFLAGS    += -fdata-sections -ffunction-sections -mabi=ilp32d -O0 -D__loongarch32 -D_KERNEL -I $(CHIPLAB_HOME)/toolchains/system_newlib/
-LDFLAGS   +=-T /home/liuweiding/ProjectCPU/cpu-tests/am/linker.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
+LDFLAGS   +=-T $(DIR)/am/linker.ld --defsym=_pmem_start=0x1C000000 --defsym=_entry_offset=0x0##-Ttext 0x1C000000 
 LDFLAGS   += --gc-sections -e _start -static 
 
 LINKAGE := $(LIB) $(OBJS)

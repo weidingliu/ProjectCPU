@@ -263,8 +263,6 @@ fetch_buffer fetch_buff(
     .excp_flush(excp_flush),
     .ertn_flush(ertn_flush),
     //inst
-    // input wire [31:0]inst_in,
-    // input wire [31:0]pc_in,
     .bus_i(if_bus),
 
     .bus_o(ib_bus),
