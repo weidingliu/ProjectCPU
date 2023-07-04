@@ -47,8 +47,8 @@ wire data_dmw1_en;
 assign inst_trans_en =  DAPG == 2'b01;
 assign data_trans_en = DAPG == 2'b01;
 // dmw driect address translate enable 
-assign inst_dmw0_en = (DMW0[31:29] == inst_vaddr);
-assign inst_dmw1_en = (DMW1[31:29] == inst_vaddr);
+assign inst_dmw0_en = (DMW0[31:29] == inst_vaddr[31:29]);
+assign inst_dmw1_en = (DMW1[31:29] == inst_vaddr[31:29]);
 
 assign data_dmw0_en = (DMW0[31:29] == data_vaddr);
 assign data_dmw1_en = (DMW1[31:29] == data_vaddr);
@@ -58,7 +58,7 @@ assign data_dmw1_en = (DMW1[31:29] == data_vaddr);
 assign inst_paddr = inst_trans_en? 32'h0:inst_vaddr;
 assign data_paddr = data_trans_en? 32'h0:data_vaddr;
 
-// 
+// uncache 
 assign inst_uncached_en = ;
 assign data_uncached_en = ;
 

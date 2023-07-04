@@ -61,3 +61,36 @@
 //TICLR
 `define CLR       0
 
+//DMW
+`define PLV0 0
+`define PLV3 3
+`define MAT 5:4
+`define PSEG 27:25
+`define VSEG  31:29 
+
+//tlbrentry
+`define PA 31:6
+
+//tlbidx
+`define INDEX     4:0
+`define PS        29:24
+`define NE        31
+
+//asid 
+
+`define ASID 9:0
+`define ASIDBITS 23:16
+
+//tlbehi
+`define VPPN 31:13
+//tlblo0 tlblo1
+`define TLB_V 0
+`define TLB_D 1
+`define TLB_PLV 3:2
+`define TLB_MAT 5:4
+`define TLB_G 6
+`define TLB_PPN 31:8
+
+//pgd
+`define BASE 31:12
+

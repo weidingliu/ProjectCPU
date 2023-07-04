@@ -19,6 +19,9 @@ module CSR (
     input wire [8:0]esubcode_in,
     input wire ertn_flush,
     input wire [31:0]pc,
+    
+    input wire [31:0]error_vaddr,
+    input wire error_va_en,
 
     //for if 
     output wire [31:0]eentry_out,
@@ -89,7 +92,7 @@ localparam SAVE3 = 14'h33;
 localparam TID   = 14'h40;
 localparam TCFG  = 14'h41;
 localparam TVAL  = 14'h42;
-localparam CNTC  = 14'h43;
+// localparam CNTC  = 14'h43;
 localparam TICLR = 14'h44;
 localparam LLBCTL= 14'h60;
 localparam TLBRENTRY = 14'h88;
@@ -122,7 +125,7 @@ wire save3_wen  = csr_wr_en & (csr_waddr == SAVE3);
 wire tid_wen    = csr_wr_en & (csr_waddr == TID);
 wire tcfg_wen   = csr_wr_en & (csr_waddr == TCFG);
 wire tval_wen   = csr_wr_en & (csr_waddr == TVAL);
-wire cntc_wen   = csr_wr_en & (csr_waddr == CNTC);
+// wire cntc_wen   = csr_wr_en & (csr_waddr == CNTC);
 wire ticlr_wen  = csr_wr_en & (csr_waddr == TICLR);
 wire llbctl_wen = csr_wr_en & (csr_waddr == LLBCTL);
 wire tlbrentry_wen = csr_wr_en & (csr_waddr == TLBRENTRY);
@@ -145,12 +148,24 @@ reg [31:0]csr_save2;
 reg [31:0]csr_save3;
 reg llbit;
 reg [31:0]llbctl;
-// reg[31:0] csr_era;
 reg [31:0]tid;
 reg [31:0]tcfg;
 reg [31:0]tval;
 reg [31:0]ticlr;
 reg timer_en;
+reg [31:0]dmw0;
+reg [31:0]dmw1;
+reg [31:0]tlbrentry;
+reg [31:0]tlbidx;
+reg [31:0]asid;
+reg [31:0]tlbehi;
+reg [31:0]tlbelo0;
+reg [31:0]tlbelo1;
+reg [31:0]pgdh;
+reg [31:0]pgdl;
+
+wire [31:0]pgd;
+
 
 `ifdef NEXT_SOFT_INT
 assign soft_int = ((estat[`IS1] & ecfg[`IS1]) != 2'b0) & crmd[`IE];
@@ -165,6 +180,7 @@ assign era_out = era;
 
 assign has_int = ((ecfg[12:0] & estat[12:0]) != 13'b0) & crmd[`IE];
 
+assign pgd = badv[31]? pgdh:pgdl;
 //crmd
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
@@ -378,6 +394,162 @@ always @(posedge clk) begin
     end
 end
 
+//dmw0 dmw1
+always @(posedge clk) begin 
+    if(reset) begin 
+        dmw0 <= 32'h0;
+    end
+    else begin 
+        if(DMW0_wen) begin 
+            dmw0[`PLV0] <= csr_wdata[`PLV0];
+            dmw0[`PLV3] <= csr_wdata[`PLV3];
+            dmw0[`MAT] <= csr_wdata[`MAT];
+            dmw0[`PSEG] <= csr_wdata[`PSEG];
+            dmw0[`VSEG] <= csr_wdata[`VSEG];
+        end
+    end
+end
+always @(posedge clk) begin 
+    if(reset) begin 
+        dmw1 <= 32'h0;
+    end
+    else begin 
+        if(DMW1_wen) begin 
+            dmw1[`PLV0] <= csr_wdata[`PLV0];
+            dmw1[`PLV3] <= csr_wdata[`PLV3];
+            dmw1[`MAT] <= csr_wdata[`MAT];
+            dmw1[`PSEG] <= csr_wdata[`PSEG];
+            dmw1[`VSEG] <= csr_wdata[`VSEG];
+        end
+    end
+end
+
+//tlbrentry
+always @(posedge clk) begin
+    if(reset) begin 
+        tlbrentry <= 32'h0;
+    end 
+    else begin 
+        if(tlbrentry_wen) begin 
+            tlbrentry[`PA] <= csr_wdata[`PA];
+        end
+    end
+end
+
+//tlbidx
+always @(posedge clk) begin
+    if(reset) begin 
+        tlbidx <= 32'h0;
+    end
+    else begin 
+        if(tlbidx_wen) begin 
+            tlbidx[`INDEX] <= csr_wdata[`INDEX];
+            tlbidx[`PS]    <= csr_wdata[`PS];
+            tlbidx[`NE]    <= csr_wdata[`NE];
+        end
+    end
+end
+
+//asid 
+always @(posedge clk) begin
+    if(reset) begin 
+        asid[31:10] <= 22'h280;
+    end
+    else begin 
+        if(asid_wen) begin 
+            asid[`ASID] <= csr_wdata[`ASID];
+        end 
+    end 
+end
+
+// badv
+always @(posedge clk) begin
+    if(reset) begin 
+        badv <= 32'h0;
+    end 
+    else begin 
+        if(badv_wen) begin 
+            badv <= csr_wdata;
+        end
+        else if(error_va_en)begin 
+            badv <= error_vaddr;
+        end
+    end
+end
+
+//cntc 
+
+// always @(posedge clk) begin
+//     if(reset) begin 
+//         cntc <= 32'h0;
+//     end
+//     else if
+// end
+
+// tlbehi
+always @(posedge clk) begin
+    if(reset) begin 
+        tlbehi <= 32'h0;
+    end
+    else begin 
+        if (tlbehi_wen) begin
+            tlbehi[`VPPN] <= csr_wdata[`VPPN];
+        end
+    end
+end
+//tlblo0
+always @(posedge clk) begin
+    if(reset) begin 
+        tlbelo0 <= 32'h0;
+    end
+    else begin 
+        if(tlbelo0_wen) begin 
+            tlbelo0[`TLB_V]   <= csr_wdata[`TLB_V];
+            tlbelo0[`TLB_D]   <= csr_wdata[`TLB_D];
+            tlbelo0[`TLB_PLV] <= csr_wdata[`TLB_PLV];
+            tlbelo0[`TLB_MAT] <= csr_wdata[`TLB_MAT];
+            tlbelo0[`TLB_G]   <= csr_wdata[`TLB_G];
+            tlbelo0[`TLB_PPN] <= csr_wdata[`TLB_PPN];
+        end
+    end
+end
+//tlblo1
+always @(posedge clk) begin
+    if(reset) begin 
+        tlbelo1 <= 32'h0;
+    end
+    else begin 
+        if(tlbelo1_wen) begin 
+            tlbelo1[`TLB_V]   <= csr_wdata[`TLB_V];
+            tlbelo1[`TLB_D]   <= csr_wdata[`TLB_D];
+            tlbelo1[`TLB_PLV] <= csr_wdata[`TLB_PLV];
+            tlbelo1[`TLB_MAT] <= csr_wdata[`TLB_MAT];
+            tlbelo1[`TLB_G]   <= csr_wdata[`TLB_G];
+            tlbelo1[`TLB_PPN] <= csr_wdata[`TLB_PPN];
+        end
+    end
+end
+//pgdh
+always @(posedge clk) begin
+    if(reset) begin 
+        pgdh <= 32'h0;
+    end
+    else begin 
+        if(pgdh_wen) begin 
+            pgdh[`BASE] <= csr_wdata[`BASE];
+        end
+    end
+end
+always @(posedge clk) begin
+    if(reset) begin 
+        pgdl <= 32'h0;
+    end
+    else begin 
+        if(pgdl_wen) begin 
+            pgdl[`BASE] <= csr_wdata[`BASE];
+        end
+    end
+end
 
 
 //difftest
@@ -388,11 +560,11 @@ assign csr_estat_diff       = estat;
 assign csr_era_diff         = era;
 assign csr_badv_diff        = badv;
 assign csr_eentry_diff      = eentry;
-// assign csr_tlbidx_diff      = tlbidx;
-// assign csr_tlbehi_diff      = tlbehi;
-// assign csr_tlbelo0_diff     = tlbelo0;
-// assign csr_tlbelo1_diff     = tlbelo1;
-// assign csr_asid_diff        = asid;
+assign csr_tlbidx_diff      = tlbidx;
+assign csr_tlbehi_diff      = tlbehi;
+assign csr_tlbelo0_diff     = tlbelo0;
+assign csr_tlbelo1_diff     = tlbelo1;
+assign csr_asid_diff        = asid;
 assign csr_save0_diff       = csr_save0;
 assign csr_save1_diff       = csr_save1;
 assign csr_save2_diff       = csr_save2;
@@ -402,11 +574,11 @@ assign csr_tcfg_diff        = tcfg;
 assign csr_tval_diff        = tval;
 assign csr_ticlr_diff       = ticlr;
 // assign csr_llbctl_diff      = {llbctl[31:1], llbit};
-// assign csr_tlbrentry_diff   = tlbrentry;
-// assign csr_dmw0_diff        = dmw0;
-// assign csr_dmw1_diff        = dmw1;
-// assign csr_pgdl_diff        = pgdl;
-// assign csr_pgdh_diff        = pgdh;
+assign csr_tlbrentry_diff   = tlbrentry;
+assign csr_dmw0_diff        = dmw0;
+assign csr_dmw1_diff        = dmw1;
+assign csr_pgdl_diff        = pgdl;
+assign csr_pgdh_diff        = pgdh;
 
 assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                     {32{csr_raddr == CRMD  }}  & crmd    |
@@ -414,16 +586,16 @@ assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                    {32{csr_raddr== ECTL  }}  & ecfg    |
                     {32{csr_raddr == ESTAT }}  & estat   |
                     {32{csr_raddr == ERA   }}  & era	    |
-                    // {32{csr_raddr == BADV  }}  & csr_badv    |
+                    {32{csr_raddr == BADV  }}  & badv    |
                     {32{csr_raddr == EENTRY}}  & eentry  |
-                    // {32{csr_raddr == TLBIDX}}  & csr_tlbidx  |
-                    // {32{csr_raddr == TLBEHI}}  & csr_tlbehi  |
-                    // {32{csr_raddr == TLBELO0}} & csr_tlbelo0 |
-                    // {32{csr_raddr == TLBELO1}} & csr_tlbelo1 |
-                    // {32{csr_raddr == ASID  }}  & csr_asid    |
-                    // {32{csr_raddr == PGDL  }}  & csr_pgdl    |
-                    // {32{csr_raddr == PGDH  }}  & csr_pgdh    |
-                    // {32{csr_raddr == PGD   }}  & csr_pgd     |
+                    {32{csr_raddr == TLBIDX}}  & tlbidx  |
+                    {32{csr_raddr == TLBEHI}}  & tlbehi  |
+                    {32{csr_raddr == TLBELO0}} & tlbelo0 |
+                    {32{csr_raddr == TLBELO1}} & tlbelo1 |
+                    {32{csr_raddr == ASID  }}  & asid    |
+                    {32{csr_raddr == PGDL  }}  & pgdl    |
+                    {32{csr_raddr == PGDH  }}  & pgdh    |
+                    {32{csr_raddr == PGD   }}  & pgd     |
                     {32{csr_raddr == CPUID }}  & cpuid   |
                     {32{csr_raddr == SAVE0 }}  & csr_save0   |
                     {32{csr_raddr == SAVE1 }}  & csr_save1   |
@@ -431,13 +603,13 @@ assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                     {32{csr_raddr == SAVE3 }}  & csr_save3   |
                     {32{csr_raddr == TID   }}  & tid     |
                     {32{csr_raddr == TCFG  }}  & tcfg    |
-                    // {32{csr_raddr == CNTC  }}  & csr_cntc    |
+                    // {32{csr_raddr == CNTC  }}  & cntc    |
                     {32{csr_raddr == TICLR }}  & ticlr   |
                     // {32{csr_raddr == LLBCTL}}  & {csr_llbctl[31:1], llbit} |
-                    {32{csr_raddr == TVAL  }}  & tval    ;
-                    // {32{csr_raddr == TLBRENTRY}} & csr_tlbrentry   |
-                    // {32{csr_raddr == DMW0}}    & csr_dmw0    |
-                    // {32{csr_raddr == DMW1}}    & csr_dmw1    ;
+                    {32{csr_raddr == TVAL  }}  & tval    |
+                    {32{csr_raddr == TLBRENTRY}} & tlbrentry   |
+                    {32{csr_raddr == DMW0}}    & dmw0    |
+                    {32{csr_raddr == DMW1}}    & dmw1    ;
 
 endmodule //CSR
 
