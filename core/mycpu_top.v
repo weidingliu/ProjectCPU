@@ -110,10 +110,19 @@ wire we;
 //IF stage signal
 wire [63:0] if_bus;
 // wire pc_valid;
+wire addr_trans_ready;
 // wire inst_ready;
 wire if_right_valid;
 wire if_right_ready;
 // wire [63:0] if_bus;
+
+wire [31:0]inst_vaddr;
+wire [31:0]inst_paddr;
+wire inst_uncached_en;
+wire inst_tlb_found;
+
+wire inst_addr_trans_valid;
+wire inst_addr_trans_ready;
 
 //inst_buffer
 wire [63:0] ib_bus;
@@ -183,6 +192,12 @@ wire has_int;
 `ifdef NEXT_SOFT_INT
 wire soft_int;
 `endif
+wire [31:0]DMW0;
+wire [31:0]DMW1;
+wire [1:0]dapg;
+wire [1:0]datf;
+wire [1:0]datm;
+wire [31:0]ASID;
 
     //for generate
 wire [1:0] plv_out;
@@ -275,12 +290,12 @@ wire [31:0] bypass_reg2;
 
 
 //IF stage
-IF if_stage(
+IF if_stage0(
     .clk(clk),
     .reset(reset),
     .PC(PC), //inst addr
-    .Inst(inst),//inst
-    .data_bus(if_bus),
+    // .Inst(inst),//inst
+    // .data_bus(if_bus),
     //excp 
     .excp_flush(excp_flush),
     .ertn_flush(ertn_flush),
@@ -292,11 +307,54 @@ IF if_stage(
     .dnpc(dnpc),
     //shark hand
     .pc_valid(pc_valid),//IF stage's data is ready
-    .inst_ready(inst_ready),//ID stage is allowin
-    .right_valid(if_right_valid),//ID stage's data is ready
-    .right_ready(if_right_ready),//EXE stage is allowin
-    .fire(ib_is_fire)
+    .addr_trans_ready(addr_trans_ready)
+    // .inst_ready(inst_ready),//ID stage is allowin
+    // .right_valid(if_right_valid),//ID stage's data is ready
+    // .right_ready(if_right_ready),//EXE stage is allowin
+    // .fire(ib_is_fire)
 );
+addr_trans addr_translate(
+    .clk(clk),
+    .reset(reset),
+    //flush
+    .flush(flush),
+    .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
+    // from csr
+    .DMW0(DMW0),
+    .DMW1(DMW1),
+    .DAPG(dapg),
+    .DATF(datf),
+    .DATM(datm),
+    .ASID(ASID),
+    .plv(plv_out),
+    // inst interface
+    .inst_vaddr(PC),
+    .inst_addr_valid(pc_valid),
+    .inst_addr_ready(addr_trans_ready),
+
+    .inst_uncached_en(inst_uncached_en),
+    .inst_paddr(inst_paddr),
+    .inst_vaddr_o(inst_vaddr_o),
+    .inst_tlb_found(inst_tlb_found),
+    .inst_valid(inst_addr_trans_valid),
+    .inst_ready(inst_addr_trans_ready),
+    .inst_fire(inst_ready)
+
+    //data addr interface
+    // input wire [31:0]data_vaddr,
+    // input wire data_addr_valid,
+    // output wire data_addr_ready,
+
+    // output wire data_uncached_en,
+    // output wire [31:0]data_paddr,
+    // output wire [31:0]data_vaddr_o,
+    // output wire data_tlb_found,
+    // output wire data_valid,
+    // input wire data_ready,
+    // input wire data_fire
+);
+
 
 fetch_buffer fetch_buff(
     .clk(clk),
@@ -513,6 +571,12 @@ CSR CSR(
     //for if
     .eentry_out(eentry_out),
     .era_out(era_out),
+    .DMW0(DMW0),
+    .DMW1(DMW1),
+    .dapg(dapg),
+    .datf(datf),
+    .datm(datm),
+    .ASID(ASID),
 
     //for generate
     .plv_out(plv_out),
@@ -560,12 +624,12 @@ ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .flush(flush || excp_flush || ertn_flush),
     
     //cpu request
-    .ce(1'b1),
+    .ce(inst_addr_trans_valid),
     .we(1'b0),
-    .addr(PC),
+    .addr(inst_paddr),
     .rdata(inst),
     .rdata_valid(inst_ready),
-    .rdata_ready(pc_valid),
+    .rdata_ready(),
 
     //mem request
     .mem_addr(inst_mem_addr),

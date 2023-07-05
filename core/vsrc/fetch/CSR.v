@@ -26,7 +26,12 @@ module CSR (
     //for if 
     output wire [31:0]eentry_out,
     output wire [31:0]era_out,
-
+    output wire [31:0]DMW0,
+    output wire [31:0]DMW1,
+    output wire [1:0]dapg,
+    output wire [1:0]datf,
+    output wire [1:0]datm,
+    output wire [31:0]ASID,
 
     //for generate
     output wire [1:0] plv_out,
@@ -610,6 +615,13 @@ assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                     {32{csr_raddr == TLBRENTRY}} & tlbrentry   |
                     {32{csr_raddr == DMW0}}    & dmw0    |
                     {32{csr_raddr == DMW1}}    & dmw1    ;
+
+assign DMW0 = dmw0;
+assign DMW1 = dmw1;
+assign dapg = {crmd[`DA],crmd[`PG]};
+assign datf = crmd[`DATF];
+assign datm = crmd[`DATM];
+assign ASID = asid;
 
 endmodule //CSR
 
