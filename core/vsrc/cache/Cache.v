@@ -1270,6 +1270,7 @@ module ICache #(
     output wire [DATA_WIDTH-1:0]rdata,
     output wire rdata_valid,
     input wire rdata_ready,
+    // input wire inst_uncached_en,
 
     //mem request
     output wire [BUS_WIDTH-1 : 0]mem_addr,

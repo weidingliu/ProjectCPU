@@ -17,7 +17,8 @@ module WB (
     output wire [31:0]excp_era,
     output wire [8:0]esubcode,
     output wire [5:0]ecode,
-    output wire [31:0]pc,
+    output wire [31:0]badv,
+    output wire badv_valid,
 
     //bypass
     output wire [`bypass_width-1:0]wb_bypass,
@@ -77,7 +78,7 @@ assign excp_flush = (ms_excp | soft_int) & left_valid;
 assign excp_flush = ms_excp & left_valid;
 `endif
 assign ertn_flush = ertn & left_valid;
-assign pc = PC;
+// assign pc = PC;
 /*
 excp_num[0]  int
         [1]  adef
@@ -100,21 +101,27 @@ excp_num[0]  int
 `ifdef NEXT_SOFT_INT
 assign {
     ecode,
-    esubcode
-} = (excp_num[0] | soft_int) ? {`ECODE_INT , 9'b0} :
-    excp_num[5] ? {`ECODE_SYS , 9'b0} :
-    excp_num[6] ? {`ECODE_BRK , 9'b0} :
-    excp_num[7] ? {`ECODE_INE , 9'b0} :
-    excp_num[8] ? {`ECODE_IPE , 9'b0} : 15'b0;
+    esubcode,
+    badv,
+    badv_valid
+} = (excp_num[0] | soft_int) ? {`ECODE_INT , 9'b0,32'h0,1'b0} :
+    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,1'b1 & left_valid}:
+    excp_num[5] ? {`ECODE_SYS , 9'b0,32'h0,1'b0} :
+    excp_num[6] ? {`ECODE_BRK , 9'b0,32'h0,1'b0} :
+    excp_num[7] ? {`ECODE_INE , 9'b0,32'h0,1'b0} :
+    excp_num[8] ? {`ECODE_IPE , 9'b0,32'h0,1'b0} : 48'b0;
 `else 
 assign {
     ecode,
-    esubcode
-} = excp_num[0] ? {`ECODE_INT , 9'b0} :
-    excp_num[5] ? {`ECODE_SYS , 9'b0} :
-    excp_num[6] ? {`ECODE_BRK , 9'b0} :
-    excp_num[7] ? {`ECODE_INE , 9'b0} :
-    excp_num[8] ? {`ECODE_IPE , 9'b0} : 15'b0;
+    esubcode,
+    badv,
+    badv_valid
+} = excp_num[0] ? {`ECODE_INT , 9'b0,32'h0,1'b0} :
+    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,1'b1  & left_valid}:
+    excp_num[5] ? {`ECODE_SYS , 9'b0,32'h0,1'b0} :
+    excp_num[6] ? {`ECODE_BRK , 9'b0,32'h0,1'b0} :
+    excp_num[7] ? {`ECODE_INE , 9'b0,32'h0,1'b0} :
+    excp_num[8] ? {`ECODE_IPE , 9'b0,32'h0,1'b0} : 48'b0;
 `endif
 
 

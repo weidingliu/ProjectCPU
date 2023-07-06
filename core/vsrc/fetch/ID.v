@@ -28,6 +28,7 @@ module ID (
     input wire excp_flush,
     input wire ertn_flush,
     input wire [1:0]plv,
+    input wire [4:0]ib_excp_bus,
 
     //ctrl flower
     output wire [`ctrl_width-1:0]ctrl_bus,//ctrl bus
@@ -391,8 +392,8 @@ assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg;
 assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn;
 assign excp_ine = ~inst_valid & left_valid;// inst is invalid
 assign excp_ipe = is_kernel_inst & (plv == 2'b11); // privilege level is falut
-assign excp = excp_ine | excp_ipe | inst_syscall | inst_break | has_int;
-assign excp_num = {excp_ipe,excp_ine,inst_break,inst_syscall,4'b0,has_int};
+assign excp = excp_ine | excp_ipe | inst_syscall | inst_break | has_int | ib_excp_bus[0];
+assign excp_num = {excp_ipe,excp_ine,inst_break,inst_syscall,ib_excp_bus[4:1],has_int};
 // assign refetch = (inst_ertn) & left_valid;
 
 //op number decoder

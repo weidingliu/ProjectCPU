@@ -296,10 +296,6 @@ always @(posedge clk) begin
     end
 end
 
-//badv
-always @(posedge clk) begin 
-    badv <= 32'h0;
-end
 
 //eentry
 always @(posedge clk) begin

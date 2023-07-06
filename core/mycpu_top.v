@@ -129,7 +129,8 @@ wire inst_addr_trans_ready;
 wire cach_inst_valid;
 
 wire if2_is_fire;
-wire if2_fire;
+wire if_excp;
+wire [3:0]if_excp_num;
 
 //inst_buffer
 wire [63:0] ib_bus;
@@ -138,6 +139,9 @@ wire ib_fire;
 
 wire id_ib_valid;
 wire id_ib_ready;
+
+wire ib_excp;
+wire [3:0]ib_excp_num;
 
 //ID stage signal
 wire [`ctrl_width-1:0] id_bus;
@@ -153,6 +157,7 @@ wire is_break;
 wire id_is_fire;
 wire [13:0] rd_csr_addr;
 wire [31:0] rd_csr_data;
+wire [4:0] ib_excp_bus;
 
 //EXE stage signal
 wire [`ex_ctrl_width-1:0] ex_bus;
@@ -198,7 +203,8 @@ wire [8:0]esubcode;
 wire [5:0]ecode;
 wire [`ex_csr_ctrl_width-1:0]wb_csr_bypass;
 wire ertn_flush;
-wire [31:0]wb_pc;
+wire [31:0]error_va;
+wire error_va_en;
 
 // csr
 wire [31:0]eentry_out;
@@ -358,6 +364,8 @@ addr_trans addr_translate(
     .inst_ready(inst_addr_trans_ready),
     .inst_fire(if2_is_fire),
     .inst_is_fire(inst_is_fire),
+    .inst_excp(if_excp),
+    .inst_excp_num(if_excp_num),
 
     //data addr interface
     .data_vaddr(addr),
@@ -387,6 +395,11 @@ IF_check IF2_stage (
     .inst_valid(inst_ready),
     .inst_ready(cache_inst_valid),
 
+    .excp_i(if_excp),
+    .excp_num_i(if_excp_num),
+
+    .excp(ib_excp),
+    .excp_num(ib_excp_num),
     .inst_o(if_bus[31:0]),
     .vaddr_o(if_bus[63:32]),
     .ib_valid(if_right_valid),
@@ -409,6 +422,11 @@ fetch_buffer fetch_buff(
     .bus_i(if_bus),
 
     .bus_o(ib_bus),
+    //excp 
+    .excp_i(ib_excp),
+    .excp_num_i(ib_excp_num),
+
+    .excp_bus(ib_excp_bus),
 
     //handshark
     .left_valid(if_right_valid),
@@ -446,6 +464,7 @@ ID id_stage(
     .excp_flush(excp_flush),
     .ertn_flush(ertn_flush),
     .plv(plv_out),
+    .ib_excp_bus(ib_excp_bus),
     //shark hand
     // input wire right_fire,//right data consumed
     .left_valid(id_ib_valid),//IF stage's data is ready
@@ -573,7 +592,8 @@ WB wb_syage(
     .excp_era(excp_era),
     .esubcode(esubcode),
     .ecode(ecode),
-    .pc(wb_pc),
+    .badv(error_va),
+    .badv_valid(error_va_en),
     `ifdef NEXT_SOFT_INT
     .soft_int(soft_int),
     `endif
@@ -608,6 +628,8 @@ CSR CSR(
     .esubcode_in(esubcode),
     .ertn_flush(ertn_flush),
     .pc(wb_pc),
+    .error_vaddr(error_va),
+    .error_va_en(error_va_en),
     //for if
     .eentry_out(eentry_out),
     .era_out(era_out),

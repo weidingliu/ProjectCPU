@@ -28,6 +28,8 @@ module addr_trans #(
     output wire [31:0]inst_paddr,
     output wire [31:0]inst_vaddr_o,
     output wire inst_tlb_found,
+    output wire inst_excp,
+    output wire [3:0]inst_excp_num,
     output wire inst_valid,
     input wire inst_ready,
     input wire inst_fire,
@@ -134,11 +136,11 @@ reg [31:0]data_vaddr_temp;
 assign inst_trans_en =  DAPG == 2'b01;
 assign data_trans_en = DAPG == 2'b01;
 // dmw driect address translate enable 
-assign inst_dmw0_en = (DMW0[31:29] == inst_vaddr_temp[31:29]);
-assign inst_dmw1_en = (DMW1[31:29] == inst_vaddr_temp[31:29]);
+assign inst_dmw0_en = (DMW0[31:29] == inst_vaddr_temp[31:29]) & ((DMW0[`PLV0] & plv == 2'b0) || (DMW0[`PLV3] & plv == 2'b11));
+assign inst_dmw1_en = (DMW1[31:29] == inst_vaddr_temp[31:29]) & ((DMW1[`PLV0] & plv == 2'b0) || (DMW1[`PLV3] & plv == 2'b11));
 
-assign data_dmw0_en = (DMW0[31:29] == data_vaddr_temp[31:29]);
-assign data_dmw1_en = (DMW1[31:29] == data_vaddr_temp[31:29]);
+assign data_dmw0_en = (DMW0[31:29] == data_vaddr_temp[31:29]) & ((DMW0[`PLV0] & plv == 2'b0) || (DMW0[`PLV3] & plv == 2'b11));
+assign data_dmw1_en = (DMW1[31:29] == data_vaddr_temp[31:29]) & ((DMW1[`PLV0] & plv == 2'b0) || (DMW1[`PLV3] & plv == 2'b11));
 
 tlb_entry tlb(
     .clk(clk),
@@ -225,11 +227,11 @@ assign data_paddr = data_trans_en? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[2
 assign inst_uncached_en = ((DAPG == 2'b10) && (DATF == 2'b00) ||
                            (inst_dmw0_en & DMW0[`MAT] == 2'b00) || 
                            (inst_dmw1_en & DMW1[`MAT] == 2'b00) ||
-                           (inst_trans_en & s0_mat == 2'b00));
+                           (inst_trans_en & !inst_dmw0_en & !inst_dmw1_en & s0_mat == 2'b00));
 assign data_uncached_en = ((DAPG == 2'b10) && (DATM == 2'b00) ||
                            (data_dmw0_en & DMW0[`MAT] == 2'b00) || 
                            (data_dmw1_en & DMW1[`MAT] == 2'b00) ||
-                           (data_trans_en & s1_mat == 2'b00));
+                           (data_trans_en & !data_dmw0_en & !data_dmw1_en & s1_mat == 2'b00));
 // output logic
 assign inst_tlb_found = s0_found;
 assign data_tlb_found = s1_found;
@@ -278,7 +280,20 @@ always @(posedge clk) begin
     end
 end
 
+//excption 
 
+wire inst_excp_adef;
+wire inst_excp_pif;
+wire inst_excp_ppi;
+wire inst_excp_tlbr;
+
+assign inst_excp_adef = (inst_paddr[1] | inst_paddr[0]) | (inst_trans_en & (plv == 2'b11) & data_vaddr_o[31] & !inst_dmw0_en & !inst_dmw1_en);
+assign inst_excp_pif = inst_trans_en & !s0_v & !inst_dmw0_en & !inst_dmw1_en;
+assign inst_excp_ppi = inst_trans_en & (s0_plv > plv) & !inst_dmw0_en & !inst_dmw1_en;
+assign inst_excp_tlbr = inst_trans_en & !s0_found & !inst_dmw0_en & !inst_dmw1_en;
+
+assign inst_excp = inst_excp_adef | inst_excp_pif | inst_excp_ppi | inst_excp_tlbr;
+assign inst_excp_num = {inst_excp_ppi,inst_excp_pif,inst_excp_tlbr,inst_excp_adef};
 
 endmodule //addr_trans
 
