@@ -120,9 +120,16 @@ wire [31:0]inst_vaddr;
 wire [31:0]inst_paddr;
 wire inst_uncached_en;
 wire inst_tlb_found;
+wire [31:0]inst_vaddr_o;
+wire inst_is_fire;
 
 wire inst_addr_trans_valid;
 wire inst_addr_trans_ready;
+
+wire cach_inst_valid;
+
+wire if2_is_fire;
+wire if2_fire;
 
 //inst_buffer
 wire [63:0] ib_bus;
@@ -170,6 +177,14 @@ wire rdata_valid;
 wire write_finish;
 wire [`ex_csr_ctrl_width-1:0] mem_csr_bus;
 wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass;
+  // for addr_trans
+wire data_uncached_en;
+wire [31:0]data_paddr;
+// wire [31:0]data_vaddr_o;
+wire data_tlb_found;
+wire data_valid;
+wire data_ready;
+wire data_fire;
 
 //WB stage signal
 wire [`mem_ctrl_width-1:0] wb_bus;
@@ -307,7 +322,9 @@ IF if_stage0(
     .dnpc(dnpc),
     //shark hand
     .pc_valid(pc_valid),//IF stage's data is ready
-    .addr_trans_ready(addr_trans_ready)
+    .addr_trans_ready(addr_trans_ready),
+
+    .fire(inst_is_fire)
     // .inst_ready(inst_ready),//ID stage is allowin
     // .right_valid(if_right_valid),//ID stage's data is ready
     // .right_ready(if_right_ready),//EXE stage is allowin
@@ -339,20 +356,43 @@ addr_trans addr_translate(
     .inst_tlb_found(inst_tlb_found),
     .inst_valid(inst_addr_trans_valid),
     .inst_ready(inst_addr_trans_ready),
-    .inst_fire(inst_ready)
+    .inst_fire(if2_is_fire),
+    .inst_is_fire(inst_is_fire),
 
     //data addr interface
-    // input wire [31:0]data_vaddr,
-    // input wire data_addr_valid,
-    // output wire data_addr_ready,
+    .data_vaddr(addr),
+    .data_addr_valid(en),
+    .data_addr_ready(),
 
-    // output wire data_uncached_en,
-    // output wire [31:0]data_paddr,
-    // output wire [31:0]data_vaddr_o,
-    // output wire data_tlb_found,
-    // output wire data_valid,
-    // input wire data_ready,
-    // input wire data_fire
+    .data_uncached_en(data_uncached_en),
+    .data_paddr(data_paddr),
+    .data_vaddr_o(),
+    .data_tlb_found(data_tlb_found),
+    .data_valid(data_valid),
+    .data_ready(!rdata_valid & !write_finish),
+    .data_fire(rdata_valid | write_finish)
+);
+IF_check IF2_stage (
+    .clk(clk),
+    .reset(reset),
+    .flush(flush),
+    .excp_flush(excp_flush),
+    .ertn_flush(ertn_flush),
+
+    .vaddr(inst_vaddr_o),
+    .vaddr_valid(inst_addr_trans_valid),
+    .vaddr_ready(inst_addr_trans_ready),
+
+    .inst_i(inst),
+    .inst_valid(inst_ready),
+    .inst_ready(cache_inst_valid),
+
+    .inst_o(if_bus[31:0]),
+    .vaddr_o(if_bus[63:32]),
+    .ib_valid(if_right_valid),
+    .ib_ready(if_right_ready),
+    .fire(ib_is_fire),
+    .is_fire(if2_is_fire)
 );
 
 
@@ -571,12 +611,12 @@ CSR CSR(
     //for if
     .eentry_out(eentry_out),
     .era_out(era_out),
-    .DMW0(DMW0),
-    .DMW1(DMW1),
+    .csr_dmw0(DMW0),
+    .csr_dmw1(DMW1),
     .dapg(dapg),
     .datf(datf),
     .datm(datm),
-    .ASID(ASID),
+    .csr_ASID(ASID),
 
     //for generate
     .plv_out(plv_out),
@@ -629,7 +669,7 @@ ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .addr(inst_paddr),
     .rdata(inst),
     .rdata_valid(inst_ready),
-    .rdata_ready(),
+    .rdata_ready(cache_inst_valid),
 
     //mem request
     .mem_addr(inst_mem_addr),
@@ -651,9 +691,9 @@ DCache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))DCache(
     .flush(1'b0),
     
     //cpu request
-    .ce(en),
+    .ce(en & data_valid),
     .we(we),
-    .addr(addr),
+    .addr(data_paddr),
     .rdata(rdata),
     .rdata_valid(rdata_valid),
     .rdata_ready(1'b1),

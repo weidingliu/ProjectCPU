@@ -339,3 +339,4 @@ assign is_fire = logic_valid & right_ready;
 // end
 
 endmodule //EXE
+

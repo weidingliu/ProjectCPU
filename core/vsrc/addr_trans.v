@@ -2,7 +2,9 @@
 `include "defines.sv"
 `include "csr_defines.v"
 
-module addr_trans (
+module addr_trans #(
+    localparam TLBNUM = 32
+)(
     input wire clk,
     input wire reset,
     //flush
@@ -29,6 +31,7 @@ module addr_trans (
     output wire inst_valid,
     input wire inst_ready,
     input wire inst_fire,
+    output wire inst_is_fire,
 
     //data addr interface
     input wire [31:0]data_vaddr,
@@ -61,24 +64,24 @@ wire s0_odd_page;
 wire s0_found;
 wire [$clog2(TLBNUM)-1:0] s0_index;
 wire [5:0]s0_ps;
-wire [19:0]s0_ppn
+wire [19:0]s0_ppn;
 wire s0_v;
 wire s0_d;
 wire [1:0]s0_mat;
 wire [1:0]s0_plv;
 //s1
-wire s1_valid,
-wire [18:0]s1_vppn,
-wire [9:0]s1_asid,
-wire s1_odd_page,
-wire s1_found,
-wire [$clog2(TLBNUM)-1:0] s1_index,
-wire [5:0]s1_ps,
-wire [19:0]s1_ppn,
-wire s1_v,
-wire s1_d,
-wire [1:0]s1_mat,
-wire [1:0]s1_plv,
+wire s1_valid;
+wire [18:0]s1_vppn;
+wire [9:0]s1_asid;
+wire s1_odd_page;
+wire s1_found;
+wire [$clog2(TLBNUM)-1:0] s1_index;
+wire [5:0]s1_ps;
+wire [19:0]s1_ppn;
+wire s1_v;
+wire s1_d;
+wire [1:0]s1_mat;
+wire [1:0]s1_plv;
 // //write port
 // wire we,
 // wire [$clog2(TLBNUM)-1:0] w_index,
@@ -239,6 +242,8 @@ assign data_vaddr_o = data_vaddr_temp;
 
 assign inst_addr_ready = inst_ready;
 assign data_addr_ready = data_ready;
+
+assign inst_is_fire = inst_valid && inst_ready;
 
 // inst pipline 
 always @(posedge clk) begin

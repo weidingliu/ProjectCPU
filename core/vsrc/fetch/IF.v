@@ -22,7 +22,8 @@ module IF (
     input wire [31:0]dnpc,
     //shark hand
     output wire pc_valid,//IF stage's data is ready
-    input wire addr_trans_ready
+    input wire addr_trans_ready,
+    input wire fire
 
     // input wire inst_ready,//ID stage is allowin
     // output wire right_valid,//ID stage's data is ready
@@ -56,6 +57,19 @@ always @(posedge clk) begin
 end
 
 assign PC=temp;
+
+always @(posedge clk ) begin 
+    if( excp_flush | ertn_flush) begin 
+      valid <= `true;
+    end
+    else begin 
+      // if(addr_trans_ready & pc_valid) valid <= `false;
+      // if(pc_valid) valid <= `true;
+      if(fire) valid <= `false;
+      if(addr_trans_ready) valid <= `true;
+    end
+end
+assign pc_valid = valid;
 // always @(*) begin
 //     $display("%h---%h-- %h---%h\n",temp,is_branch,flush,dnpc);
 // end

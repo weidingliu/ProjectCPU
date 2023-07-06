@@ -26,12 +26,12 @@ module CSR (
     //for if 
     output wire [31:0]eentry_out,
     output wire [31:0]era_out,
-    output wire [31:0]DMW0,
-    output wire [31:0]DMW1,
+    output wire [31:0]csr_dmw0,
+    output wire [31:0]csr_dmw1,
     output wire [1:0]dapg,
     output wire [1:0]datf,
     output wire [1:0]datm,
-    output wire [31:0]ASID,
+    output wire [31:0]csr_ASID,
 
     //for generate
     output wire [1:0] plv_out,
