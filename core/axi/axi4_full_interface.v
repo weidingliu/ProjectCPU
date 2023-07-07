@@ -134,7 +134,7 @@ reg bid;
 
 wire wait_write;
 
-assign write_data_last = (write_data_count == (CPU_WIDTH/DATA_WIDTH));
+assign write_data_last = (write_data_count == aw_len);
 // read FSM
 always @(posedge aclk) begin
     if(~reset) begin 
@@ -160,7 +160,7 @@ always @(posedge aclk) begin
                         ar_addr <= data_addr;
                     end
                     if(data_transfer_type == 3'b100) ar_len <= 8'hf;
-                    else ar_len <= 8'h1;
+                    else ar_len <= 8'h0;
                 end 
                 else if(inst_ce && !inst_we) begin 
                     rid <= 1'b1;
@@ -178,7 +178,7 @@ always @(posedge aclk) begin
                         ar_addr <= inst_addr;
                     end
                     if(inst_transfer_type == 3'b100) ar_len <= 8'hf;
-                    else ar_len <= 8'h1;
+                    else ar_len <= 8'h0;
                 end
             end
             read_request_ready: begin 
@@ -277,13 +277,13 @@ always @(posedge aclk) begin
                         // wd_last <= 1'b0;
                         write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
-                        aw_len <= 8'h10;
+                        aw_len <= 8'h0f;
                     end
                     else begin 
                         // wd_last <= 1'b0;
                         write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
-                        aw_len <= 8'h1;
+                        aw_len <= 8'h0;
                     end
 
                  end
@@ -305,13 +305,13 @@ always @(posedge aclk) begin
                         // wd_last <= 1'b0;
                         write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
-                        aw_len <= 8'h10;
+                        aw_len <= 8'h0f;
                     end
                     else begin 
                         // wd_last <= 1'b0;
                         write_request_state <= write_request_transfer_addr;
                         write_data_count <= 'h0;
-                        aw_len <= 8'h1;
+                        aw_len <= 8'h0;
                     end
 
                  end

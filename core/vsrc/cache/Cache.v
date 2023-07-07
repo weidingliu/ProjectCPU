@@ -857,6 +857,8 @@ module DCache #(
     input wire [31:0]wdata,
     input wire [3:0]wmask,
     output wire write_respone,
+
+    input wire uncached_en,
     //mem request
     output wire [BUS_WIDTH-1 : 0]mem_addr,
         //read data
