@@ -1060,13 +1060,19 @@ always @(posedge clk) begin
                 if(hit) begin 
                     if(rdata_ready) state <= idle;
                 end
-                else begin 
+                else if(!uncached_en) begin 
                     if(dirt[lru]) state <= write_data;
                     else state <= miss;
                 end
+                else begin 
+                    state <= miss;
+                end
             end
             miss: begin 
-                if(read_count_ready && rdata_ready) state <= idle;
+                if(uncached_en) begin 
+                    if(mem_write_respone || rdata_ready) state <= idle;
+                end
+                else if(read_count_ready && rdata_ready) state <= idle;
             end
             write_data: begin 
                 if(mem_write_respone) state <= miss;
@@ -1187,15 +1193,15 @@ assign wmask_en = we;
 assign write_lru = (state == miss)? ~lru: 
                     (state == scanf & hit_way0) ? 1'b1:
                     (state == scanf & hit_way1)? 1'b0: 1'b1;
-assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready);
+assign write_lru_we = ((state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready)) & !uncached_en;
 //generate dirt data and enable
-assign write_dirt_we[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we);
-assign write_dirt_we[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we);
+assign write_dirt_we[0] = ((state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)) & !uncached_en;
+assign write_dirt_we[1] = ((state == miss & we & lru)    | (state == scanf & hit_way1 & we)) & !uncached_en;
 assign write_dirt[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)? 1'b1:1'b0;
 assign write_dirt[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we)? 1'b1:1'b0;
 //generate cache meta data and cache data write enable
-assign cache_we[0] = (state == miss & (~lru) & read_count_ready | state == scanf & hit_way0 & we) & rdata_ready;
-assign cache_we[1] = (state == miss & lru & read_count_ready | state == scanf & hit_way1 & we) & rdata_ready;
+assign cache_we[0] = (state == miss & (~lru) & read_count_ready | state == scanf & hit_way0 & we) & rdata_ready & !uncached_en;
+assign cache_we[1] = (state == miss & lru & read_count_ready | state == scanf & hit_way1 & we) & rdata_ready & !uncached_en;
 
 generate
     for(i=0;i<Cache_way;i++) begin 
@@ -1208,17 +1214,18 @@ assign scanf_valid = state == scanf;
 //read out data 
 assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) | 
                ({DATA_WIDTH{hit_way1}} & hit_rdata[1]) |
-               ({DATA_WIDTH{read_count_ready}} & miss_rdata);
+               ({DATA_WIDTH{read_count_ready & !uncached_en}} & miss_rdata)| 
+               ({DATA_WIDTH{uncached_en}} & mem_rdata);
 
-assign mem_addr = (state == miss)?  miss_addr : (state == write_data)? write_back_addr: 'h0;
-assign mem_ce = (state == miss && read_count != Cache_line_wordnum) || state == write_data;
-assign mem_we = state == write_data;
-assign mem_wdata = write_back_data;
-assign mem_wmask = {(CPU_WIDTH/8){1'b1}};
+assign mem_addr = uncached_en ? addr:(state == miss)?  miss_addr : (state == write_data)? write_back_addr: 'h0;
+assign mem_ce = uncached_en ? (state == miss):((state == miss && read_count != Cache_line_wordnum) || state == write_data);
+assign mem_we = uncached_en ? we:state == write_data;
+assign mem_wdata = uncached_en ? {{(Cache_line_size - DATA_WIDTH){1'b0}},wdata}:write_back_data;
+assign mem_wmask = uncached_en ? wmask:{(CPU_WIDTH/8){1'b1}};
 
-assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
-assign write_respone = (state == scanf & hit) | (state == miss & read_count_ready); 
-assign data_transform_type = 3'b100;
+assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_en & mem_rdata_valid);
+assign write_respone = (state == scanf & hit) | (state == miss & read_count_ready) | (state == miss & uncached_en & mem_write_respone); 
+assign data_transform_type = uncached_en ? 3'b001:3'b100;
 
 `ifdef display_cache_missinfo
 always @(posedge clk) begin

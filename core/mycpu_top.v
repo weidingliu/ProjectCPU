@@ -722,6 +722,7 @@ DCache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))DCache(
     .wdata(wdata),
     .wmask(wmask),
     .write_respone(write_finish),
+    .uncached_en(data_uncached_en),
     //mem request
     .mem_addr(data_mem_addr),
         //read data
