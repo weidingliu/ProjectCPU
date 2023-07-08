@@ -136,6 +136,7 @@ wire tlbrentry_wen = csr_wr_en & (csr_waddr == TLBRENTRY);
 wire DMW0_wen   = csr_wr_en & (csr_waddr == DMW0);
 wire DMW1_wen   = csr_wr_en & (csr_waddr == DMW1);
 
+
 reg [31:0]crmd;
 reg [31:0]prmd;
 reg [31:0]ecfg;
@@ -282,6 +283,9 @@ always @(posedge clk) begin
 end
 //era
 always @(posedge clk) begin
+    if(reset) begin 
+        era <= 32'h0;
+    end
     if (excp_flush) begin
         era <= era_in;
     end
@@ -471,6 +475,15 @@ always @(posedge clk) begin
         end
     end
 end
+
+//cntc 
+
+// always @(posedge clk) begin
+//     if(reset) begin 
+//         cntc <= 32'h0;
+//     end
+//     else if
+// end
 
 // tlbehi
 always @(posedge clk) begin

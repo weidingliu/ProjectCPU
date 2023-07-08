@@ -1556,7 +1556,7 @@ assign data_transform_type = uncached_en ? 3'b001:3'b100;
 
 assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_en & mem_rdata_valid);
 
-assign icache_busy = !(state == idle | state == scanf);
+assign icache_busy = !(state == idle);
 `ifdef display_cache_missinfo
 always @(posedge clk) begin
     if(state == scanf && (~hit))begin 

@@ -217,8 +217,8 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid)) | !left_valid ? 1'b0:1'b1;
-assign left_ready= (en && (we && !write_finish || !we && !rdata_valid)) ? 1'b0:1'b1;
+assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid ? 1'b0:1'b1;
+assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
 assign mem_excp_bus = excp_temp;
