@@ -5,14 +5,14 @@
 `define bypass_width 38
 `define ctrl_width 215
 `define ex_ctrl_width 220
-`define mem_ctrl_width 104
+`define mem_ctrl_width 136
 // for csr read and write bus
 `define id_csr_ctrl_width 49
 `define ex_csr_ctrl_width 47
 // for excp and interrupt
 `define id_excp_width 11
 `define ex_excp_width 11
-`define mem_excp_width 11
+`define mem_excp_width 18
 
 // for difftest, next instruction after set soft interrupt
 `define NEXT_SOFT_INT

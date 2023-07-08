@@ -39,11 +39,17 @@ module addr_trans #(
     input wire [31:0]data_vaddr,
     input wire data_addr_valid,
     output wire data_addr_ready,
+    input wire mem_load,// is load 
+    input wire mem_store,// is store
+    input wire mem_halfword,// is half word mem 
+    input wire mem_word,// is word mem 
 
     output wire data_uncached_en,
     output wire [31:0]data_paddr,
     output wire [31:0]data_vaddr_o,
     output wire data_tlb_found,
+    output wire data_excp,
+    output wire [6:0]data_excp_num,
     output wire data_valid,
     input wire data_ready,
     input wire data_fire
@@ -84,6 +90,9 @@ wire s1_v;
 wire s1_d;
 wire [1:0]s1_mat;
 wire [1:0]s1_plv;
+
+wire inst_tlb_trans;
+wire data_tlb_trans;
 // //write port
 // wire we,
 // wire [$clog2(TLBNUM)-1:0] w_index,
@@ -212,6 +221,9 @@ tlb_entry tlb(
     .r_plv1(),
     .r_ppn1()
 );
+//
+assign inst_tlb_trans = !inst_dmw0_en & !inst_dmw1_en & inst_trans_en;
+assign data_tlb_trans = !data_dmw0_en & !data_dmw1_en & data_trans_en;
 
 // paddr
 assign inst_paddr = inst_trans_en? (inst_dmw0_en? {DMW0[27:25],inst_vaddr_temp[28:0]}
@@ -280,20 +292,40 @@ always @(posedge clk) begin
     end
 end
 
-//excption 
+//inst excption 
 
 wire inst_excp_adef;
 wire inst_excp_pif;
 wire inst_excp_ppi;
 wire inst_excp_tlbr;
 
-assign inst_excp_adef = (inst_paddr[1] | inst_paddr[0]) | (inst_trans_en & (plv == 2'b11) & data_vaddr_o[31] & !inst_dmw0_en & !inst_dmw1_en);
-assign inst_excp_pif = inst_trans_en & !s0_v & !inst_dmw0_en & !inst_dmw1_en;
-assign inst_excp_ppi = inst_trans_en & (s0_plv > plv) & !inst_dmw0_en & !inst_dmw1_en;
-assign inst_excp_tlbr = inst_trans_en & !s0_found & !inst_dmw0_en & !inst_dmw1_en;
+assign inst_excp_adef = (inst_paddr[1] | inst_paddr[0]) | ((plv == 2'b11) & inst_vaddr_o[31] & inst_tlb_trans);//addr not aligned
+assign inst_excp_pif = inst_tlb_trans & !s0_v;// page fault
+assign inst_excp_ppi = inst_tlb_trans & (plv > s0_plv) & s0_v;//page privilege not allow 
+assign inst_excp_tlbr = inst_tlb_trans & !s0_found;//refill page
 
 assign inst_excp = inst_excp_adef | inst_excp_pif | inst_excp_ppi | inst_excp_tlbr;
 assign inst_excp_num = {inst_excp_ppi,inst_excp_pif,inst_excp_tlbr,inst_excp_adef};
+
+//data excption 
+wire data_excp_pil;
+wire data_excp_pis;
+wire data_excp_pme;
+wire data_excp_ppi;
+wire data_excp_adem;
+wire data_excp_ale;
+wire data_excp_tlbr;
+
+assign data_excp_pil = data_tlb_trans & !s1_v & mem_load & data_addr_valid;// load page fault 
+assign data_excp_pis = data_tlb_trans & !s1_v & mem_store & data_addr_valid;// store page fault 
+assign data_excp_ppi = data_tlb_trans & (plv > s1_plv) & data_addr_valid & s1_v;// page privilege not allow 
+assign data_excp_pme = data_tlb_trans & data_addr_valid & mem_store & !s1_d & (s1_plv >= plv);// store page but dirt is not 1,syscall to fix 
+assign data_excp_adem = ((plv == 2'b11) & data_vaddr_o[31] & data_tlb_trans) & data_addr_valid;
+assign data_excp_tlbr = inst_tlb_trans & !s1_found; //refill page
+assign data_excp_ale = data_addr_valid & ((mem_halfword & data_vaddr_o[0]) | (mem_word & (data_vaddr_o[1] | data_vaddr_o[0])));
+
+assign data_excp_num = {data_excp_pil, data_excp_pis, data_excp_ppi, data_excp_pme, data_excp_tlbr,data_excp_adem,data_excp_ale};
+assign data_excp = data_excp_pil | data_excp_pis | data_excp_ppi | data_excp_pme | data_excp_adem | data_excp_tlbr | data_excp_ale;
 
 endmodule //addr_trans
 

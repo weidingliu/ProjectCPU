@@ -185,6 +185,12 @@ wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass;
   // for addr_trans
 wire data_uncached_en;
 wire [31:0]data_paddr;
+wire mem_load;
+wire mem_store;
+wire mem_halfword;
+wire mem_word;
+wire mem_excp_i;
+wire [6:0]mem_excp_num_i;
 // wire [31:0]data_vaddr_o;
 wire data_tlb_found;
 wire data_valid;
@@ -232,6 +238,7 @@ wire [31:0] difftest_Inst;
 wire [31:0] difftest_PC;
 wire [31:0]difftest_result;
 wire diifftest_is_break;
+wire [31:0] difftest_mem_addr;
 
 // from csr
 wire    [31:0]  csr_crmd_diff_0     ;
@@ -371,6 +378,13 @@ addr_trans addr_translate(
     .data_vaddr(addr),
     .data_addr_valid(en),
     .data_addr_ready(),
+    //for excp
+    .mem_load(mem_load),
+    .mem_store(mem_store),
+    .mem_halfword(mem_halfword),
+    .mem_word(mem_word),
+    .data_excp(mem_excp_i),
+    .data_excp_num(mem_excp_num_i),
 
     .data_uncached_en(data_uncached_en),
     .data_paddr(data_paddr),
@@ -504,6 +518,7 @@ EXE exe_stage(
     .clk(clk),//clock
     .reset(reset),//global reset
     .id_ctrl_bus(id_bus), //ctrl flower
+    .icache_busy(icache_busy),
 
     .ex_ctrl_bus(ex_bus),
     //csr bus
@@ -552,6 +567,14 @@ MEM mem_stage(
     .mem_excp_bus(mem_excp_bus),
     .excp_flush(excp_flush),
     .ertn_flush(ertn_flush),
+
+    .mem_load(mem_load),
+    .mem_store(mem_store),
+    .mem_halfword(mem_halfword),
+    .mem_word(mem_word),
+    .excp_i(mem_excp_i),
+    .excp_num_i(mem_excp_num_i),
+
     //mem interface
     .addr(addr),//read/write address
     .en(en),//read/write enable
@@ -579,6 +602,7 @@ MEM mem_stage(
 WB wb_syage(
     .clk(clk),//clock
     .reset(reset),//global reset
+    .icache_busy(icache_busy),
     //ctrl flower
     .mem_ctrl_bus(mem_bus),
     .wb_ctrl_bus(wb_bus),
@@ -683,8 +707,7 @@ CSR CSR(
 ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .clk(clk),
     .reset(reset),
-    .flush(flush || excp_flush || ertn_flush),
-    
+    .icache_busy(icache_busy),
     //cpu request
     .ce(inst_addr_trans_valid),
     .we(1'b0),
@@ -692,6 +715,7 @@ ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .rdata(inst),
     .rdata_valid(inst_ready),
     .rdata_ready(cache_inst_valid),
+    .uncached_en(inst_uncached_en),
 
     //mem request
     .mem_addr(inst_mem_addr),
@@ -974,7 +998,8 @@ always @(posedge clk) begin
         difftest_ecode <= ecode;
     end
 end
-assign {     
+assign {    
+    difftest_mem_addr,//104:135 
     diifftest_is_break,//103:103
     difftest_inst_valid,//102:102
     difftest_wreg_index,//97:101

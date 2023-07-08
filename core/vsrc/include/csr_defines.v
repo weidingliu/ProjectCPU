@@ -50,8 +50,10 @@
 `define ECODE_IPE  6'he
 `define ECODE_FPD  6'hf
 `define ECODE_TLBR 6'h3f
+`define ECODE_ADEM 6'h8
 
 `define ESUBCODE_ADEF  9'h0
+`define ESUBCODE_ADEM  9'h1
 
 //tcfg 
 `define EN        0

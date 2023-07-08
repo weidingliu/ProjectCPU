@@ -103,8 +103,7 @@ localparam LLBCTL= 14'h60;
 localparam TLBRENTRY = 14'h88;
 localparam DMW0  = 14'h180;
 localparam DMW1  = 14'h181;
-localparam BRK = 14'h100;
-localparam DISABLE_CACHE = 14'h101;
+
 
 
 wire crmd_wen   = csr_wr_en & (csr_waddr == CRMD);
@@ -136,8 +135,6 @@ wire llbctl_wen = csr_wr_en & (csr_waddr == LLBCTL);
 wire tlbrentry_wen = csr_wr_en & (csr_waddr == TLBRENTRY);
 wire DMW0_wen   = csr_wr_en & (csr_waddr == DMW0);
 wire DMW1_wen   = csr_wr_en & (csr_waddr == DMW1);
-wire BRK_wen    = csr_wr_en & (csr_waddr == BRK);
-wire disable_cache_wen = csr_wr_en & (csr_waddr == DISABLE_CACHE);
 
 reg [31:0]crmd;
 reg [31:0]prmd;
@@ -288,9 +285,6 @@ always @(posedge clk) begin
     if (excp_flush) begin
         era <= era_in;
     end
-    // else if(excp_flush) begin 
-    //     era <= pc;
-    // end
     else if (era_wen) begin
         era <= csr_wdata;
     end
@@ -477,15 +471,6 @@ always @(posedge clk) begin
         end
     end
 end
-
-//cntc 
-
-// always @(posedge clk) begin
-//     if(reset) begin 
-//         cntc <= 32'h0;
-//     end
-//     else if
-// end
 
 // tlbehi
 always @(posedge clk) begin

@@ -520,6 +520,7 @@ ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .rdata(inst),
     .rdata_valid(inst_ready),
     .rdata_ready(pc_valid),
+    .uncached_en(inst_uncached_en),
 
     //mem request
     .mem_addr(inst_mem_addr),

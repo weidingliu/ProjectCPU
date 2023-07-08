@@ -24,6 +24,14 @@ module MEM (
     output wire we,//read/write enable
     input wire rdata_valid,
     input wire write_finish,
+    // for data trans 
+    output wire mem_load,
+    output wire mem_store,
+    output wire mem_halfword,
+    output wire mem_word,
+    input wire excp_i,
+    input wire [6:0]excp_num_i,
+
     //bypass
     output wire [`bypass_width-1:0]mem_bypass,
     output wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass,
@@ -135,6 +143,11 @@ assign half_load = (
     ({32{alu_result[1]}} & (({16'h0,rdata[31:16]}   & {32{op_mem[1]}}) | ({{16{rdata[31]}},rdata[31:16]}    & {32{~op_mem[1]}})))
 );
 
+assign mem_load = op_mem[0] & !op_mem[2];
+assign mem_store = op_mem[0] & op_mem[2];
+assign mem_halfword = op_mem[0] & op_mem[4];
+assign mem_word = op_mem[0] & op_mem[3];
+
 //for sram
 assign en = op_mem[0] & inst_valid & left_valid & !excp_flush;
 assign we = op_mem[2];
@@ -183,10 +196,11 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    alu_result, // 104:135
                     is_break,//103:103
                     (left_valid & inst_valid ),//102:102
                     wreg_index,//97:101
-                    wreg_en,//96:96
+                    wreg_en & !excp_i,//96:96 when exception ,should not write back data
                     Inst,// 64:95
                     PC,// 32:63
                     mem_result// 0:31
@@ -194,9 +208,9 @@ always @(posedge clk) begin
             csr_bus_temp <= mem_csr_bus;
 
             `ifdef NEXT_SOFT_INT
-            excp_temp <= {ex_excp_bus[`ex_excp_width-1:2],soft_int ,ex_excp_bus[0] | soft_int};
+            excp_temp <= {ex_excp_bus[`ex_excp_width-1],excp_num_i,ex_excp_bus[`ex_excp_width-2:2],soft_int ,ex_excp_bus[0] | soft_int | excp_i};
             `else
-            excp_temp <= ex_excp_bus;
+            excp_temp <= {ex_excp_bus[`ex_excp_width-1],excp_num_i,ex_excp_bus[`ex_excp_width-2:1],ex_excp_bus[0] | excp_i};
             `endif
         end
     end

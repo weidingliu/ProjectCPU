@@ -1070,7 +1070,7 @@ always @(posedge clk) begin
             end
             miss: begin 
                 if(uncached_en) begin 
-                    if(mem_write_respone || rdata_ready) state <= idle;
+                    if(mem_write_respone || mem_rdata_valid) state <= idle;
                 end
                 else if(read_count_ready && rdata_ready) state <= idle;
             end
@@ -1270,7 +1270,7 @@ module ICache #(
 )(
     input wire clk,
     input wire reset,
-    input wire flush,
+    output wire icache_busy,
     
     //cpu request
     input wire ce,
@@ -1279,6 +1279,7 @@ module ICache #(
     output wire [DATA_WIDTH-1:0]rdata,
     output wire rdata_valid,
     input wire rdata_ready,
+    input wire uncached_en,
     // input wire inst_uncached_en,
 
     //mem request
@@ -1299,7 +1300,6 @@ localparam idle = 3'b000;
 localparam scanf = 3'b001;
 localparam miss = 3'b010;
 localparam write_data = 3'b011;
-localparam wait_axi_end = 3'b100;
 
 reg [2:0]state;
 reg [31:0]read_count;
@@ -1440,12 +1440,6 @@ always @(posedge clk) begin
     if(reset) begin 
         state <= idle;
     end
-    else if(flush) begin 
-        if((state == miss && !(read_count_ready && rdata_ready)) | state == wait_axi_end) begin 
-            state <= wait_axi_end;
-        end
-        else state <= idle;
-    end
     else begin 
         case (state)
             idle: begin 
@@ -1464,13 +1458,10 @@ always @(posedge clk) begin
                 end
             end
             miss: begin 
-                if(read_count_ready && rdata_ready) state <= idle;
-            end
-            // write_data: begin 
-            //     if(write_count_ready) state <= miss;
-            // end 
-            wait_axi_end: begin 
-                if(read_count_ready && rdata_ready) state <= idle;
+                if(uncached_en) begin 
+                    if(mem_write_respone || mem_rdata_valid) state <= idle;
+                end
+                else if(read_count_ready && rdata_ready) state <= idle;
             end
             default: state <= idle;
         endcase
@@ -1491,7 +1482,7 @@ always @(posedge clk) begin
         miss_data <= 0;
         read_count <= 0;
     end
-    else if((state == wait_axi_end || state == miss) & mem_rdata_valid) begin 
+    else if((state == miss) & mem_rdata_valid) begin 
         read_count <= read_count + 1'b1;
         miss_data <= {mem_rdata,miss_data[Cache_line_size-1:DATA_WIDTH]};
     end
@@ -1537,9 +1528,9 @@ endgenerate
 assign write_lru = (state == miss)? ~lru: 
                     (state == scanf & hit_way0) ? 1'b1:
                     (state == scanf & hit_way1)? 1'b0: 1'b1;
-assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready);
-assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready;
-assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready;
+assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready) & !uncached_en;
+assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready & !uncached_en;
+assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready & !uncached_en;
 
 generate
     for(i=0;i<Cache_way;i++) begin 
@@ -1553,17 +1544,19 @@ assign scanf_valid = state == scanf;
 
 assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) | 
                ({DATA_WIDTH{hit_way1}} & hit_rdata[1]) |
-               ({DATA_WIDTH{read_count_ready}} & miss_rdata);
+               ({DATA_WIDTH{read_count_ready & !uncached_en}} & miss_rdata)| 
+               ({DATA_WIDTH{uncached_en}} & mem_rdata);
 
-assign mem_addr = (state == miss)?  miss_addr : {DATA_WIDTH{1'b0}};
-assign mem_ce = (state == miss && read_count != Cache_line_wordnum) || state == write_data;
-assign mem_we = state == write_data;
+assign mem_addr = uncached_en ? addr:(state == miss)?  miss_addr : {DATA_WIDTH{1'b0}};
+assign mem_ce = uncached_en ? (state == miss):((state == miss && read_count != Cache_line_wordnum) || state == write_data);
+assign mem_we = uncached_en ? we:state == write_data;
 // assign mem_wdata = write_back_data[DATA_WIDTH-1:0];
 // assign mem_wmask = 
-assign data_transform_type = 3'b100;
+assign data_transform_type = uncached_en ? 3'b001:3'b100;
 
-assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready);
+assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_en & mem_rdata_valid);
 
+assign icache_busy = !(state == idle | state == scanf);
 `ifdef display_cache_missinfo
 always @(posedge clk) begin
     if(state == scanf && (~hit))begin 

@@ -3,6 +3,7 @@
 module WB (
     input wire clk,//clock
     input wire reset,//global reset
+    input wire icache_busy,
     //bus 
     input wire [`mem_ctrl_width-1:0] mem_ctrl_bus,
     output wire [`mem_ctrl_width-1:0] wb_ctrl_bus,
@@ -50,8 +51,9 @@ wire [31:0]Inst;
 wire [31:0]PC;
 wire [31:0]mem_result;
 // wire inst_valid;
-
+wire [31:0]mem_addr;
 assign {
+        mem_addr,//104:135
         is_break,//103:103
         inst_valid,//102:102
         wreg_index,//97:101
@@ -63,7 +65,7 @@ assign {
 
 //excp
 wire ms_excp;
-wire [8:0]excp_num;
+wire [15:0]excp_num;
 wire ertn;
 
 assign {
@@ -73,11 +75,11 @@ assign {
 } = mem_excp_bus;
 
 `ifdef NEXT_SOFT_INT
-assign excp_flush = (ms_excp | soft_int) & left_valid;
+assign excp_flush = (ms_excp | soft_int) & left_valid & !icache_busy;
 `else 
-assign excp_flush = ms_excp & left_valid;
+assign excp_flush = ms_excp & left_valid & !icache_busy;
 `endif
-assign ertn_flush = ertn & left_valid;
+assign ertn_flush = ertn & left_valid & !icache_busy;
 // assign pc = PC;
 /*
 excp_num[0]  int
@@ -89,8 +91,8 @@ excp_num[0]  int
         [6]  brk
         [7]  ine
         [8]  ipe
-        [9]  ale
-        [10] <null>
+        [9]  ale     | mem exceptions 
+        [10] adem
         [11] tlbr    |
         [12] pme     |data tlb exceptions
         [13] ppi     |
@@ -105,11 +107,22 @@ assign {
     badv,
     badv_valid
 } = (excp_num[0] | soft_int) ? {`ECODE_INT , 9'b0,32'h0,1'b0} :
-    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,1'b1 & left_valid}:
-    excp_num[5] ? {`ECODE_SYS , 9'b0,32'h0,1'b0} :
-    excp_num[6] ? {`ECODE_BRK , 9'b0,32'h0,1'b0} :
-    excp_num[7] ? {`ECODE_INE , 9'b0,32'h0,1'b0} :
-    excp_num[8] ? {`ECODE_IPE , 9'b0,32'h0,1'b0} : 48'b0;
+    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,    left_valid}:
+    excp_num[2] ? {`ECODE_TLBR, 9'b0,         PC,    left_valid}:
+    excp_num[3] ? {`ECODE_PIF,  9'b0,         PC,    left_valid}:
+    excp_num[4] ? {`ECODE_PPI,  9'b0,         PC,    left_valid}:
+    excp_num[5] ? {`ECODE_SYS , 9'b0,         32'h0,  1'b0} :
+    excp_num[6] ? {`ECODE_BRK , 9'b0,         32'h0,  1'b0} :
+    excp_num[7] ? {`ECODE_INE , 9'b0,         32'h0,  1'b0} :
+    excp_num[8] ? {`ECODE_IPE , 9'b0,         32'h0,  1'b0} : 
+    excp_num[9] ? {`ECODE_ALE , 9'b0,         mem_addr,left_valid} : 
+    excp_num[10]? {`ECODE_ADEM,`ESUBCODE_ADEM,mem_addr,left_valid} :
+    excp_num[11]? {`ECODE_TLBR, 9'b0,         mem_addr,left_valid} :
+    excp_num[12]? {`ECODE_PME,  9'b0,         mem_addr,left_valid} :
+    excp_num[13]? {`ECODE_PPI,  9'b0,         mem_addr,left_valid} :
+    excp_num[14]? {`ECODE_PIS,  9'b0,         mem_addr,left_valid} :
+    excp_num[15]? {`ECODE_PIL,  9'b0,         mem_addr,left_valid} :
+    48'b0;
 `else 
 assign {
     ecode,
@@ -118,10 +131,21 @@ assign {
     badv_valid
 } = excp_num[0] ? {`ECODE_INT , 9'b0,32'h0,1'b0} :
     excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,1'b1  & left_valid}:
+    excp_num[2] ? {`ECODE_TLBR, 9'b0, PC, left_valid}:
+    excp_num[3] ? {`ECODE_PIF,9'b0,PC,left_valid}:
+    excp_num[4] ? {`ECODE_PPI,9'b0,PC,left_valid}:
     excp_num[5] ? {`ECODE_SYS , 9'b0,32'h0,1'b0} :
     excp_num[6] ? {`ECODE_BRK , 9'b0,32'h0,1'b0} :
     excp_num[7] ? {`ECODE_INE , 9'b0,32'h0,1'b0} :
-    excp_num[8] ? {`ECODE_IPE , 9'b0,32'h0,1'b0} : 48'b0;
+    excp_num[8] ? {`ECODE_IPE , 9'b0,32'h0,1'b0} : 
+    excp_num[9] ? {`ECODE_ALE , 9'b0,         mem_addr,left_valid} : 
+    excp_num[10]? {`ECODE_ADEM,`ESUBCODE_ADEM,mem_addr,left_valid} :
+    excp_num[11]? {`ECODE_TLBR, 9'b0,         mem_addr,left_valid} :
+    excp_num[12]? {`ECODE_PME,  9'b0,         mem_addr,left_valid} :
+    excp_num[13]? {`ECODE_PPI,  9'b0,         mem_addr,left_valid} :
+    excp_num[14]? {`ECODE_PIS,  9'b0,         mem_addr,left_valid} :
+    excp_num[15]? {`ECODE_PIL,  9'b0,         mem_addr,left_valid} :
+    48'b0;
 `endif
 
 
@@ -163,8 +187,8 @@ assign excp_era = PC;
 // output logic
 // assign right_valid=valid;
 assign right_valid = logic_valid;
-assign logic_valid = left_valid;
-assign left_ready=right_ready;
+assign logic_valid = (icache_busy & (ms_excp | ertn) & left_valid) ? 1'b0:left_valid;
+assign left_ready = (icache_busy & (ms_excp | ertn) & left_valid) ? 1'b0: right_ready;
 // assign wb_ctrl_bus=bus_temp;
 // assign wb_csr_bus = csr_bus_temp;
 assign wb_ctrl_bus={mem_ctrl_bus[103:103],(mem_ctrl_bus[102] & ~excp_flush),mem_ctrl_bus[101:0]};;

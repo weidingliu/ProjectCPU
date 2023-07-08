@@ -6,6 +6,7 @@ module EXE (
     input wire [`id_csr_ctrl_width-1:0]id_csr_ctrl_bus,
     input wire excp_flush,
     input wire ertn_flush,
+    input wire icache_busy,
 
     output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
     //csr
@@ -317,15 +318,15 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
-assign left_ready= (!mul_valid && is_mul || !div_valid && is_div )? 1'b0:right_ready;
+assign logic_valid = (branch_flag & left_valid & right_ready & icache_busy) | !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
+assign left_ready= (!mul_valid && is_mul || !div_valid && is_div ) | (flush & icache_busy)? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
 assign ex_csr_ctrl_bus = csr_bus_temp;
 assign ex_excp_bus = excp_temp;
 assign ex_bypass = {alu_result,wreg_index,wreg_en & left_valid};
 
 assign is_branch = (branch_flag) & left_valid & right_ready;
-assign flush = branch_flag & left_valid & right_ready;
+assign flush = branch_flag & left_valid & right_ready & !icache_busy;
 assign dnpc = alu_result;
 
 assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:
