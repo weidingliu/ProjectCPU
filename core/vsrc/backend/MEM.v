@@ -73,6 +73,8 @@ wire [31:0]alu_result;
 wire [5:0] op_mem;
 wire is_break;
 // wire Inst_valid;
+wire timer_inst;
+wire [63:0]timer64;
 
 wire [31:0] byte_temp;
 wire [31:0] half_temp;
@@ -84,6 +86,8 @@ wire [3:0] byte_wmask;
 wire [3:0] half_wmask;
 
 assign {
+    timer_inst,// 284:284
+    timer64,// 220:283
     is_break,//219:219
     op_mem,//213:218
     alu_op,//199:212
@@ -142,7 +146,7 @@ assign half_load = (
     ({32{~alu_result[1]}} & (({16'h0,rdata[15:0]}   & {32{op_mem[1]}}) | ({{16{rdata[15]}},rdata[15:0]}    & {32{~op_mem[1]}}))) |
     ({32{alu_result[1]}} & (({16'h0,rdata[31:16]}   & {32{op_mem[1]}}) | ({{16{rdata[31]}},rdata[31:16]}    & {32{~op_mem[1]}})))
 );
-
+// for addr teanslate
 assign mem_load = op_mem[0] & !op_mem[2];
 assign mem_store = op_mem[0] & op_mem[2];
 assign mem_halfword = op_mem[0] & op_mem[4];
@@ -196,6 +200,8 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    timer_inst,// 200:200
+                    timer64,// 136:199
                     alu_result, // 104:135
                     is_break,//103:103
                     (left_valid & inst_valid ),//102:102
@@ -206,7 +212,7 @@ always @(posedge clk) begin
                     mem_result// 0:31
                     };
             csr_bus_temp <= mem_csr_bus;
-
+            // for difftest , next inst soft int 
             `ifdef NEXT_SOFT_INT
             excp_temp <= {ex_excp_bus[`ex_excp_width-1],excp_num_i,ex_excp_bus[`ex_excp_width-2:2],soft_int ,ex_excp_bus[0] | soft_int | excp_i};
             `else
@@ -217,7 +223,7 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid ? 1'b0:1'b1;
+assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid ? 1'b0:1'b1;// memory must not exceptions 
 assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;

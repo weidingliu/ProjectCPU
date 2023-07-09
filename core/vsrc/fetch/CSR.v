@@ -33,6 +33,10 @@ module CSR (
     output wire [1:0]datm,
     output wire [31:0]csr_ASID,
 
+    //for id 
+    output wire [63:0]timer_out,
+    output wire [31:0]tid_out,
+
     //for generate
     output wire [1:0] plv_out,
 
@@ -168,6 +172,7 @@ reg [31:0]pgdh;
 reg [31:0]pgdl;
 
 wire [31:0]pgd;
+reg [63:0]timer64;
 
 
 `ifdef NEXT_SOFT_INT
@@ -184,6 +189,16 @@ assign era_out = era;
 assign has_int = ((ecfg[12:0] & estat[12:0]) != 13'b0) & crmd[`IE];
 
 assign pgd = badv[31]? pgdh:pgdl;
+// timer 
+always @(posedge clk) begin
+    if(reset) begin 
+        timer64 <= 64'h0;
+    end
+    else begin 
+        timer64 <= timer64 + 64'h1;
+    end
+end
+
 //crmd
 always @(posedge clk) begin
     if(reset == `RestEn) begin 
@@ -476,7 +491,7 @@ always @(posedge clk) begin
     end
 end
 
-//cntc 
+//
 
 // always @(posedge clk) begin
 //     if(reset) begin 
@@ -550,6 +565,8 @@ always @(posedge clk) begin
     end
 end
 
+assign timer_out = timer64; 
+assign tid_out = tid;
 
 //difftest
 assign csr_crmd_diff        = crmd;

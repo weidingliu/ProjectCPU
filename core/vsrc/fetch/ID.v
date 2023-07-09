@@ -21,6 +21,8 @@ module ID (
     output [13:0] rd_csr_addr,
     input  [31:0] rd_csr_data,
     output wire [`id_csr_ctrl_width-1:0] id_csr_ctrl,
+    input wire [63:0] timer_in,
+    input wire [31:0] tid,
     //interrupt
     input wire has_int,
     // excp bus and some sign for excp
@@ -104,6 +106,8 @@ wire [5:0]op_mem;
 wire is_rd;
 //select r1 as dest
 wire is_r1;
+// select rj as dest
+wire is_rj;
 
 //inst valid
 wire inst_valid;
@@ -161,6 +165,10 @@ wire inst_csrxchg;
 wire inst_syscall;
 wire inst_ertn;
 
+wire inst_rdcntid;
+wire inst_rdcntvl;
+wire inst_edcntvh;
+
 wire logic_valid;
 wire is_sign_extend;
 
@@ -200,6 +208,7 @@ assign op_mem[5] = inst_st_b | inst_ld_bu | inst_ld_b ;
 //select rd as second source reg
 assign is_rd = inst_st_w | inst_bge | inst_st_b | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_st_h | inst_bltu | inst_csrwr | inst_csrxchg; 
 assign is_r1 = inst_bl;
+assign is_rj = inst_rdcntid;
 
 //aluop
 assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge | inst_st_b | inst_ld_bu
@@ -307,8 +316,8 @@ assign inst_sltu      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decod
 assign inst_nor       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h08];
 assign inst_and       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h09];
 assign inst_xor       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0b];
-// assign inst_orn        = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0c];
-// assign inst_andn       = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h0d];
+// assign inst_orn       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0c];
+// assign inst_andn      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0d];
 assign inst_sll       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0e];
 assign inst_srl       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0f];
 assign inst_sra       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h10];
@@ -351,6 +360,15 @@ assign inst_csrxchg   = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & (~rj_d
 assign inst_syscall   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h2] & decoder_op_19_15[5'h16];
 assign inst_ertn      = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h10] & rk_d[5'h0e] & rj_d[5'h00] & rd_d[5'h00];
 
+assign inst_rdcntid   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h00] & rk_d[5'h18] & rd_d[5'h00];
+assign inst_rdcntvl   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h00] & rk_d[5'h18] & rj_d[5'h00] & !rd_d[5'h00];
+assign inst_rdcntvh   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h00] & rk_d[5'h19] & rj_d[5'h00];
+
+// assign inst_tlbsrch    = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk_d[5'h0a] & rj_d[5'h00] & rd_d[5'h00];
+// assign inst_tlbrd      = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk_d[5'h0b] & rj_d[5'h00] & rd_d[5'h00];
+// assign inst_tlbwr      = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk_d[5'h0c] & rj_d[5'h00] & rd_d[5'h00];
+// assign inst_tlbfill    = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk_d[5'h0d] & rj_d[5'h00] & rd_d[5'h00];
+
 
 // assign right_fire=right_ready & right_valid;//data submit finish
 // if alu is sign compute 
@@ -362,7 +380,8 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                     | inst_st_b | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
                     | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
-                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_syscall | inst_ertn);
+                    | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_syscall | inst_ertn
+                    | inst_rdcntid | inst_rdcntvl | inst_rdcntvh);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
@@ -370,11 +389,11 @@ assign ctrl_bus= bus_temp;
 assign id_excp_bus = excp_bus_temp;
 assign reg_index1=rj;
 assign reg_index2=(is_rd)? rd:rk;
-assign wreg_index=(is_r1)? 5'h1:rd;
+assign wreg_index=(is_r1)? 5'h1: (is_rj)? rj:rd;
 assign wreg_en = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
                  inst_ld_w | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu | inst_xori | inst_nor |
                  inst_sltui | inst_mul | inst_mod_w | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh |
-                 inst_mulh_u | inst_div | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg);
+                 inst_mulh_u | inst_div | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntid | inst_rdcntvl | inst_rdcntvh);
 assign Imm = ({32{Imm20_en}} & Imm20) |
              ({32{Imm12_en}} & Imm12) |
              ({32{Imm16_en}} & Imm16) |
@@ -384,9 +403,11 @@ assign Imm = ({32{Imm20_en}} & Imm20) |
 assign csr_we = inst_csrwr | inst_csrxchg;
 assign csr_idx = Inst[23:10];
 assign csr_mask_en = inst_csrxchg;
-assign csr_data = rd_csr_data;
+assign csr_data = (inst_rdcntvh)? timer_in[63:32]:
+                   (inst_rdcntvl)? timer_in[31:0]:
+                   (inst_rdcntid) ? tid : rd_csr_data;
 assign rd_csr_addr = csr_idx;
-assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg;
+assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntvl | inst_rdcntvh | inst_rdcntid;
 
 // for excp 
 assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn;
@@ -459,6 +480,8 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    (inst_rdcntvl | inst_rdcntvh | inst_rdcntid),// 279:279
+                    timer_in,// 215:278
                     mul_div_op,//211:214
                     is_break,//210:210
                     reg_index1,//205:209

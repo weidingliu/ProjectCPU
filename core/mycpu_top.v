@@ -226,6 +226,9 @@ wire [1:0]datf;
 wire [1:0]datm;
 wire [31:0]ASID;
 
+wire [63:0]timer64;
+wire [31:0]tid;
+
     //for generate
 wire [1:0] plv_out;
 
@@ -239,6 +242,8 @@ wire [31:0] difftest_PC;
 wire [31:0]difftest_result;
 wire diifftest_is_break;
 wire [31:0] difftest_mem_addr;
+wire difftest_timet_inst;
+wire [63:0]difftest_timer64;
 
 // from csr
 wire    [31:0]  csr_crmd_diff_0     ;
@@ -473,6 +478,8 @@ ID id_stage(
     .rd_csr_addr(rd_csr_addr),
     .rd_csr_data(rd_csr_data),
     .has_int(has_int),
+    .timer_in(timer64),
+    .tid(tid),
     //excp
     .id_excp_bus(id_excp_bus),
     .excp_flush(excp_flush),
@@ -663,6 +670,9 @@ CSR CSR(
     .datf(datf),
     .datm(datm),
     .csr_ASID(ASID),
+    // for id 
+    .timer_out(timer64),
+    .tid_out(tid),
 
     //for generate
     .plv_out(plv_out),
@@ -999,6 +1009,8 @@ always @(posedge clk) begin
     end
 end
 assign {    
+    difftest_timet_inst,
+    difftest_timer64,
     difftest_mem_addr,//104:135 
     diifftest_is_break,//103:103
     difftest_inst_valid,//102:102
@@ -1024,8 +1036,8 @@ DifftestInstrCommit DifftestInstrCommit(
     .skip(0),
     .is_TLBFILL(0),
     .TLBFILL_index(0),
-    .is_CNTinst(0),
-    .timer_64_value(0),
+    .is_CNTinst(difftest_timet_inst),
+    .timer_64_value(difftest_timer64),
     .wen(difftest_wreg_en),
     .wdest(difftest_wreg_index),
     .wdata(difftest_result),

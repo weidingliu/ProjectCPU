@@ -1,4 +1,5 @@
 `include "csr_defines.v"
+`include "defines.sv"
 
 module WB (
     input wire clk,//clock
@@ -52,7 +53,11 @@ wire [31:0]PC;
 wire [31:0]mem_result;
 // wire inst_valid;
 wire [31:0]mem_addr;
+wire timer_inst;
+wire [63:0]timer64;
 assign {
+        timer_inst,// 200:200
+        timer64,// 136:199
         mem_addr,//104:135
         is_break,//103:103
         inst_valid,//102:102
@@ -148,9 +153,7 @@ assign {
     48'b0;
 `endif
 
-
 assign excp_era = PC;
-
 
 // assign right_fire=right_ready & right_valid;//data submit finish
 //shark hands
@@ -191,7 +194,7 @@ assign logic_valid = (icache_busy & (ms_excp | ertn) & left_valid) ? 1'b0:left_v
 assign left_ready = (icache_busy & (ms_excp | ertn) & left_valid) ? 1'b0: right_ready;
 // assign wb_ctrl_bus=bus_temp;
 // assign wb_csr_bus = csr_bus_temp;
-assign wb_ctrl_bus={mem_ctrl_bus[103:103],(mem_ctrl_bus[102] & ~excp_flush),mem_ctrl_bus[101:0]};;
+assign wb_ctrl_bus={mem_ctrl_bus[`mem_ctrl_width-1:103],(mem_ctrl_bus[102] & ~excp_flush),mem_ctrl_bus[101:0]};
 assign wb_csr_bus = mem_csr_bus;
 assign wb_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
 assign wb_bypass = {mem_ctrl_bus[31:0],mem_ctrl_bus[101:97],mem_ctrl_bus[96:96] & left_valid};

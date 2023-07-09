@@ -27,6 +27,8 @@ wire [31:0]srl_result;
 wire [31:0]sltu_result;
 wire [31:0]nor_result;
 wire [31:0]slt_result;
+// wire [31:0]orn_result;
+// wire [31:0]andn_result;
 
 //adder 
 wire [31:0]adder_a;
@@ -62,14 +64,16 @@ assign srl_result = adder_a >> adder_b[4:0];
 assign sltu_result = (adder_a < adder_b) ? 32'h1:32'h0;
 assign nor_result = ~(adder_a | adder_b);
 assign slt_result = ($signed(adder_a) < $signed(adder_b)) ? 32'h1:32'h0;
+// assign orn_result = ~or_result;
+// assign andn_result = ~and_result;
 
 
 assign alu_result = ({32{op_add | op_sub}} & adder_result) | 
                     ({32{op_imm}} & alu_src1) |
-                    ({32{op_or}} & or_result) |
+                    ({32{op_or & !op_nor}} & or_result) |
                     ({32{op_xor}} & xor_result) |
                     ({32{op_sra}} & sra_result) |
-                    ({32{op_and}} & and_result) |
+                    ({32{op_and & !op_nor}} & and_result) |
                     ({32{op_sll}} & sll_result) |
                     ({32{op_srl}} & srl_result) |
                     ({32{op_sltu}} & sltu_result) |

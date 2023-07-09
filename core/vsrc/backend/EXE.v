@@ -89,6 +89,9 @@ wire div_valid;
 wire [31:0]quotient;
 wire [31:0]remainder;
 
+wire timer_inst;
+wire [63:0]timer64;
+
 //csr
 wire csr_we;//csr write enable
 wire [13:0]csr_idx;//csr write and read addr
@@ -134,6 +137,8 @@ assign real_csr_data = (wb_bypass_csr_we & (wb_bypass_csr_idx == csr_idx)) ? wb_
 
 //bus
 assign {
+    timer_inst,// 279:279
+    timer64,// 215:278
     mul_div_op,//211:214
     is_break,//210:210
     reg_index1,//205:209
@@ -289,6 +294,8 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             ctrl_temp_bus <= {
+                    timer_inst,// 284:284
+                    timer64,// 220:283
                     is_break,//219:219
                     op_mem,//213:218
                     alu_op,//199:212
