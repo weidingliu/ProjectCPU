@@ -52,7 +52,7 @@ module tlb_entry #(
     input wire [ 1:0] w_plv1,
     input wire [19:0] w_ppn1,
 
-    //read ort
+    //read port
     input wire [$clog2(TLBNUM)-1:0] r_index,
     output wire [18:0] r_vppn,
     output wire [ 9:0] r_asid,
@@ -70,10 +70,13 @@ module tlb_entry #(
     output wire r_d1,
     output wire [ 1:0] r_mat1,
     output wire [ 1:0] r_plv1,
-    output wire [19:0] r_ppn1
+    output wire [19:0] r_ppn1,
 
-    // tlb inst op
-
+        // invalid port 
+    input  wire       tlbinv_en,
+    input  wire [ 4:0]tlbinv_op,
+    input  wire [ 9:0]tlbinv_asid,
+    input  wire [18:0]tlbinv_vpn
 
     
 );
@@ -291,6 +294,43 @@ assign r_d1    =  tlb_d1   [r_index];
 assign r_mat1  =  tlb_mat1 [r_index]; 
 assign r_plv1  =  tlb_plv1 [r_index]; 
 assign r_ppn1  =  tlb_ppn1 [r_index]; 
+
+// genvar i;
+generate
+    for(i=0;i<TLBNUM;i=i+1) begin : invalid_tlb
+        always @(posedge clk) begin
+            if(we && (w_index == i)) begin 
+                tlb_e[i] <= w_e;
+            end
+            else if(tlbinv_en) begin 
+                if(tlbinv_op == 5'd0 || tlbinv_op == 5'd1) begin 
+                    tlb_e[i] <= 1'b0;
+                end
+                else if(tlbinv_op == 5'd2) begin 
+                    if(tlb_g[i]) tlb_e[i] <= 1'b0;
+                end
+                else if(tlbinv_op == 5'd3) begin 
+                    if(!tlb_g[i]) tlb_e[i] <= 1'b0;
+                end
+                else if(tlbinv_op == 5'd4) begin 
+                     if(!tlb_g[i] && (tlb_asid[i] == tlbinv_asid)) tlb_e[i] <= 1'b0;
+                end
+                else if(tlbinv_op == 5'd5) begin 
+                    if (!tlb_g[i] && (tlb_asid[i] == tlbinv_asid) && 
+                           ((tlb_ps[i] == 6'd12) ? (tlb_vppn[i] == tlbinv_vpn) : (tlb_vppn[i][18:10] == tlbinv_vpn[18:10]))) begin
+                            tlb_e[i] <= 1'b0;
+                        end
+                end
+                else if(tlbinv_op == 5'd6) begin 
+                    if ((tlb_g[i] || (tlb_asid[i] == tlbinv_asid)) && 
+                           ((tlb_ps[i] == 6'd12) ? (tlb_vppn[i] == tlbinv_vpn) : (tlb_vppn[i][18:10] == tlbinv_vpn[18:10]))) begin
+                            tlb_e[i] <= 1'b0;
+                        end
+                end
+            end
+        end
+    end
+endgenerate
 
 
 endmodule //tlb_entry

@@ -21,6 +21,14 @@ module WB (
     output wire [5:0]ecode,
     output wire [31:0]badv,
     output wire badv_valid,
+    // invtlb 
+    output wire tlbinv_en,
+    output wire [4:0]tlbinv_op,
+    output wire [9:0]tlbinv_asid,
+    output wire [18:0]tlbinv_vpn,
+    // tlbwr
+    output wire tlb_wren,//for tlbwr
+    output wire tlb_rden,// for tlbrd
 
     //bypass
     output wire [`bypass_width-1:0]wb_bypass,
@@ -55,7 +63,17 @@ wire [31:0]mem_result;
 wire [31:0]mem_addr;
 wire timer_inst;
 wire [63:0]timer64;
+
+//tlb 
+wire [4:0]tlb_op;
+
+//bus
 assign {
+        tlb_op,//236:240
+        tlbinv_en,//235:235
+        tlbinv_op,//230:234
+        tlbinv_asid,//220:229
+        tlbinv_vpn,//201:219
         timer_inst,// 200:200
         timer64,// 136:199
         mem_addr,//104:135
@@ -67,7 +85,9 @@ assign {
         PC,// 32:63
         mem_result// 0:31
 } = mem_ctrl_bus;
-
+//tlb 
+assign tlb_wren = tlb_op[1];
+assign tlb_rden = tlb_op[2];
 //excp
 wire ms_excp;
 wire [15:0]excp_num;

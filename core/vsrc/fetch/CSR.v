@@ -39,6 +39,33 @@ module CSR (
 
     //for generate
     output wire [1:0] plv_out,
+    //for tlb 
+    output wire [31:0] csr_tlbehi,
+    output wire [31:0] csr_tlbidx,
+    output wire [31:0] csr_tlbelo0,
+    output wire [31:0] csr_tlbelo1,
+    output wire [5:0]encode_in,
+    //from tlb 
+       //read ort
+    // input wire [$clog2(TLBNUM)-1:0] r_index,
+    input wire tlb_wden,
+    input wire [18:0] r_vppn,
+    input wire [ 9:0] r_asid,
+    input wire r_g,
+    input wire [ 5:0] r_ps,
+    input wire r_e,
+
+    input wire r_v0,
+    input wire r_d0,
+    input wire [ 1:0] r_mat0,
+    input wire [ 1:0] r_plv0,
+    input wire [19:0] r_ppn0,
+
+    input wire r_v1,
+    input wire r_d1,
+    input wire [ 1:0] r_mat1,
+    input wire [ 1:0] r_plv1,
+    input wire [19:0] r_ppn1,
 
     //interrupt
     input wire[7:0]interrupt,
@@ -140,6 +167,14 @@ wire tlbrentry_wen = csr_wr_en & (csr_waddr == TLBRENTRY);
 wire DMW0_wen   = csr_wr_en & (csr_waddr == DMW0);
 wire DMW1_wen   = csr_wr_en & (csr_waddr == DMW1);
 
+wire [31:0]    tlbehi_in;
+wire [31:0]    tlbelo0_in;
+wire [31:0]    tlbelo1_in;
+wire [31:0]    tlbidx_in;
+wire [ 9:0]    asid_in;
+
+wire tlbrd_valid;
+wire tlbrd_invalid;
 
 reg [31:0]crmd;
 reg [31:0]prmd;
@@ -174,6 +209,14 @@ reg [31:0]pgdl;
 wire [31:0]pgd;
 reg [63:0]timer64;
 
+assign tlbehi_in = {r_vppn, 13'b0};
+assign tlbelo0_in = {4'b0, r_ppn0, 1'b0, r_g, r_mat0, r_plv0, r_d0, r_v0};
+assign tlbelo1_in = {4'b0, r_ppn1, 1'b0, r_g, r_mat1, r_plv1, r_d1, r_v1};
+assign tlbidx_in = {!r_e, 1'b0, r_ps, 24'b0}; 
+assign asid_in = r_asid;
+
+assign tlbrd_valid = tlb_wden & !tlbidx_in[`NE];
+assign tlbrd_invalid = tlb_wden & tlbidx_in[`NE];
 
 `ifdef NEXT_SOFT_INT
 assign soft_int = ((estat[`IS1] & ecfg[`IS1]) != 2'b0) & crmd[`IE];
@@ -185,6 +228,7 @@ assign plv_out = {2{excp_flush}} & 2'b0            |
                  {2{!excp_flush && !ertn_flush && !crmd_wen}} & crmd[`PLV];
 assign eentry_out = eentry;
 assign era_out = era;
+assign csr_ASID = asid;
 
 assign has_int = ((ecfg[12:0] & estat[12:0]) != 13'b0) & crmd[`IE];
 
@@ -461,6 +505,14 @@ always @(posedge clk) begin
             tlbidx[`PS]    <= csr_wdata[`PS];
             tlbidx[`NE]    <= csr_wdata[`NE];
         end
+        else if(tlbrd_valid) begin 
+            tlbidx[`PS] <= tlbidx_in[`PS];
+            tlbidx[`NE] <= tlbidx_in[`NE];
+        end
+        else if(tlbrd_invalid) begin 
+            tlbidx[`PS] <= 6'b0;
+            tlbidx[`NE] <= tlbidx_in[`NE];
+        end
     end
 end
 
@@ -473,6 +525,12 @@ always @(posedge clk) begin
         if(asid_wen) begin 
             asid[`ASID] <= csr_wdata[`ASID];
         end 
+        else if(tlbrd_valid) begin 
+            asid[`ASID] <= asid_in;
+        end 
+        else if(tlbrd_invalid) begin 
+            asid[`ASID] <= 10'h0;
+        end
     end 
 end
 
@@ -509,6 +567,12 @@ always @(posedge clk) begin
         if (tlbehi_wen) begin
             tlbehi[`VPPN] <= csr_wdata[`VPPN];
         end
+        else if(tlbrd_valid) begin 
+            tlbehi[`VPPN] <= tlbehi_in[`VPPN];
+        end
+        else if(tlbrd_invalid) begin 
+            tlbehi[`VPPN] <= 19'b0;
+        end
     end
 end
 //tlblo0
@@ -525,6 +589,22 @@ always @(posedge clk) begin
             tlbelo0[`TLB_G]   <= csr_wdata[`TLB_G];
             tlbelo0[`TLB_PPN] <= csr_wdata[`TLB_PPN];
         end
+        else if(tlbrd_valid) begin 
+            tlbelo0[`TLB_V]   <= tlbelo0_in[`TLB_V];
+            tlbelo0[`TLB_D]   <= tlbelo0_in[`TLB_D];
+            tlbelo0[`TLB_PLV] <= tlbelo0_in[`TLB_PLV];
+            tlbelo0[`TLB_MAT] <= tlbelo0_in[`TLB_MAT];
+            tlbelo0[`TLB_G]   <= tlbelo0_in[`TLB_G];
+            tlbelo0[`TLB_PPN] <= tlbelo0_in[`TLB_PPN];
+        end
+        else if(tlbrd_invalid) begin 
+            tlbelo0[`TLB_V]   <= 1'b0;
+            tlbelo0[`TLB_D]   <= 1'b0;
+            tlbelo0[`TLB_PLV] <= 2'b0;
+            tlbelo0[`TLB_MAT] <= 2'b0;
+            tlbelo0[`TLB_G]   <= 1'b0;
+            tlbelo0[`TLB_PPN] <= 24'b0;
+        end
     end
 end
 //tlblo1
@@ -540,6 +620,22 @@ always @(posedge clk) begin
             tlbelo1[`TLB_MAT] <= csr_wdata[`TLB_MAT];
             tlbelo1[`TLB_G]   <= csr_wdata[`TLB_G];
             tlbelo1[`TLB_PPN] <= csr_wdata[`TLB_PPN];
+        end
+        else if(tlbrd_valid) begin 
+            tlbelo1[`TLB_V]   <= tlbelo1_in[`TLB_V];
+            tlbelo1[`TLB_D]   <= tlbelo1_in[`TLB_D];
+            tlbelo1[`TLB_PLV] <= tlbelo1_in[`TLB_PLV];
+            tlbelo1[`TLB_MAT] <= tlbelo1_in[`TLB_MAT];
+            tlbelo1[`TLB_G]   <= tlbelo1_in[`TLB_G];
+            tlbelo1[`TLB_PPN] <= tlbelo1_in[`TLB_PPN];
+        end
+        else if(tlbrd_invalid) begin 
+            tlbelo1[`TLB_V]   <= 1'b0;
+            tlbelo1[`TLB_D]   <= 1'b0;
+            tlbelo1[`TLB_PLV] <= 2'b0;
+            tlbelo1[`TLB_MAT] <= 2'b0;
+            tlbelo1[`TLB_G]   <= 1'b0;
+            tlbelo1[`TLB_PPN] <= 24'b0;
         end
     end
 end
@@ -633,6 +729,12 @@ assign dapg = {crmd[`DA],crmd[`PG]};
 assign datf = crmd[`DATF];
 assign datm = crmd[`DATM];
 assign ASID = asid;
+
+assign csr_tlbehi = tlbehi;
+assign csr_tlbidx = tlbidx;
+assign csr_tlbelo0 = tlbelo0;
+assign csr_tlbelo1 = tlbelo1;
+assign encode_in = estat[`Ecode];
 
 endmodule //CSR
 

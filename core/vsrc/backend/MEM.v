@@ -76,6 +76,13 @@ wire is_break;
 wire timer_inst;
 wire [63:0]timer64;
 
+// tlb 
+wire [4:0]tlb_op;
+wire tlbinv_en;
+wire [4:0]tlbinv_op;
+wire [9:0]tlbinv_asid;
+wire [18:0]tlbinv_vpn;
+
 wire [31:0] byte_temp;
 wire [31:0] half_temp;
 
@@ -86,6 +93,11 @@ wire [3:0] byte_wmask;
 wire [3:0] half_wmask;
 
 assign {
+    tlb_op,//320:324
+    tlbinv_en,//319:319
+    tlbinv_op,//314:318
+    tlbinv_asid,//304:313
+    tlbinv_vpn,//285:303
     timer_inst,// 284:284
     timer64,// 220:283
     is_break,//219:219
@@ -200,6 +212,11 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    tlb_op,//236:240
+                    tlbinv_en,//235:235
+                    tlbinv_op,//230:234
+                    tlbinv_asid,//220:229
+                    tlbinv_vpn,//201:219
                     timer_inst,// 200:200
                     timer64,// 136:199
                     alu_result, // 104:135

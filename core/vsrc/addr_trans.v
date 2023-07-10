@@ -19,6 +19,12 @@ module addr_trans #(
     input wire [1:0]DATF,
     input wire [1:0]DATM,
     input wire [31:0]ASID,
+
+    input wire [31:0] csr_tlbehi,
+    input wire [31:0] csr_tlbidx,
+    input wire [31:0] csr_tlbelo0,
+    input wire [31:0] csr_tlbelo1,
+    input wire [5:0]encode_in,
     // inst interface
     input wire [31:0]inst_vaddr,
     input wire inst_addr_valid,
@@ -52,7 +58,35 @@ module addr_trans #(
     output wire [6:0]data_excp_num,
     output wire data_valid,
     input wire data_ready,
-    input wire data_fire
+    input wire data_fire,
+
+    //tlb 
+    input wire tlbinv_en,
+    input wire [4:0]tlbinv_op,
+    input wire [9:0]tlbinv_asid,
+    input wire [18:0]tlbinv_vpn,
+    // tlb wr 
+    input wire tlb_wen,
+    //read port
+    // input wire [$clog2(TLBNUM)-1:0] r_index,
+    output wire [18:0] r_vppn,
+    output wire [ 9:0] r_asid,
+    output wire r_g,
+    output wire [ 5:0] r_ps,
+    output wire r_e,
+
+    output wire r_v0,
+    output wire r_d0,
+    output wire [ 1:0] r_mat0,
+    output wire [ 1:0] r_plv0,
+    output wire [19:0] r_ppn0,
+
+    output wire r_v1,
+    output wire r_d1,
+    output wire [ 1:0] r_mat1,
+    output wire [ 1:0] r_plv1,
+    output wire [19:0] r_ppn1
+
 );
 
 wire inst_trans_en;
@@ -94,26 +128,28 @@ wire [1:0]s1_plv;
 wire inst_tlb_trans;
 wire data_tlb_trans;
 // //write port
-// wire we,
-// wire [$clog2(TLBNUM)-1:0] w_index,
-// wire [18:0] w_vppn,
-// input wire [ 9:0] w_asid,
-// input wire w_g,
-// input wire [ 5:0] w_ps,
-// input wire w_e,
+wire we;
+wire [$clog2(TLBNUM)-1:0] w_index;
+wire [18:0] w_vppn;
+wire [ 9:0] w_asid;
+wire w_g;
+wire [ 5:0] w_ps;
+wire w_e;
 
-// input wire w_v0,
-// input wire w_d0,
-// input wire [ 1:0] w_mat0,
-// input wire [ 1:0] w_plv0,
-// input wire [19:0] w_ppn0,
+wire w_v0;
+wire w_d0;
+wire [ 1:0] w_mat0;
+wire [ 1:0] w_plv0;
+wire [19:0] w_ppn0;
 
-// input wire w_v1,
-// input wire w_d1,
-// input wire [ 1:0] w_mat1,
-// input wire [ 1:0] w_plv1,
-// input wire [19:0] w_ppn1,
+wire w_v1;
+wire w_d1;
+wire [ 1:0] w_mat1;
+wire [ 1:0] w_plv1;
+wire [19:0] w_ppn1;
 
+// read port
+wire [$clog2(TLBNUM)-1:0] r_index; 
 // //read ort
 // input wire [$clog2(TLBNUM)-1:0] r_index,
 // output wire [18:0] r_vppn,
@@ -141,6 +177,27 @@ reg [31:0]inst_vaddr_temp;
 reg data_valid_temp;
 reg [31:0]data_vaddr_temp;
 
+//tlb write port
+assign we = tlb_wen;
+assign w_index = ({5{tlb_wen}} & csr_tlbidx[`INDEX]) ;
+assign w_vppn = csr_tlbehi[`VPPN];
+assign w_asid = ASID[`ASID];
+assign w_g = csr_tlbelo0[`TLB_G] && csr_tlbelo1[`TLB_G];
+assign w_ps = csr_tlbidx[`PS];
+assign w_e = (encode_in == 6'h3f) ? 1'b1 : !csr_tlbidx[`NE];
+
+assign w_v0    = csr_tlbelo0[`TLB_V];
+assign w_d0    = csr_tlbelo0[`TLB_D];
+assign w_plv0  = csr_tlbelo0[`TLB_PLV];
+assign w_mat0  = csr_tlbelo0[`TLB_MAT];
+assign w_ppn0  = csr_tlbelo0[`TLB_PPN];
+assign w_v1    = csr_tlbelo1[`TLB_V];
+assign w_d1    = csr_tlbelo1[`TLB_D];
+assign w_plv1  = csr_tlbelo1[`TLB_PLV];
+assign w_mat1  = csr_tlbelo1[`TLB_MAT];
+assign w_ppn1  = csr_tlbelo1[`TLB_PPN];
+
+assign r_index = csr_tlbidx[`INDEX];
 // adress translate mod
 assign inst_trans_en =  DAPG == 2'b01;
 assign data_trans_en = DAPG == 2'b01;
@@ -181,45 +238,50 @@ tlb_entry tlb(
     .s1_mat(s1_mat),
     .s1_plv(s1_plv),
     //write port
-    .we(),
-    .w_index(),
-    .w_vppn(),
-    .w_asid(),
-    .w_g(),
-    .w_ps(),
-    .w_e(),
+    .we(we),
+    .w_index(w_index),
+    .w_vppn(w_vppn),
+    .w_asid(w_asid),
+    .w_g(w_g),
+    .w_ps(w_ps),
+    .w_e(w_e),
 
-    .w_v0(),
-    .w_d0(),
-    .w_mat0(),
-    .w_plv0(),
-    .w_ppn0(),
+    .w_v0(w_v0),
+    .w_d0(w_d0),
+    .w_mat0(w_mat0),
+    .w_plv0(w_plv0),
+    .w_ppn0(w_ppn0),
 
-    .w_v1(),
-    .w_d1(),
-    .w_mat1(),
-    .w_plv1(),
-    .w_ppn1(),
+    .w_v1(w_v1),
+    .w_d1(w_d1),
+    .w_mat1(w_mat1),
+    .w_plv1(w_plv1),
+    .w_ppn1(w_ppn1),
 
     //read ort
-    .r_index(),
-    .r_vppn(),
-    .r_asid(),
-    .r_g(),
-    .r_ps(),
-    .r_e(),
+    .r_index(r_index),
+    .r_vppn(r_vppn),
+    .r_asid(r_asid),
+    .r_g(r_g),
+    .r_ps(r_ps),
+    .r_e(r_e),
 
-    .r_v0(),
-    .r_d0(),
-    .r_mat0(),
-    .r_plv0(),
-    .r_ppn0(),
+    .r_v0(r_v0),
+    .r_d0(r_d0),
+    .r_mat0(r_mat0),
+    .r_plv0(r_plv0),
+    .r_ppn0(r_ppn0),
 
-    .r_v1(),
-    .r_d1(),
-    .r_mat1(),
-    .r_plv1(),
-    .r_ppn1()
+    .r_v1(r_v1),
+    .r_d1(r_d1),
+    .r_mat1(r_mat1),
+    .r_plv1(r_plv1),
+    .r_ppn1(r_ppn1),
+
+    .tlbinv_en(tlbinv_en),
+    .tlbinv_op(tlbinv_op),
+    .tlbinv_asid(tlbinv_asid),
+    .tlbinv_vpn(tlbinv_vpn)
 );
 //
 assign inst_tlb_trans = !inst_dmw0_en & !inst_dmw1_en & inst_trans_en;

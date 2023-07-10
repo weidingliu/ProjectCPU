@@ -170,6 +170,7 @@ wire is_branch;
 wire [31:0]dnpc;
 wire exe_is_fire;
 wire [`ex_csr_ctrl_width-1:0]ex_csr_bus;
+wire [6:0] ex_hazard;
 
 //MEM stage signal
 wire [`mem_ctrl_width-1:0] mem_bus;
@@ -229,6 +230,38 @@ wire [31:0]ASID;
 wire [63:0]timer64;
 wire [31:0]tid;
 
+wire [31:0] csr_tlbehi;
+wire [31:0] csr_tlbidx;
+wire [31:0] csr_tlbelo0;
+wire [31:0] csr_tlbelo1;
+wire [5:0]encode_in;
+
+// tlb 
+wire tlbinv_en;
+wire [4:0]tlbinv_op;
+wire [9:0]tlbinv_asid;
+wire [18:0]tlbinv_vpn;
+wire tlb_wen;
+wire tlb_wden;
+
+wire [18:0] r_vppn;
+wire [ 9:0] r_asid;
+wire r_g;
+wire [ 5:0] r_ps;
+wire r_e;
+
+wire r_v0;
+wire r_d0;
+wire [ 1:0] r_mat0;
+wire [ 1:0] r_plv0;
+wire [19:0] r_ppn0;
+
+wire r_v1;
+wire r_d1;
+wire [ 1:0] r_mat1;
+wire [ 1:0] r_plv1;
+wire [19:0] r_ppn1;
+
     //for generate
 wire [1:0] plv_out;
 
@@ -246,6 +279,13 @@ wire difftest_timet_inst;
 wire [63:0]difftest_timer64;
 
 // from csr
+
+wire [31:0] csr_tlbehi;
+wire [31:0] csr_tlbidx;
+wire [31:0] csr_tlbelo0;
+wire [31:0] csr_tlbelo1;
+wire [5:0]encode_in;
+
 wire    [31:0]  csr_crmd_diff_0     ;
 wire    [31:0]  csr_prmd_diff_0     ;
 wire    [31:0]  csr_ectl_diff_0     ;
@@ -278,6 +318,8 @@ wire    [31:0]  regs[31:0];
 //from bypass
 wire [31:0] bypass_reg1;
 wire [31:0] bypass_reg2;
+
+
 
 //for axi mem
 // wire ar_valid;
@@ -363,6 +405,11 @@ addr_trans addr_translate(
     .DATM(datm),
     .ASID(ASID),
     .plv(plv_out),
+    .csr_tlbehi(csr_tlbehi),
+    .csr_tlbidx(csr_tlbidx),
+    .csr_tlbelo0(csr_tlbelo0),
+    .csr_tlbelo1(csr_tlbelo1),
+    .encode_in(encode_in),
     // inst interface
     .inst_vaddr(PC),
     .inst_addr_valid(pc_valid),
@@ -397,7 +444,34 @@ addr_trans addr_translate(
     .data_tlb_found(data_tlb_found),
     .data_valid(data_valid),
     .data_ready(!rdata_valid & !write_finish),
-    .data_fire(rdata_valid | write_finish)
+    .data_fire(rdata_valid | write_finish),
+
+        //tlbinv 
+    .tlbinv_en(tlbinv_en),
+    .tlbinv_op(tlbinv_op),
+    .tlbinv_asid(tlbinv_asid),
+    .tlbinv_vpn(tlbinv_vpn),
+    //tlb wr 
+    .tlb_wen(tlb_wen),
+    //tlb rd 
+
+    .r_vppn(r_vppn),
+    .r_asid(r_asid),
+    .r_g(r_g),
+    .r_ps(r_ps),
+    .r_e(r_e),
+
+    .r_v0(r_v0),
+    .r_d0(r_d0),
+    .r_mat0(r_mat0),
+    .r_plv0(r_plv0),
+    .r_ppn0(r_ppn0),
+
+    .r_v1(r_v1),
+    .r_d1(r_d1),
+    .r_mat1(r_mat1),
+    .r_plv1(r_plv1),
+    .r_ppn1(r_ppn1)
 );
 IF_check IF2_stage (
     .clk(clk),
@@ -473,6 +547,8 @@ ID id_stage(
     .is_break(is_break),
     //ctrl flower
     .ctrl_bus(id_bus),//ctrl bus
+    // for mem hazard
+    .ex_mem_hazard(ex_hazard),
     //csr
     .id_csr_ctrl(id_csr_bus),
     .rd_csr_addr(rd_csr_addr),
@@ -525,7 +601,9 @@ EXE exe_stage(
     .clk(clk),//clock
     .reset(reset),//global reset
     .id_ctrl_bus(id_bus), //ctrl flower
-    .icache_busy(icache_busy),
+    .icache_busy(icache_busy),// icache busy should not flush 
+
+    .ex_mem_hazard(ex_hazard),// have mem hazird
 
     .ex_ctrl_bus(ex_bus),
     //csr bus
@@ -539,7 +617,7 @@ EXE exe_stage(
     //bypass
     .ex_bypass(ex_bypass),
     //mem_bypass
-    .mem_bypass(mem_bypass),
+    // .mem_bypass(mem_bypass),
     //csr bypass
     .mem_csr_bypass(mem_csr_bypass),
     .wb_csr_bypass(wb_csr_bypass),
@@ -629,6 +707,14 @@ WB wb_syage(
     .soft_int(soft_int),
     `endif
 
+    //tlbinv 
+    .tlbinv_en(tlbinv_en),
+    .tlbinv_op(tlbinv_op),
+    .tlbinv_asid(tlbinv_asid),
+    .tlbinv_vpn(tlbinv_vpn),
+
+    .tlb_wren(tlb_wen),
+    .tlb_rden(tlb_wden),
     //bypass 
     .wb_bypass(wb_bypass),
     .wb_csr_bypass(wb_csr_bypass),
@@ -673,6 +759,33 @@ CSR CSR(
     // for id 
     .timer_out(timer64),
     .tid_out(tid),
+    // for tlb
+    .csr_tlbehi(csr_tlbehi),
+    .csr_tlbidx(csr_tlbidx),
+    .csr_tlbelo0(csr_tlbelo0),
+    .csr_tlbelo1(csr_tlbelo1),
+    .encode_in(encode_in),
+
+    // tlb rd
+    // .r_index(r_index),
+    .tlb_wden(tlb_wden),
+    .r_vppn(r_vppn),
+    .r_asid(r_asid),
+    .r_g(r_g),
+    .r_ps(r_ps),
+    .r_e(r_e),
+
+    .r_v0(r_v0),
+    .r_d0(r_d0),
+    .r_mat0(r_mat0),
+    .r_plv0(r_plv0),
+    .r_ppn0(r_ppn0),
+
+    .r_v1(r_v1),
+    .r_d1(r_d1),
+    .r_mat1(r_mat1),
+    .r_plv1(r_plv1),
+    .r_ppn1(r_ppn1),
 
     //for generate
     .plv_out(plv_out),

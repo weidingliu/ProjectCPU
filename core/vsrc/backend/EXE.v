@@ -15,10 +15,12 @@ module EXE (
     input wire [`id_excp_width-1:0]id_excp_bus,
     output wire [`ex_excp_width-1:0]ex_excp_bus,
 
+    // for id 
+    output wire [6:0]ex_mem_hazard,
     //bypass
     output wire [`bypass_width-1:0]ex_bypass,
 
-    input wire [`bypass_width-1:0]mem_bypass,
+    // input wire [`bypass_width-1:0]mem_bypass,
 
     input wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass,
     input wire [`ex_csr_ctrl_width-1:0]wb_csr_bypass,
@@ -70,12 +72,6 @@ wire [4:0] reg_index2;
 wire is_break;
 
 wire [31:0]mem_reg;
-wire bypass_en1;
-wire bypass_en2;
-wire [31:0] bypass_reg1;
-wire [31:0] bypass_reg2;
-// wire [64:0]mul_result;
-// wire [31:0]mod_result;
 wire [31:0]mul_div_result;
 wire is_mul_div;
 // wire [31:0]div_result;
@@ -106,12 +102,19 @@ reg [`ex_csr_ctrl_width-1:0]csr_bus_temp;
 //excp
 reg [`ex_excp_width-1:0] excp_temp;
 
+// tlb 
+wire [4:0]tlb_op;
+wire tlbinv_en;
+wire [4:0]tlbinv_op;
+wire [9:0]tlbinv_asid;
+wire [18:0]tlbinv_vpn;
+
 wire branch_flag;
 //mem_bypass 
-assign bypass_en1 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index1) & (mem_bypass[5:1] != 5'h0); 
-assign bypass_en2 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index2) & (mem_bypass[5:1] != 5'h0); 
-assign bypass_reg1 = bypass_en1 ? mem_bypass[37:6]:reg1;
-assign bypass_reg2 = bypass_en2 ? mem_bypass[37:6]:reg2;
+// assign bypass_en1 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index1) & (mem_bypass[5:1] != 5'h0); 
+// assign bypass_en2 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index2) & (mem_bypass[5:1] != 5'h0); 
+// assign bypass_reg1 = bypass_en1 ? mem_bypass[37:6]:reg1;
+// assign bypass_reg2 = bypass_en2 ? mem_bypass[37:6]:reg2;
 //csr bypass
 wire mem_bypass_csr_we;
 wire [13:0]mem_bypass_csr_idx;
@@ -133,10 +136,15 @@ assign  {
 
 assign real_csr_data = (wb_bypass_csr_we & (wb_bypass_csr_idx == csr_idx)) ? wb_bypass_csr_data :
                         (mem_bypass_csr_we & (mem_bypass_csr_idx == csr_idx)) ? mem_bypass_csr_data :csr_data;
-                        
+//invtlb
+assign tlbinv_en = tlb_op[0];
+assign tlbinv_op = wreg_index;
+assign tlbinv_asid = reg1[9:0];
+assign tlbinv_vpn = reg2[18:0];                        
 
 //bus
 assign {
+    tlb_op,//280:284
     timer_inst,// 279:279
     timer64,// 215:278
     mul_div_op,//211:214
@@ -169,22 +177,24 @@ assign {
 
 assign src1 = (select_src1[1])? PC:
               (select_src1[0])? Imm:
-              bypass_reg1;
+              reg1;
 assign src2 = (select_src2[1])? PC:
               (select_src2[0])? Imm:
-              bypass_reg2;
+              reg2;
+assign ex_mem_hazard = {op_mem[0] & !op_mem[2],wreg_en & left_valid,wreg_index};
+
 // always @(*) begin 
 //     $display("%h   %h   %h",PC,src1,src2);
 // end
 //branch
 assign branch_flag = left_valid & inst_valid & (
     branch_op[0] | branch_op[1] | 
-    (branch_op[2] & ($signed(bypass_reg1) >= $signed(bypass_reg2))) |
-    (branch_op[3] & (bypass_reg1 == bypass_reg2)) |
-    (branch_op[4] & (bypass_reg1 >= bypass_reg2)) |
-    (branch_op[5] & ($signed(bypass_reg1) < $signed(bypass_reg2))) | 
-    (branch_op[6] & (bypass_reg1 != bypass_reg2)) |
-    (branch_op[7] & (bypass_reg1 < bypass_reg2))
+    (branch_op[2] & ($signed(reg1) >= $signed(reg2))) |
+    (branch_op[3] & (reg1 == reg2)) |
+    (branch_op[4] & (reg1 >= reg2)) |
+    (branch_op[5] & ($signed(reg1) < $signed(reg2))) | 
+    (branch_op[6] & (reg1 != reg2)) |
+    (branch_op[7] & (reg1 < reg2))
     );
 //alu 
 alu alu(
@@ -294,6 +304,11 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             ctrl_temp_bus <= {
+                    tlb_op,//320:324
+                    tlbinv_en,//319:319
+                    tlbinv_op,//314:318
+                    tlbinv_asid,//304:313
+                    tlbinv_vpn,//285:303
                     timer_inst,// 284:284
                     timer64,// 220:283
                     is_break,//219:219
@@ -305,8 +320,8 @@ always @(posedge clk) begin
                     Inst,//102:133
                     wreg_index,//97:101
                     wreg_en,//96:96
-                    bypass_reg2,// 64:95
-                    bypass_reg1,// 32:63
+                    reg2,// 64:95
+                    reg1,// 32:63
                     write_data// 0:31
                     };
             csr_bus_temp <= {
@@ -325,14 +340,15 @@ always @(posedge clk) begin
 end
 // output logic
 assign right_valid=valid;
-assign logic_valid = (branch_flag & left_valid & right_ready & icache_busy) | !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
-assign left_ready= (!mul_valid && is_mul || !div_valid && is_div ) | (flush & icache_busy)? 1'b0:right_ready;
+assign logic_valid = (branch_flag & left_valid & right_ready & icache_busy) | 
+                     !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
+assign left_ready= (!mul_valid && is_mul || !div_valid && is_div ) | (branch_flag & left_valid & right_ready & icache_busy)? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
 assign ex_csr_ctrl_bus = csr_bus_temp;
 assign ex_excp_bus = excp_temp;
-assign ex_bypass = {alu_result,wreg_index,wreg_en & left_valid};
+assign ex_bypass = {write_data,wreg_index,wreg_en & left_valid};
 
-assign is_branch = (branch_flag) & left_valid & right_ready;
+assign is_branch = (branch_flag) & left_valid & right_ready & !icache_busy;
 assign flush = branch_flag & left_valid & right_ready & !icache_busy;
 assign dnpc = alu_result;
 
