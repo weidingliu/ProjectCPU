@@ -342,13 +342,13 @@ end
 assign right_valid=valid;
 assign logic_valid = (branch_flag & left_valid & right_ready & icache_busy) | 
                      !left_valid | (left_valid & (!mul_valid && is_mul || !div_valid && is_div))? 1'b0:1'b1;
-assign left_ready= (!mul_valid && is_mul || !div_valid && is_div ) | (branch_flag & left_valid & right_ready & icache_busy)? 1'b0:right_ready;
+assign left_ready= (!mul_valid && is_mul || !div_valid && is_div ) | (branch_flag & left_valid & icache_busy)? 1'b0:right_ready;
 assign ex_ctrl_bus=ctrl_temp_bus;
 assign ex_csr_ctrl_bus = csr_bus_temp;
 assign ex_excp_bus = excp_temp;
 assign ex_bypass = {write_data,wreg_index,wreg_en & left_valid};
 
-assign is_branch = (branch_flag) & left_valid & right_ready & !icache_busy;
+assign is_branch = (branch_flag) & left_valid & (icache_busy | !right_ready); // wait icache
 assign flush = branch_flag & left_valid & right_ready & !icache_busy;
 assign dnpc = alu_result;
 

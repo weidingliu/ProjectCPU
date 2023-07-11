@@ -871,7 +871,7 @@ ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .reset(reset),
     .icache_busy(icache_busy),
     //cpu request
-    .ce(inst_addr_trans_valid),
+    .ce(inst_addr_trans_valid & !(flush | excp_flush | ertn_flush)),
     .we(1'b0),
     .addr(inst_paddr),
     .rdata(inst),

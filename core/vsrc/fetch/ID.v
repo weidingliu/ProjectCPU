@@ -404,7 +404,11 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
                     | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
                     | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_syscall | inst_ertn
-                    | inst_rdcntid | inst_rdcntvl | inst_rdcntvh | inst_invtlb | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch);
+                    | inst_rdcntid | inst_rdcntvl | inst_rdcntvh | (inst_invtlb && (rd == 5'd0 | rd == 5'd1 | 
+                                                                                    rd == 5'd2 | rd == 5'd3 | 
+                                                                                    rd == 5'd4 | 
+                                                                                    rd == 5'd5 | rd == 5'd6)) 
+                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;

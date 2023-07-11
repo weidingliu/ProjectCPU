@@ -48,7 +48,10 @@ always @(posedge clk) begin
   else if(ertn_flush) begin 
     temp <= era;
   end
-  else if(is_branch == 1'b1) begin 
+  else if(is_branch) begin 
+
+  end
+  else if(flush == 1'b1) begin 
       temp <= dnpc;
   end
   else begin 
@@ -59,14 +62,17 @@ end
 assign PC=temp;
 
 always @(posedge clk ) begin 
-    if( excp_flush | ertn_flush) begin 
+    if( excp_flush | ertn_flush | flush) begin 
       valid <= `true;
     end
     else begin 
       // if(addr_trans_ready & pc_valid) valid <= `false;
       // if(pc_valid) valid <= `true;
-      if(fire) valid <= `false;
-      if(addr_trans_ready) valid <= `true;
+      if(is_branch) valid <= `false;
+      else begin 
+        if(fire) valid <= `false;
+        if(addr_trans_ready) valid <= `true;
+      end
     end
 end
 assign pc_valid = valid;
