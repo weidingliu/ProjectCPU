@@ -49,6 +49,11 @@ module addr_trans #(
     input wire mem_store,// is store
     input wire mem_halfword,// is half word mem 
     input wire mem_word,// is word mem 
+    //for tlbserch
+    input wire data_tlbserch_en,
+    output wire [4:0]data_tlbindex,
+    output wire data_tlbfound,
+    output wire serch_tlb_finish,
 
     output wire data_uncached_en,
     output wire [31:0]data_paddr,
@@ -67,8 +72,12 @@ module addr_trans #(
     input wire [18:0]tlbinv_vpn,
     // tlb wr 
     input wire tlb_wen,
+    
     //read port
     // input wire [$clog2(TLBNUM)-1:0] r_index,
+    input wire tlb_fill_en,
+    input wire [4:0]rand_index,
+
     output wire [18:0] r_vppn,
     output wire [ 9:0] r_asid,
     output wire r_g,
@@ -178,8 +187,8 @@ reg data_valid_temp;
 reg [31:0]data_vaddr_temp;
 
 //tlb write port
-assign we = tlb_wen;
-assign w_index = ({5{tlb_wen}} & csr_tlbidx[`INDEX]) ;
+assign we = tlb_wen | tlb_fill_en;
+assign w_index = ({5{tlb_wen}} & csr_tlbidx[`INDEX]) | ({5{tlb_fill_en}} & rand_index);
 assign w_vppn = csr_tlbehi[`VPPN];
 assign w_asid = ASID[`ASID];
 assign w_g = csr_tlbelo0[`TLB_G] && csr_tlbelo1[`TLB_G];
@@ -225,10 +234,10 @@ tlb_entry tlb(
     .s0_mat(s0_mat),
     .s0_plv(s0_plv),
     //s1
-    .s1_valid(data_addr_valid),
-    .s1_vppn(data_vaddr[31:13]),
+    .s1_valid(data_addr_valid | data_tlbserch_en),
+    .s1_vppn(data_tlbserch_en? csr_tlbehi[`VPPN]:data_vaddr[31:13]),
     .s1_asid(ASID[`ASID]),
-    .s1_odd_page(data_vaddr[12]),
+    .s1_odd_page(data_tlbserch_en? 1'b0:data_vaddr[12]),
     .s1_found(s1_found),
     .s1_index(s1_index),
     .s1_ps(s1_ps),
@@ -336,8 +345,22 @@ always @(posedge clk) begin
         end
     end
 end
+reg trans_state;
+always @(posedge clk) begin 
+    if(reset | flush | excp_flush | ertn_flush) begin 
+        trans_state <= 1'b0;
+    end
+    else begin 
 
-
+        if(data_tlbserch_en & !trans_state) begin 
+            trans_state <= 1'b1;
+        end
+        else if(trans_state) begin 
+            trans_state <= 1'b0;
+        end
+    end 
+end
+assign serch_tlb_finish = trans_state;
 // data pipline
 always @(posedge clk) begin
     if(reset | flush | excp_flush | ertn_flush) begin 
@@ -347,12 +370,14 @@ always @(posedge clk) begin
         if(data_fire) begin 
             data_valid_temp <= `false;
         end
-        if(data_addr_valid && data_ready) begin 
+        if((data_addr_valid) && data_ready) begin 
            data_valid_temp <= `true;
            data_vaddr_temp <= data_vaddr;
         end
     end
 end
+assign data_tlbindex = s1_index;
+assign data_tlbfound = s1_found;
 
 //inst excption 
 

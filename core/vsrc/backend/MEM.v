@@ -31,6 +31,11 @@ module MEM (
     output wire mem_word,
     input wire excp_i,
     input wire [6:0]excp_num_i,
+    //for ylbsrch
+    output wire data_tlbserch_en,
+    input wire [4:0]data_tlbindex,
+    input wire data_tlbfound,
+    input wire serch_finish,
 
     //bypass
     output wire [`bypass_width-1:0]mem_bypass,
@@ -212,6 +217,8 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    data_tlbindex,//242:246
+                    data_tlbfound,//241:241
                     tlb_op,//236:240
                     tlbinv_en,//235:235
                     tlbinv_op,//230:234
@@ -238,10 +245,11 @@ always @(posedge clk) begin
         end
     end
 end
+assign data_tlbserch_en = tlb_op[4] & left_valid;
 // output logic
 assign right_valid=valid;
-assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid ? 1'b0:1'b1;// memory must not exceptions 
-assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) ? 1'b0:1'b1;
+assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid | (data_tlbserch_en & ! serch_finish) ? 1'b0:1'b1;// memory must not exceptions 
+assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | (data_tlbserch_en & ! serch_finish) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
 assign mem_excp_bus = excp_temp;

@@ -29,6 +29,11 @@ module WB (
     // tlbwr
     output wire tlb_wren,//for tlbwr
     output wire tlb_rden,// for tlbrd
+    output wire tlb_fill_en,
+    //tlb serch
+    output wire [4:0]data_tlbindex,
+    output wire data_tlbfound,
+    output wire tlb_serch_en,
 
     //bypass
     output wire [`bypass_width-1:0]wb_bypass,
@@ -69,6 +74,8 @@ wire [4:0]tlb_op;
 
 //bus
 assign {
+        data_tlbindex,//242:246
+        data_tlbfound,//241:241
         tlb_op,//236:240
         tlbinv_en,//235:235
         tlbinv_op,//230:234
@@ -86,8 +93,17 @@ assign {
         mem_result// 0:31
 } = mem_ctrl_bus;
 //tlb 
+/*
+tlbop[0] tlbinv
+tlbop[1] tlbwr
+tlbop[2] inst_tlbrd
+tlbop[3] inst_tlbfill
+tlbop[4]
+*/ 
 assign tlb_wren = tlb_op[1];
 assign tlb_rden = tlb_op[2];
+assign tlb_fill_en = tlb_op[3] & left_valid;
+assign tlb_serch_en = tlb_op[4] & left_valid;
 //excp
 wire ms_excp;
 wire [15:0]excp_num;

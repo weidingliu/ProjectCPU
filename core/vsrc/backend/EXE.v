@@ -140,7 +140,7 @@ assign real_csr_data = (wb_bypass_csr_we & (wb_bypass_csr_idx == csr_idx)) ? wb_
 assign tlbinv_en = tlb_op[0];
 assign tlbinv_op = wreg_index;
 assign tlbinv_asid = reg1[9:0];
-assign tlbinv_vpn = reg2[18:0];                        
+assign tlbinv_vpn = reg2[31:13];                        
 
 //bus
 assign {

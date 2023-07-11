@@ -45,9 +45,16 @@ module CSR (
     output wire [31:0] csr_tlbelo0,
     output wire [31:0] csr_tlbelo1,
     output wire [5:0]encode_in,
+
+        //tlb serch
+    input wire [4:0]data_tlbindex,
+    input wire data_tlbfound,
+    input wire tlb_serch_en,
+
     //from tlb 
        //read ort
     // input wire [$clog2(TLBNUM)-1:0] r_index,
+    output wire [4:0]rand_index,
     input wire tlb_wden,
     input wire [18:0] r_vppn,
     input wire [ 9:0] r_asid,
@@ -206,9 +213,12 @@ reg [31:0]tlbelo1;
 reg [31:0]pgdh;
 reg [31:0]pgdl;
 
+reg [31:0]lsfr_reg;
+
 wire [31:0]pgd;
 reg [63:0]timer64;
 
+assign rand_index = lsfr_reg[4:0];
 assign tlbehi_in = {r_vppn, 13'b0};
 assign tlbelo0_in = {4'b0, r_ppn0, 1'b0, r_g, r_mat0, r_plv0, r_d0, r_v0};
 assign tlbelo1_in = {4'b0, r_ppn1, 1'b0, r_g, r_mat1, r_plv1, r_d1, r_v1};
@@ -505,6 +515,13 @@ always @(posedge clk) begin
             tlbidx[`PS]    <= csr_wdata[`PS];
             tlbidx[`NE]    <= csr_wdata[`NE];
         end
+        else if(tlb_serch_en) begin 
+            if(data_tlbfound) begin 
+                tlbidx[`INDEX] <= data_tlbindex;
+                tlbidx[`NE]    <= 1'b0;
+            end
+            else tlbidx[`NE]    <= 1'b1;
+        end
         else if(tlbrd_valid) begin 
             tlbidx[`PS] <= tlbidx_in[`PS];
             tlbidx[`NE] <= tlbidx_in[`NE];
@@ -658,6 +675,15 @@ always @(posedge clk) begin
         if(pgdl_wen) begin 
             pgdl[`BASE] <= csr_wdata[`BASE];
         end
+    end
+end
+//lsfr 
+always @(posedge clk) begin
+    if(reset) begin 
+        lsfr_reg <= 32'h0327;
+    end
+    else begin 
+        lsfr_reg <= {lsfr_reg[0] ^ lsfr_reg[31] ^ lsfr_reg[20] ^ lsfr_reg[8] ,lsfr_reg[31:1]};
     end
 end
 

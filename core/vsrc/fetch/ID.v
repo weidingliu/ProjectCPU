@@ -178,6 +178,7 @@ wire inst_invtlb;
 wire inst_tlbwr;
 wire inst_tlbrd;
 wire inst_tlbfill;
+wire inst_tlbsrch;
 
 wire logic_valid;
 wire is_sign_extend;
@@ -257,13 +258,13 @@ tlbop[0] tlbinv
 tlbop[1] tlbwr
 tlbop[2] inst_tlbrd
 tlbop[3] inst_tlbfill
-tlbop[4]
+tlbop[4] inst_tlbsrch
 */ 
 assign tlb_op[0] = inst_invtlb;
 assign tlb_op[1] = inst_tlbwr;
 assign tlb_op[2] = inst_tlbrd;
 assign tlb_op[3] = inst_tlbfill;
-assign tlb_op[4] = 1'b0;
+assign tlb_op[4] = inst_tlbsrch;
 //is break
 assign is_break = inst_break;
 
@@ -385,7 +386,7 @@ assign inst_rdcntid   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decod
 assign inst_rdcntvl   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h00] & rk_d[5'h18] & rj_d[5'h00] & !rd_d[5'h00];
 assign inst_rdcntvh   = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h00] & rk_d[5'h19] & rj_d[5'h00];
 
-// assign inst_tlbsrch    = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & rk_d[5'h0a] & rj_d[5'h00] & rd_d[5'h00];
+assign inst_tlbsrch    = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h10] & rk_d[5'h0a] & rj_d[5'h00] & rd_d[5'h00];
 assign inst_tlbrd      = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h10] & rk_d[5'h0b] & rj_d[5'h00] & rd_d[5'h00];
 assign inst_tlbwr      = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h10] & rk_d[5'h0c] & rj_d[5'h00] & rd_d[5'h00];
 assign inst_tlbfill    = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h10] & rk_d[5'h0d] & rj_d[5'h00] & rd_d[5'h00];
@@ -403,7 +404,7 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                     | inst_xori | inst_beq | inst_nor | inst_sltui | inst_bgeu | inst_blt | inst_mul | inst_bne | inst_mod_w
                     | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh | inst_mulh_u | inst_st_h
                     | inst_div | inst_bltu | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_syscall | inst_ertn
-                    | inst_rdcntid | inst_rdcntvl | inst_rdcntvh | inst_invtlb | inst_tlbwr | inst_tlbrd | inst_tlbfill);
+                    | inst_rdcntid | inst_rdcntvl | inst_rdcntvh | inst_invtlb | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
@@ -432,7 +433,7 @@ assign rd_csr_addr = csr_idx;
 assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntvl | inst_rdcntvh | inst_rdcntid;
 
 // for excp 
-assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn | inst_invtlb | inst_tlbwr | inst_tlbrd | inst_tlbfill;
+assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn | inst_invtlb | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch;
 assign excp_ine = ~inst_valid & left_valid;// inst is invalid
 assign excp_ipe = is_kernel_inst & (plv == 2'b11); // privilege level is falut
 assign excp = excp_ine | excp_ipe | inst_syscall | inst_break | has_int | ib_excp_bus[0];

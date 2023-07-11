@@ -183,6 +183,11 @@ wire rdata_valid;
 wire write_finish;
 wire [`ex_csr_ctrl_width-1:0] mem_csr_bus;
 wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass;
+//for tlb serch
+wire data_tlbserch_en;
+wire [4:0]data_tlbindex;
+wire data_tlbfound;
+wire serch_finish;
   // for addr_trans
 wire data_uncached_en;
 wire [31:0]data_paddr;
@@ -213,6 +218,10 @@ wire ertn_flush;
 wire [31:0]error_va;
 wire error_va_en;
 
+wire [4:0]wb_tlbindex;
+wire wb_tlbfound;
+wire tlb_serch_en;
+
 // csr
 wire [31:0]eentry_out;
 wire [31:0]era_out;
@@ -237,12 +246,14 @@ wire [31:0] csr_tlbelo1;
 wire [5:0]encode_in;
 
 // tlb 
+wire [4:0]rand_index;
 wire tlbinv_en;
 wire [4:0]tlbinv_op;
 wire [9:0]tlbinv_asid;
 wire [18:0]tlbinv_vpn;
 wire tlb_wen;
 wire tlb_wden;
+wire tlb_fill_en;
 
 wire [18:0] r_vppn;
 wire [ 9:0] r_asid;
@@ -278,6 +289,9 @@ wire [31:0] difftest_mem_addr;
 wire difftest_timet_inst;
 wire [63:0]difftest_timer64;
 
+reg [4:0] difftest_rand_index;
+reg difftest_tlbfill_en;
+
 // from csr
 
 wire [31:0] csr_tlbehi;
@@ -285,6 +299,7 @@ wire [31:0] csr_tlbidx;
 wire [31:0] csr_tlbelo0;
 wire [31:0] csr_tlbelo1;
 wire [5:0]encode_in;
+
 
 wire    [31:0]  csr_crmd_diff_0     ;
 wire    [31:0]  csr_prmd_diff_0     ;
@@ -437,6 +452,11 @@ addr_trans addr_translate(
     .mem_word(mem_word),
     .data_excp(mem_excp_i),
     .data_excp_num(mem_excp_num_i),
+    // tlbserch
+    .data_tlbserch_en(data_tlbserch_en),
+    .data_tlbindex(data_tlbindex),
+    .data_tlbfound(data_tlbfound),
+    .serch_tlb_finish(serch_finish),
 
     .data_uncached_en(data_uncached_en),
     .data_paddr(data_paddr),
@@ -454,6 +474,8 @@ addr_trans addr_translate(
     //tlb wr 
     .tlb_wen(tlb_wen),
     //tlb rd 
+    .rand_index(rand_index),
+    .tlb_fill_en(tlb_fill_en),
 
     .r_vppn(r_vppn),
     .r_asid(r_asid),
@@ -672,6 +694,11 @@ MEM mem_stage(
     `ifdef NEXT_SOFT_INT
     .soft_int(soft_int),
     `endif
+    //tlb 
+    .data_tlbserch_en(data_tlbserch_en),
+    .data_tlbindex(data_tlbindex),
+    .data_tlbfound(data_tlbfound),
+    .serch_finish(serch_finish),
     //bypass 
     .mem_bypass(mem_bypass),
     .mem_csr_bypass(mem_csr_bypass),
@@ -715,6 +742,12 @@ WB wb_syage(
 
     .tlb_wren(tlb_wen),
     .tlb_rden(tlb_wden),
+//tlbfill
+    .tlb_fill_en(tlb_fill_en),
+    //tlb serch
+    .data_tlbindex(wb_tlbindex),
+    .data_tlbfound(wb_tlbfound),
+    .tlb_serch_en(tlb_serch_en),
     //bypass 
     .wb_bypass(wb_bypass),
     .wb_csr_bypass(wb_csr_bypass),
@@ -766,8 +799,14 @@ CSR CSR(
     .csr_tlbelo1(csr_tlbelo1),
     .encode_in(encode_in),
 
+    // tlb serch
+    .data_tlbindex(wb_tlbindex),
+    .data_tlbfound(wb_tlbfound),
+    .tlb_serch_en(tlb_serch_en),
+
     // tlb rd
     // .r_index(r_index),
+    .rand_index(rand_index),
     .tlb_wden(tlb_wden),
     .r_vppn(r_vppn),
     .r_asid(r_asid),
@@ -1113,12 +1152,16 @@ always @(posedge clk) begin
         difftest_excp_flush <= 1'b0;
         difftest_ertn_flush <= 1'b0;
         difftest_ecode <= 6'h0;
+        difftest_tlbfill_en <= 1'b0;
+        difftest_rand_index <= 5'b0;
     end
     else begin 
         difftest_bus <= wb_bus & {`mem_ctrl_width{wb_valid}};
         difftest_excp_flush <= excp_flush;
         difftest_ertn_flush <= ertn_flush;
         difftest_ecode <= ecode;
+        difftest_tlbfill_en <= tlb_fill_en;
+        difftest_rand_index <= rand_index;
     end
 end
 assign {    
@@ -1147,8 +1190,8 @@ DifftestInstrCommit DifftestInstrCommit(
     .pc(difftest_PC),
     .instr(difftest_Inst),
     .skip(0),
-    .is_TLBFILL(0),
-    .TLBFILL_index(0),
+    .is_TLBFILL(difftest_tlbfill_en & difftest_inst_valid),
+    .TLBFILL_index(difftest_rand_index),
     .is_CNTinst(difftest_timet_inst),
     .timer_64_value(difftest_timer64),
     .wen(difftest_wreg_en),
