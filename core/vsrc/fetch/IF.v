@@ -9,6 +9,7 @@ module IF (
     //excp
     input wire excp_flush,
     input wire ertn_flush,
+    input wire stall,
     input wire [31:0]eentry,
     input wire [31:0]era,
     output wire[31:0] PC, //inst addr
@@ -48,7 +49,7 @@ always @(posedge clk) begin
   else if(ertn_flush) begin 
     temp <= era;
   end
-  else if(is_branch) begin 
+  else if(is_branch | stall) begin 
 
   end
   else if(flush == 1'b1) begin 
@@ -68,7 +69,7 @@ always @(posedge clk ) begin
     else begin 
       // if(addr_trans_ready & pc_valid) valid <= `false;
       // if(pc_valid) valid <= `true;
-      if(is_branch) valid <= `false;
+      if(is_branch | stall) valid <= `false;
       else begin 
         if(fire) valid <= `false;
         if(addr_trans_ready) valid <= `true;

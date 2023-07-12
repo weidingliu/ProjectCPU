@@ -171,6 +171,7 @@ wire [31:0]dnpc;
 wire exe_is_fire;
 wire [`ex_csr_ctrl_width-1:0]ex_csr_bus;
 wire [6:0] ex_hazard;
+wire ex_is_tlbhazard;
 
 //MEM stage signal
 wire [`mem_ctrl_width-1:0] mem_bus;
@@ -183,6 +184,7 @@ wire rdata_valid;
 wire write_finish;
 wire [`ex_csr_ctrl_width-1:0] mem_csr_bus;
 wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass;
+wire mem_is_tlbhazard;
 //for tlb serch
 wire data_tlbserch_en;
 wire [4:0]data_tlbindex;
@@ -217,10 +219,13 @@ wire [`ex_csr_ctrl_width-1:0]wb_csr_bypass;
 wire ertn_flush;
 wire [31:0]error_va;
 wire error_va_en;
+wire wb_is_tlbhazard;
 
 wire [4:0]wb_tlbindex;
 wire wb_tlbfound;
 wire tlb_serch_en;
+
+wire stall;
 
 // csr
 wire [31:0]eentry_out;
@@ -389,6 +394,7 @@ IF if_stage0(
     //excp 
     .excp_flush(excp_flush),
     .ertn_flush(ertn_flush),
+    .stall(stall),
     .eentry(eentry_out),
     .era(era_out),
     //branch 
@@ -571,6 +577,11 @@ ID id_stage(
     .ctrl_bus(id_bus),//ctrl bus
     // for mem hazard
     .ex_mem_hazard(ex_hazard),
+    // for tlb hazard
+     // ex ,mem, wb have hazard
+    .ex_is_tlbhazard(ex_is_tlbhazard),
+    .mem_is_tlbhazard(mem_is_tlbhazard),
+    .wb_is_tlbhazard(wb_is_tlbhazard), 
     //csr
     .id_csr_ctrl(id_csr_bus),
     .rd_csr_addr(rd_csr_addr),
@@ -628,6 +639,9 @@ EXE exe_stage(
     .ex_mem_hazard(ex_hazard),// have mem hazird
 
     .ex_ctrl_bus(ex_bus),
+    
+    .stall(stall),// stall if and exe
+    .is_tlbhazard(ex_is_tlbhazard),// tlb hazard
     //csr bus
     .id_csr_ctrl_bus(id_csr_bus),
     .ex_csr_ctrl_bus(ex_csr_bus),
@@ -674,6 +688,7 @@ MEM mem_stage(
     .mem_excp_bus(mem_excp_bus),
     .excp_flush(excp_flush),
     .ertn_flush(ertn_flush),
+    .stall(stall),// stall memory
 
     .mem_load(mem_load),
     .mem_store(mem_store),
@@ -681,6 +696,8 @@ MEM mem_stage(
     .mem_word(mem_word),
     .excp_i(mem_excp_i),
     .excp_num_i(mem_excp_num_i),
+
+    .is_tlbhazard(mem_is_tlbhazard),// tlb hazard
 
     //mem interface
     .addr(addr),//read/write address
@@ -730,6 +747,7 @@ WB wb_syage(
     .ecode(ecode),
     .badv(error_va),
     .badv_valid(error_va_en),
+    .stall(stall),
     `ifdef NEXT_SOFT_INT
     .soft_int(soft_int),
     `endif
@@ -748,6 +766,7 @@ WB wb_syage(
     .data_tlbindex(wb_tlbindex),
     .data_tlbfound(wb_tlbfound),
     .tlb_serch_en(tlb_serch_en),
+    .is_tlbhazard(wb_is_tlbhazard),// tlb hazard
     //bypass 
     .wb_bypass(wb_bypass),
     .wb_csr_bypass(wb_csr_bypass),

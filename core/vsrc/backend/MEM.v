@@ -4,6 +4,7 @@ module MEM (
     input wire reset,//global reset
     input wire excp_flush,
     input wire ertn_flush,
+    input wire stall,
     //ctrl bus
     input wire [`ex_ctrl_width-1:0] mem_ctrl_bus,
     output wire [`mem_ctrl_width-1:0] wb_ctrl_bus,
@@ -14,6 +15,8 @@ module MEM (
     //excp 
     input wire [`ex_excp_width-1:0]ex_excp_bus,
     output wire [`mem_excp_width-1:0]mem_excp_bus,
+    // is tlb rd
+    output wire is_tlbhazard,
 
     //mem interface
     output wire [31:0]addr,//read/write address
@@ -31,7 +34,7 @@ module MEM (
     output wire mem_word,
     input wire excp_i,
     input wire [6:0]excp_num_i,
-    //for ylbsrch
+    //for tlbsrch
     output wire data_tlbserch_en,
     input wire [4:0]data_tlbindex,
     input wire data_tlbfound,
@@ -118,6 +121,8 @@ assign {
     src1,// 32:63
     alu_result// 0:31
 }=mem_ctrl_bus;
+// is tlbrd tlbserch
+assign is_tlbhazard = (tlb_op[4] | tlb_op[2]) & left_valid;
 
 // assign Inst_valid = left_valid ? inst_valid:1'b0;
 // byte store wdata and wmask
@@ -170,7 +175,7 @@ assign mem_halfword = op_mem[0] & op_mem[4];
 assign mem_word = op_mem[0] & op_mem[3];
 
 //for sram
-assign en = op_mem[0] & inst_valid & left_valid & !excp_flush;
+assign en = op_mem[0] & inst_valid & left_valid & !excp_flush & !stall;
 assign we = op_mem[2];
 assign addr = alu_result;
 assign wdata = op_mem[3] ? src2:

@@ -35,7 +35,7 @@ reg [31:0]inst_temp;
 // wire excp_ppi;
 // wire excp_tlbr;
 reg excp_temp;
-reg excp_num_temp;
+reg [3:0]excp_num_temp;
 
 always @(posedge clk) begin
     if(reset | flush | excp_flush | ertn_flush) begin 

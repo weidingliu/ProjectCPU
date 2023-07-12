@@ -1,4 +1,6 @@
 `include "defines.sv"
+// `include "csr_defines.v"
+
 /*
 * decoder inst and produce ctrl signal for backend
 *
@@ -23,6 +25,10 @@ module ID (
     output wire [`id_csr_ctrl_width-1:0] id_csr_ctrl,
     input wire [63:0] timer_in,
     input wire [31:0] tid,
+    // ex ,mem, wb have hazard
+    input wire ex_is_tlbhazard,
+    input wire mem_is_tlbhazard,
+    input wire wb_is_tlbhazard, 
     // from ex 
     input wire [6:0]ex_mem_hazard,
     //interrupt
@@ -45,6 +51,11 @@ module ID (
     output wire is_fire,
     input wire fire//next stage's data was consumed
 );
+localparam TLBIDX= 14'h10;
+localparam TLBEHI= 14'h11;
+localparam TLBELO0=14'h12;
+localparam TLBELO1=14'h13;
+
 assign is_fire = logic_valid & right_ready;
 
 // wire right_fire;
@@ -428,7 +439,7 @@ assign Imm = ({32{Imm20_en}} & Imm20) |
              ({32{Imm5_en}}  & Imm5 );
 // for csr ,decoder contrl sign 
 assign csr_we = inst_csrwr | inst_csrxchg;
-assign csr_idx = Inst[23:10];
+assign csr_idx = inst_rdcntid? 14'h40:Inst[23:10];
 assign csr_mask_en = inst_csrxchg;
 assign csr_data = (inst_rdcntvh)? timer_in[63:32]:
                    (inst_rdcntvl)? timer_in[31:0]:
@@ -549,7 +560,17 @@ always @(posedge clk) begin
 end
 // shark hands output logic
 assign right_valid=valid;
-assign left_ready = is_mem_hazrd? 1'b0:right_ready;
-assign logic_valid = is_mem_hazrd? 1'b0:left_valid;;
+assign left_ready = is_mem_hazrd| 
+                    ((ex_is_tlbhazard | mem_is_tlbhazard | wb_is_tlbhazard) & rd_from_csr & (csr_idx == TLBIDX| 
+                                                                                 csr_idx == TLBEHI|
+                                                                                 csr_idx == TLBELO0|
+                                                                                 csr_idx == TLBELO1))? 1'b0
+                    :right_ready;
+assign logic_valid = is_mem_hazrd | 
+                    ((ex_is_tlbhazard | mem_is_tlbhazard | wb_is_tlbhazard) & rd_from_csr & (csr_idx == TLBIDX| 
+                                                                                 csr_idx == TLBEHI|
+                                                                                 csr_idx == TLBELO0|
+                                                                                 csr_idx == TLBELO1))? 1'b0
+                    :left_valid; // have mem hazrd or have tlb csr hazard
 
 endmodule //ID

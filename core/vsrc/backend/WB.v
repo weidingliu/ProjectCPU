@@ -21,6 +21,8 @@ module WB (
     output wire [5:0]ecode,
     output wire [31:0]badv,
     output wire badv_valid,
+
+    output wire stall,
     // invtlb 
     output wire tlbinv_en,
     output wire [4:0]tlbinv_op,
@@ -34,6 +36,8 @@ module WB (
     output wire [4:0]data_tlbindex,
     output wire data_tlbfound,
     output wire tlb_serch_en,
+    // is tlb rd
+    output wire is_tlbhazard,
 
     //bypass
     output wire [`bypass_width-1:0]wb_bypass,
@@ -104,6 +108,7 @@ assign tlb_wren = tlb_op[1];
 assign tlb_rden = tlb_op[2];
 assign tlb_fill_en = tlb_op[3] & left_valid;
 assign tlb_serch_en = tlb_op[4] & left_valid;
+assign is_tlbhazard = (tlb_op[4] | tlb_op[2]) & left_valid;
 //excp
 wire ms_excp;
 wire [15:0]excp_num;
@@ -117,10 +122,13 @@ assign {
 
 `ifdef NEXT_SOFT_INT
 assign excp_flush = (ms_excp | soft_int) & left_valid & !icache_busy;
+assign stall = (ertn | ms_excp | soft_int) & left_valid & icache_busy;
 `else 
 assign excp_flush = ms_excp & left_valid & !icache_busy;
+assign stall = (ertn | ms_excp) & left_valid & icache_busy;
 `endif
 assign ertn_flush = ertn & left_valid & !icache_busy;
+
 // assign pc = PC;
 /*
 excp_num[0]  int
@@ -231,7 +239,7 @@ assign left_ready = (icache_busy & (ms_excp | ertn) & left_valid) ? 1'b0: right_
 // assign wb_ctrl_bus=bus_temp;
 // assign wb_csr_bus = csr_bus_temp;
 assign wb_ctrl_bus={mem_ctrl_bus[`mem_ctrl_width-1:103],(mem_ctrl_bus[102] & ~excp_flush),mem_ctrl_bus[101:0]};
-assign wb_csr_bus = mem_csr_bus;
+assign wb_csr_bus = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
 assign wb_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
 assign wb_bypass = {mem_ctrl_bus[31:0],mem_ctrl_bus[101:97],mem_ctrl_bus[96:96] & left_valid};
 

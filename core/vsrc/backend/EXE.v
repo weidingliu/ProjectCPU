@@ -7,6 +7,7 @@ module EXE (
     input wire excp_flush,
     input wire ertn_flush,
     input wire icache_busy,
+    input wire stall,
 
     output wire [`ex_ctrl_width-1:0] ex_ctrl_bus,
     //csr
@@ -19,6 +20,8 @@ module EXE (
     output wire [6:0]ex_mem_hazard,
     //bypass
     output wire [`bypass_width-1:0]ex_bypass,
+    // is tlb rd
+    output wire is_tlbhazard,
 
     // input wire [`bypass_width-1:0]mem_bypass,
 
@@ -203,7 +206,8 @@ alu alu(
     .alu_src2(src2),
     .alu_result(alu_result)
 );
-
+//is tlb rd 
+assign is_tlbhazard = (tlb_op[4] | tlb_op[2]) & left_valid;
 //mul and div 
 assign is_mul_div = mul_div_op[0] | mul_div_op[1] | mul_div_op[2] | mul_div_op[3];
 
@@ -248,7 +252,7 @@ Booth_Walloc_MUL MUL(
     .reset(reset),
     .io_in_ready(),
     .io_in_valid(is_mul),
-    .io_in_bits_ctrl_flow_flush(1'b0),
+    .io_in_bits_ctrl_flow_flush(excp_flush || ertn_flush || stall),
     .io_in_bits_ctrl_flow_mulw(1'b0),
     .io_in_bits_ctrl_flow_mul_sign({~is_sign,~is_sign}),
     .io_in_bits_ctrl_data_src1(src1),
@@ -265,7 +269,7 @@ DIV DIV(
     .io_in_valid(is_div),
     .io_in_bits_ctrl_flow_divw(),
     .io_in_bits_ctrl_flow_div_signed(is_sign),
-    .io_in_bits_ctrl_flow_flush(1'b0),
+    .io_in_bits_ctrl_flow_flush(excp_flush || ertn_flush || stall),
     .io_in_bits_ctrl_data_src1(src1),
     .io_in_bits_ctrl_data_src2(src2),
     .io_out_ready(1'b1),
