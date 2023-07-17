@@ -1165,7 +1165,7 @@ Data_mask #(
 
 // generate hit_rdata , select a word data form a cache line data 
 generate
-    for(i=0;i<Cache_way;i++) begin :data_select
+    for(i=0;i<Cache_way;i=i+1) begin :data_select
         Data_mask #(
         .DATA_WIDTH(DATA_WIDTH),
         .Cache_line_size(Cache_line_size)
@@ -1179,7 +1179,7 @@ generate
 endgenerate
 // generate write cache data
 generate
-    for(i=0;i<Cache_line_wordnum;i++) begin 
+    for(i=0;i<Cache_line_wordnum;i=i+1) begin 
         assign new_data[(i+1)*DATA_WIDTH -1 :i*DATA_WIDTH] = wdata;
     end
 endgenerate
@@ -1211,7 +1211,7 @@ assign cache_we[0] = (state == miss & (~lru) & read_count_ready | state == scanf
 assign cache_we[1] = (state == miss & lru & read_count_ready | state == scanf & hit_way1 & we) & rdata_ready & !uncached_buffer;
 
 generate
-    for(i=0;i<Cache_way;i++) begin 
+    for(i=0;i<Cache_way;i=i+1) begin 
         assign write_cache_data[i] = (old_data & (~mask) | new_data & (mask));
         assign write_tag[i] = Tag;
     end
@@ -1352,7 +1352,7 @@ assign Tag = addr[BUS_WIDTH-1:Index_size + Offset_size];
 genvar i;
 //tag 
 generate
-    for(i=0;i<Cache_way;i++) begin :Cache_tag
+    for(i=0;i<Cache_way;i=i+1) begin :Cache_tag
         Sramlike#(.DATA_WIDTH(Tag_size),.Addr_len(Index_size)) Tag_way (
            .clk(clk),
            .reset(reset),
@@ -1368,7 +1368,7 @@ generate
 endgenerate
 //data
 generate
-    for(i=0;i<Cache_way;i++) begin :Cache_data
+    for(i=0;i<Cache_way;i=i+1) begin :Cache_data
         Sramlike#(.DATA_WIDTH(Cache_line_size),.Addr_len(Index_size)) Data_way (
            .clk(clk),
            .reset(reset),
@@ -1385,7 +1385,7 @@ generate
 endgenerate
 //valid
 generate
-    for(i=0;i<Cache_way;i++) begin :data_valid
+    for(i=0;i<Cache_way;i=i+1) begin :data_valid
         Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) Data_valid (
            .clk(clk),
            .reset(reset),
@@ -1525,7 +1525,7 @@ Data_mask #(
 
 // generate hit_rdata, select a word data form a cache line data 
 generate
-    for(i=0;i<Cache_way;i++) begin :data_select
+    for(i=0;i<Cache_way;i=i+1) begin :data_select
         Data_mask #(
         .DATA_WIDTH(DATA_WIDTH),
         .Cache_line_size(Cache_line_size)
@@ -1546,7 +1546,7 @@ assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready &
 assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready & !uncached_buffer;
 
 generate
-    for(i=0;i<Cache_way;i++) begin 
+    for(i=0;i<Cache_way;i=i+1) begin 
         assign write_cache_data[i] = miss_data;
         assign write_tag[i] = Tag;
         // assign write_dirt = 1'b1;

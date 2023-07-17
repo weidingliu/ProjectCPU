@@ -44,7 +44,7 @@ module axi4_full_interface #(
     output wire [3:0]ar_id,
     output reg [7:0] ar_len,
     output wire [2:0] ar_size,
-    output wire [BUS_WIDTH-1:0] ar_addr,//read request address 
+    output reg [BUS_WIDTH-1:0] ar_addr,//read request address 
     output wire [2:0]ar_prot, // Access attributes
     output wire [1:0]ar_burst,
     output wire [1:0]ar_lock,
@@ -52,12 +52,12 @@ module axi4_full_interface #(
     
 
     //write address channel
-    output wire aw_valid,
+    output reg aw_valid,
     input wire aw_ready,
     output wire [3:0]aw_id,
     output reg [7:0] aw_len,
     output wire [2:0] aw_size,
-    output wire [BUS_WIDTH-1:0] aw_addr,
+    output reg [BUS_WIDTH-1:0] aw_addr,
     output wire [2:0]aw_prot,
     output wire [1:0]aw_burst,
     output wire [1:0]aw_lock,

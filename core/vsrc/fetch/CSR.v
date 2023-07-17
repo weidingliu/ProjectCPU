@@ -23,6 +23,9 @@ module CSR (
     input wire [31:0]error_vaddr,
     input wire error_va_en,
 
+    input wire excp_tlbrefill,// tlb refile excption
+    input wire excp_tlb,// tlb excp such as PPI 
+
     //for if 
     output wire [31:0]eentry_out,
     output wire [31:0]era_out,
@@ -32,6 +35,7 @@ module CSR (
     output wire [1:0]datf,
     output wire [1:0]datm,
     output wire [31:0]csr_ASID,
+    output wire [31:0]tlbentry_out,
 
     //for id 
     output wire [63:0]timer_out,
@@ -218,6 +222,8 @@ reg [31:0]lsfr_reg;
 wire [31:0]pgd;
 reg [63:0]timer64;
 
+wire dapg_forward;
+
 assign rand_index = lsfr_reg[4:0];
 assign tlbehi_in = {r_vppn, 13'b0};
 assign tlbelo0_in = {4'b0, r_ppn0, 1'b0, r_g, r_mat0, r_plv0, r_d0, r_v0};
@@ -269,10 +275,18 @@ always @(posedge clk) begin
         if (excp_flush) begin
             crmd[ `PLV] <=  2'b0;
             crmd[  `IE] <=  1'b0;
+            if(excp_tlbrefill) begin 
+                crmd [`DA] <= 1'b1;
+                crmd [`PG] <= 1'b0;
+            end
          end
          else if(ertn_flush) begin 
             crmd[ `PLV] <=  prmd[ `PLV];
             crmd[  `IE] <=  prmd[  `IE];
+            if(estat[`Ecode] == 6'h3f) begin 
+                crmd [`DA] <= 1'b0;
+                crmd [`PG] <= 1'b1;
+            end
          end
         else if(crmd_wen) begin 
             crmd[ `PLV] <= csr_wdata[ `PLV];
@@ -590,6 +604,9 @@ always @(posedge clk) begin
         else if(tlbrd_invalid) begin 
             tlbehi[`VPPN] <= 19'b0;
         end
+        else if(excp_tlb) begin 
+            tlbehi[`VPPN] <= error_vaddr[`VPPN];
+        end
     end
 end
 //tlblo0
@@ -749,14 +766,20 @@ assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                     {32{csr_raddr == DMW0}}    & dmw0    |
                     {32{csr_raddr == DMW1}}    & dmw1    ;
 
-assign DMW0 = dmw0;
-assign DMW1 = dmw1;
-assign dapg = {crmd[`DA],crmd[`PG]};
+assign dapg_forward = !excp_tlbrefill & !(ertn_flush & (estat[`Ecode] == 6'h3f)) & !crmd_wen;
+assign csr_dmw0 = DMW0_wen? csr_wdata:dmw0;
+assign csr_dmw1 = DMW1_wen? csr_wdata:dmw1;
+assign dapg = {2{excp_tlbrefill}} & {1'b1,1'b0} |
+              {2{ertn_flush & (estat[`Ecode] == 6'h3f)}} & {1'b0,1'b1}|
+              {2{crmd_wen}} & {csr_wdata[`DA],csr_wdata[`PG]} |
+              {2{dapg_forward}} & {crmd[`DA],crmd[`PG]};
+
 assign datf = crmd[`DATF];
 assign datm = crmd[`DATM];
 assign ASID = asid;
+assign tlbentry_out = tlbrentry;
 
-assign csr_tlbehi = tlbehi;
+assign csr_tlbehi = tlbehi_wen ? csr_wdata :tlbehi;
 assign csr_tlbidx = tlbidx;
 assign csr_tlbelo0 = tlbelo0;
 assign csr_tlbelo1 = tlbelo1;

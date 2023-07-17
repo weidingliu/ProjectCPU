@@ -22,6 +22,9 @@ module WB (
     output wire [31:0]badv,
     output wire badv_valid,
 
+    output wire excp_tlb,
+    output wire excp_tlbrefill,
+
     output wire stall,
     // invtlb 
     output wire tlbinv_en,
@@ -154,47 +157,51 @@ assign {
     ecode,
     esubcode,
     badv,
-    badv_valid
-} = (excp_num[0] | soft_int) ? {`ECODE_INT , 9'b0,32'h0,1'b0} :
-    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,    left_valid}:
-    excp_num[2] ? {`ECODE_TLBR, 9'b0,         PC,    left_valid}:
-    excp_num[3] ? {`ECODE_PIF,  9'b0,         PC,    left_valid}:
-    excp_num[4] ? {`ECODE_PPI,  9'b0,         PC,    left_valid}:
-    excp_num[5] ? {`ECODE_SYS , 9'b0,         32'h0,  1'b0} :
-    excp_num[6] ? {`ECODE_BRK , 9'b0,         32'h0,  1'b0} :
-    excp_num[7] ? {`ECODE_INE , 9'b0,         32'h0,  1'b0} :
-    excp_num[8] ? {`ECODE_IPE , 9'b0,         32'h0,  1'b0} : 
-    excp_num[9] ? {`ECODE_ALE , 9'b0,         mem_addr,left_valid} : 
-    excp_num[10]? {`ECODE_ADEM,`ESUBCODE_ADEM,mem_addr,left_valid} :
-    excp_num[11]? {`ECODE_TLBR, 9'b0,         mem_addr,left_valid} :
-    excp_num[12]? {`ECODE_PME,  9'b0,         mem_addr,left_valid} :
-    excp_num[13]? {`ECODE_PPI,  9'b0,         mem_addr,left_valid} :
-    excp_num[14]? {`ECODE_PIS,  9'b0,         mem_addr,left_valid} :
-    excp_num[15]? {`ECODE_PIL,  9'b0,         mem_addr,left_valid} :
-    48'b0;
+    badv_valid,
+    excp_tlb,
+    excp_tlbrefill
+} = (excp_num[0] | soft_int) ? {`ECODE_INT , 9'b0,32'h0,1'b0   ,1'b0,      1'b0} :
+    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,    left_valid,1'b0,      1'b0}:
+    excp_num[2] ? {`ECODE_TLBR, 9'b0,         PC,    left_valid,left_valid,left_valid}:
+    excp_num[3] ? {`ECODE_PIF,  9'b0,         PC,    left_valid,left_valid,      1'b0}:
+    excp_num[4] ? {`ECODE_PPI,  9'b0,         PC,    left_valid,left_valid,      1'b0}:
+    excp_num[5] ? {`ECODE_SYS , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} :
+    excp_num[6] ? {`ECODE_BRK , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} :
+    excp_num[7] ? {`ECODE_INE , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} :
+    excp_num[8] ? {`ECODE_IPE , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} : 
+    excp_num[9] ? {`ECODE_ALE , 9'b0,         mem_addr,left_valid,1'b0,      1'b0} : 
+    excp_num[10]? {`ECODE_ADEM,`ESUBCODE_ADEM,mem_addr,left_valid,1'b0,      1'b0} :
+    excp_num[11]? {`ECODE_TLBR, 9'b0,         mem_addr,left_valid,left_valid,      left_valid} :
+    excp_num[12]? {`ECODE_PME,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    excp_num[13]? {`ECODE_PPI,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    excp_num[14]? {`ECODE_PIS,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    excp_num[15]? {`ECODE_PIL,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    50'b0;
 `else 
 assign {
     ecode,
     esubcode,
     badv,
-    badv_valid
-} = excp_num[0] ? {`ECODE_INT , 9'b0,32'h0,1'b0} :
-    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,1'b1  & left_valid}:
-    excp_num[2] ? {`ECODE_TLBR, 9'b0, PC, left_valid}:
-    excp_num[3] ? {`ECODE_PIF,9'b0,PC,left_valid}:
-    excp_num[4] ? {`ECODE_PPI,9'b0,PC,left_valid}:
-    excp_num[5] ? {`ECODE_SYS , 9'b0,32'h0,1'b0} :
-    excp_num[6] ? {`ECODE_BRK , 9'b0,32'h0,1'b0} :
-    excp_num[7] ? {`ECODE_INE , 9'b0,32'h0,1'b0} :
-    excp_num[8] ? {`ECODE_IPE , 9'b0,32'h0,1'b0} : 
-    excp_num[9] ? {`ECODE_ALE , 9'b0,         mem_addr,left_valid} : 
-    excp_num[10]? {`ECODE_ADEM,`ESUBCODE_ADEM,mem_addr,left_valid} :
-    excp_num[11]? {`ECODE_TLBR, 9'b0,         mem_addr,left_valid} :
-    excp_num[12]? {`ECODE_PME,  9'b0,         mem_addr,left_valid} :
-    excp_num[13]? {`ECODE_PPI,  9'b0,         mem_addr,left_valid} :
-    excp_num[14]? {`ECODE_PIS,  9'b0,         mem_addr,left_valid} :
-    excp_num[15]? {`ECODE_PIL,  9'b0,         mem_addr,left_valid} :
-    48'b0;
+    badv_valid,
+    excp_tlb,
+    excp_tlbrefill
+} = excp_num[0] ? {`ECODE_INT , 9'b0,32'h0,1'b0,1'b0,      1'b0} :
+    excp_num[1] ? {`ECODE_ADEF,`ESUBCODE_ADEF,PC,    left_valid,1'b0,      1'b0}:
+    excp_num[2] ? {`ECODE_TLBR, 9'b0,         PC,    left_valid,left_valid,left_valid}:
+    excp_num[3] ? {`ECODE_PIF,  9'b0,         PC,    left_valid,left_valid,      1'b0}:
+    excp_num[4] ? {`ECODE_PPI,  9'b0,         PC,    left_valid,left_valid,      1'b0}:
+    excp_num[5] ? {`ECODE_SYS , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} :
+    excp_num[6] ? {`ECODE_BRK , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} :
+    excp_num[7] ? {`ECODE_INE , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} :
+    excp_num[8] ? {`ECODE_IPE , 9'b0,         32'h0,  1'b0,1'b0,      1'b0} : 
+    excp_num[9] ? {`ECODE_ALE , 9'b0,         mem_addr,left_valid,1'b0,      1'b0} : 
+    excp_num[10]? {`ECODE_ADEM,`ESUBCODE_ADEM,mem_addr,left_valid,1'b0,      1'b0} :
+    excp_num[11]? {`ECODE_TLBR, 9'b0,         mem_addr,left_valid,left_valid,      left_valid} :
+    excp_num[12]? {`ECODE_PME,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    excp_num[13]? {`ECODE_PPI,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    excp_num[14]? {`ECODE_PIS,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    excp_num[15]? {`ECODE_PIL,  9'b0,         mem_addr,left_valid,left_valid,      1'b0} :
+    50'b0;
 `endif
 
 assign excp_era = PC;

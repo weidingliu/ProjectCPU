@@ -13,6 +13,8 @@ module IF (
     input wire [31:0]eentry,
     input wire [31:0]era,
     output wire[31:0] PC, //inst addr
+    input wire excp_tlbrefill,
+    input wire [31:0]tlbentry,
     // input wire [31:0]Inst,//inst
     // output wire [63:0]data_bus,
 
@@ -44,7 +46,8 @@ always @(posedge clk) begin
       temp <=32'h1C000000;
   end
   else if(excp_flush) begin 
-    temp <= eentry;
+    if(excp_tlbrefill) temp <= tlbentry;
+    else temp <= eentry;
   end
   else if(ertn_flush) begin 
     temp <= era;

@@ -225,6 +225,9 @@ wire [4:0]wb_tlbindex;
 wire wb_tlbfound;
 wire tlb_serch_en;
 
+wire excp_tlb;
+wire excp_tlbrefill;
+
 wire stall;
 
 // csr
@@ -249,6 +252,7 @@ wire [31:0] csr_tlbidx;
 wire [31:0] csr_tlbelo0;
 wire [31:0] csr_tlbelo1;
 wire [5:0]encode_in;
+wire [31:0]tlbentry_out;
 
 // tlb 
 wire [4:0]rand_index;
@@ -397,6 +401,8 @@ IF if_stage0(
     .stall(stall),
     .eentry(eentry_out),
     .era(era_out),
+    .tlbentry(tlbentry_out),
+    .excp_tlbrefill(excp_tlbrefill),
     //branch 
     .flush(flush),
     .is_branch(is_branch),
@@ -751,6 +757,8 @@ WB wb_syage(
     `ifdef NEXT_SOFT_INT
     .soft_int(soft_int),
     `endif
+    .excp_tlb(excp_tlb),
+    .excp_tlbrefill(excp_tlbrefill),
 
     //tlbinv 
     .tlbinv_en(tlbinv_en),
@@ -799,6 +807,8 @@ CSR CSR(
     .pc(wb_pc),
     .error_vaddr(error_va),
     .error_va_en(error_va_en),
+    .excp_tlb(excp_tlb),
+    .excp_tlbrefill(excp_tlbrefill),
     //for if
     .eentry_out(eentry_out),
     .era_out(era_out),
@@ -808,6 +818,7 @@ CSR CSR(
     .datf(datf),
     .datm(datm),
     .csr_ASID(ASID),
+    .tlbentry_out(tlbentry_out),
     // for id 
     .timer_out(timer64),
     .tid_out(tid),
