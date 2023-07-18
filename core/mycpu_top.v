@@ -1,3 +1,5 @@
+`include "defines.sv"
+`include "soc_defines.v"
 module core_top #(
     localparam DATA_WIDTH = 32,
     localparam CPU_WIDTH = DATA_WIDTH * 16
@@ -787,7 +789,7 @@ WB wb_syage(
     .fire(1'b1)
 );
 
-CSR CSR(
+CSR_CPU CSR(
     .clk(clk),
     .reset(reset),
     //read bus
@@ -1169,7 +1171,7 @@ axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(DATA_WIDTH),.CPU_WIDTH(CPU_WIDTH
 //     .wr_breap(wr_breap),
 //     .wr_id(wr_id)
 // );
-
+`ifndef soc_sim
 reg difftest_excp_flush;
 reg difftest_ertn_flush;
 reg [5:0]difftest_ecode;
@@ -1320,6 +1322,6 @@ DifftestGRegState DifftestGRegState(
     .gpr_30             (regs[30]   ),
     .gpr_31             (regs[31]   )
 );
-
+`endif
 
 endmodule

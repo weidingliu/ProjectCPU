@@ -1,7 +1,7 @@
 `include "defines.sv"
 `include "csr_defines.v"
 
-module CSR (
+module CSR_CPU (
     input wire clk,
     input wire reset,
     //read bus
@@ -776,7 +776,7 @@ assign dapg = {2{excp_tlbrefill}} & {1'b1,1'b0} |
 
 assign datf = crmd[`DATF];
 assign datm = crmd[`DATM];
-assign ASID = asid;
+assign csr_ASID = asid;
 assign tlbentry_out = tlbrentry;
 
 assign csr_tlbehi = tlbehi_wen ? csr_wdata :tlbehi;
