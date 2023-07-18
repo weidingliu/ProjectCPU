@@ -66,7 +66,7 @@ module axi4_full_interface #(
 
     //read data channel 
     input wire rd_valid,
-    output wire rd_ready,
+    output reg rd_ready,
     input    [ 3:0] rd_id,
     input wire [DATA_WIDTH-1:0] rd_data,
     input    [ 1:0] rd_resp,
@@ -83,7 +83,7 @@ module axi4_full_interface #(
 
     //write respone channel
     input wire wr_valid,
-    output wire wr_ready,
+    output reg wr_ready,
     input wire [3:0]wr_id,
     input wire [1:0]wr_breap
 );

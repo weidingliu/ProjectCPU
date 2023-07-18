@@ -305,12 +305,6 @@ reg difftest_tlbfill_en;
 
 // from csr
 
-wire [31:0] csr_tlbehi;
-wire [31:0] csr_tlbidx;
-wire [31:0] csr_tlbelo0;
-wire [31:0] csr_tlbelo1;
-wire [5:0]encode_in;
-
 
 wire    [31:0]  csr_crmd_diff_0     ;
 wire    [31:0]  csr_prmd_diff_0     ;
@@ -634,8 +628,11 @@ Regfile Regfile(
     .data2(reg_data2),//data out
     .wreg_en(wb_bus[96:96] & wb_valid),//write enable
     .wdata(wb_bus[31:0]),//write data
-    .wreg_index(wb_bus[101:97]),//write addr
+    .wreg_index(wb_bus[101:97])
+    `ifndef soc_sim
+    ,//write addr
     .rf_o(regs)
+    `endif
 );
 
 EXE exe_stage(
