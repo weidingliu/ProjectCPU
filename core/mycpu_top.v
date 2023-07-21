@@ -63,6 +63,7 @@ module core_top #(
     output [31:0] debug0_wb_rf_wdata,
     output [31:0] debug0_wb_inst
 );
+
 wire clk;
 wire reset;
 assign clk = aclk;
@@ -785,7 +786,10 @@ WB wb_syage(
     .is_fire(wb_is_fire),
     .fire(1'b1)
 );
-
+assign debug0_wb_pc = wb_bus[63:32];
+assign debug0_wb_rf_wen = {4{wb_bus[96] &wb_valid}}; 
+assign debug0_wb_rf_wnum = wb_bus[101:97];
+assign debug0_wb_rf_wdata = wb_bus[31:0];
 CSR_CPU CSR(
     .clk(clk),
     .reset(reset),
