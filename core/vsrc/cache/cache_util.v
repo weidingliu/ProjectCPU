@@ -27,25 +27,11 @@ reg [Addr_len-1:0]addr_temp;
 // for soc 
 `ifndef soc_sim
 always @(posedge clk) begin
+    if(we) begin 
+        Mem[waddr] <= wdata;
+    end
     addr_temp <= addr;
 end
-// write data 
-genvar i;
-generate
-for(i = 0 ; i<Sram_Depth; i=i+1) begin :write_data
-    always @(posedge clk) begin 
-        if(reset) begin 
-            Mem[i] <= 0;
-        end
-        if(we & (i == waddr)) begin 
-            Mem[i] <= wdata;
-        end
-    end
-end
-
-endgenerate
-
-
 `else
 genvar i;
 generate
