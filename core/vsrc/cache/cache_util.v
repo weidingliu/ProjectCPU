@@ -3,7 +3,7 @@
 * simulate sram , when clock rising edge read out data or write data, signal port
 * write first memory
 */
-
+`include "soc_defines.v"
 module Sramlike #(
     parameter DATA_WIDTH = 32,
     parameter Addr_len = 6,
@@ -23,7 +23,8 @@ module Sramlike #(
 
 reg [DATA_WIDTH-1:0]Mem[0:Sram_Depth-1];
 reg [Addr_len-1:0]addr_temp;
-
+// for soc 
+`ifndef soc_sim
 always @(posedge clk) begin
     if(we) begin 
         Mem[waddr] <= wdata;
@@ -31,6 +32,25 @@ always @(posedge clk) begin
     addr_temp <= addr;
 end
 
+`else
+genvar i;
+generate
+for(i=0;i<Sram_Depth;i=i+1) begin :write_block
+always @(posedge clk) begin
+    if(reset) begin 
+        Mem[i] <= 0;
+    end
+    else if(we & (i == waddr)) begin 
+        Mem[i] <= wdata;
+    end
+end
+end
+endgenerate
+always @(posedge clk) begin
+    addr_temp <= addr;
+end
+
+`endif
 assign rdata = Mem[addr_temp];
     
 endmodule
