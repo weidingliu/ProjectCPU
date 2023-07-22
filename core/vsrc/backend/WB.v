@@ -59,7 +59,7 @@ module WB (
 );
 
 // wire right_fire;
-assign is_fire = logic_valid & right_ready;
+
 reg valid;
 reg [`mem_ctrl_width-1:0]bus_temp;
 reg [`ex_csr_ctrl_width-1:0] csr_bus_temp;
@@ -78,7 +78,7 @@ wire [63:0]timer64;
 
 //tlb 
 wire [4:0]tlb_op;
-
+assign is_fire = logic_valid & right_ready;
 //bus
 assign {
         data_tlbindex,//242:246

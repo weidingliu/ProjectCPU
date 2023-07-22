@@ -233,6 +233,8 @@ wire excp_tlbrefill;
 
 wire stall;
 
+wire [31:0]wb_pc;
+
 // csr
 wire [31:0]eentry_out;
 wire [31:0]era_out;

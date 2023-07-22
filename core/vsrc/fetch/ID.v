@@ -56,8 +56,6 @@ localparam TLBEHI= 14'h11;
 localparam TLBELO0=14'h12;
 localparam TLBELO1=14'h13;
 
-assign is_fire = logic_valid & right_ready;
-
 // wire right_fire;
 reg valid;
 
@@ -209,7 +207,7 @@ wire excp_ine;
 wire excp_ipe;
 wire is_kernel_inst;
 wire refetch;
-
+assign is_fire = logic_valid & right_ready;
 /*
 *    op_mem[0] is mem inst
 *    op_mem[1] is usignal extend
