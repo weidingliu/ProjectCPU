@@ -1,0 +1,1 @@
+`define soc_sim 1

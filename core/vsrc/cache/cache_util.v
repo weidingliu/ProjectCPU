@@ -40,7 +40,7 @@ always @(posedge clk) begin
     if(reset) begin 
         Mem[i] <= 0;
     end
-    else if(we & (i == waddr)) begin 
+    else if(we && (i == waddr)) begin 
         Mem[i] <= wdata;
     end
 end

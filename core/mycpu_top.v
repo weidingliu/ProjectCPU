@@ -529,7 +529,7 @@ IF_check IF2_stage (
     .inst_o(if_bus[31:0]),
     .vaddr_o(if_bus[63:32]),
     .ib_valid(if_right_valid),
-    .ib_ready(if_right_ready),
+    .ib_ready(if_right_ready | stall | is_branch),
     .fire(ib_is_fire),
     .is_fire(if2_is_fire)
 );

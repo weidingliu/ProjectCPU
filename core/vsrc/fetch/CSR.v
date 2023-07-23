@@ -139,7 +139,7 @@ localparam SAVE3 = 14'h33;
 localparam TID   = 14'h40;
 localparam TCFG  = 14'h41;
 localparam TVAL  = 14'h42;
-// localparam CNTC  = 14'h43;
+localparam CNTC  = 14'h43;
 localparam TICLR = 14'h44;
 localparam LLBCTL= 14'h60;
 localparam TLBRENTRY = 14'h88;
@@ -171,7 +171,7 @@ wire save3_wen  = csr_wr_en & (csr_waddr == SAVE3);
 wire tid_wen    = csr_wr_en & (csr_waddr == TID);
 wire tcfg_wen   = csr_wr_en & (csr_waddr == TCFG);
 wire tval_wen   = csr_wr_en & (csr_waddr == TVAL);
-// wire cntc_wen   = csr_wr_en & (csr_waddr == CNTC);
+wire cntc_wen   = csr_wr_en & (csr_waddr == CNTC);
 wire ticlr_wen  = csr_wr_en & (csr_waddr == TICLR);
 wire llbctl_wen = csr_wr_en & (csr_waddr == LLBCTL);
 wire tlbrentry_wen = csr_wr_en & (csr_waddr == TLBRENTRY);
@@ -216,6 +216,7 @@ reg [31:0]tlbelo0;
 reg [31:0]tlbelo1;
 reg [31:0]pgdh;
 reg [31:0]pgdl;
+reg [31:0]cntc;
 
 reg [31:0]lsfr_reg;
 
@@ -582,12 +583,14 @@ end
 
 //
 
-// always @(posedge clk) begin
-//     if(reset) begin 
-//         cntc <= 32'h0;
-//     end
-//     else if
-// end
+ always @(posedge clk) begin
+     if(reset) begin 
+         cntc <= 32'h0;
+     end
+     else if(cntc_wen) begin 
+        cntc <= csr_wdata;
+     end
+ end
 
 // tlbehi
 always @(posedge clk) begin
@@ -704,7 +707,7 @@ always @(posedge clk) begin
     end
 end
 
-assign timer_out = timer64; 
+assign timer_out =  timer64 + {{32{cntc[31]}}, cntc}; 
 assign tid_out = tid;
 
 //difftest
@@ -758,7 +761,7 @@ assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                     {32{csr_raddr == SAVE3 }}  & csr_save3   |
                     {32{csr_raddr == TID   }}  & tid     |
                     {32{csr_raddr == TCFG  }}  & tcfg    |
-                    // {32{csr_raddr == CNTC  }}  & cntc    |
+                    {32{csr_raddr == CNTC  }}  & cntc    |
                     {32{csr_raddr == TICLR }}  & ticlr   |
                     // {32{csr_raddr == LLBCTL}}  & {csr_llbctl[31:1], llbit} |
                     {32{csr_raddr == TVAL  }}  & tval    |
