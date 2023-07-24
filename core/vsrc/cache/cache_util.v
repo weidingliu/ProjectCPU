@@ -17,41 +17,49 @@ module Sramlike #(
     input wire [DATA_WIDTH-1:0] wdata,
     input wire [Addr_len-1:0] waddr,
     input wire we,// 1'b0 is read, 1'b1 is write
-
+    input wire ce,
+    `ifndef soc_sim
     output wire [DATA_WIDTH-1:0] rdata
+    `else 
+    output reg [DATA_WIDTH-1:0] rdata
+    `endif
 );
 
-reg [DATA_WIDTH-1:0]Mem[0:Sram_Depth-1];
+(* ram_style = " block" *) reg [DATA_WIDTH-1:0]Mem[0:Sram_Depth-1];
 reg [Addr_len-1:0]addr_temp;
 
 // for soc 
 `ifndef soc_sim
 always @(posedge clk) begin
-    if(we) begin 
+    if(ce & we) begin 
         Mem[waddr] <= wdata;
     end
     addr_temp <= addr;
 end
+
+assign rdata = Mem[addr_temp];
 `else
-genvar i;
-generate
-for(i=0;i<Sram_Depth;i=i+1) begin :write_block
-always @(posedge clk) begin
-    if(reset) begin 
-        Mem[i] <= 0;
-    end
-    else if(we && (i == waddr)) begin 
-        Mem[i] <= wdata;
+integer j;
+initial begin
+    //$readmemb("F:/IP_core/Single Port RAM/SIM/single_port_rom_init.txt", mem);
+	for(j=0; j < Sram_Depth; j = j + 1) begin
+        Mem[j] = 0;
     end
 end
-end
-endgenerate
+
 always @(posedge clk) begin
-    addr_temp <= addr;
+    if(ce && we) begin 
+        Mem[waddr] <= wdata;
+    end
+end
+
+always @(posedge clk) begin
+    if(ce && !we) begin 
+        rdata <= Mem[addr];
+    end
 end
 
 `endif
-assign rdata = Mem[addr_temp];
     
 endmodule
 

@@ -206,6 +206,7 @@ generate
            .wdata(write_tag[i]),
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .ce(1'b1),
 
            .rdata(tag[i]) 
         );
@@ -222,6 +223,7 @@ generate
            .wdata(write_cache_data[i]),
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .ce(1'b1),
 
            .rdata(cache_data[i]) 
         );
@@ -239,6 +241,7 @@ generate
            .wdata(1'b1),
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .ce(1'b1),
 
            .rdata(valid[i]) 
         );
@@ -255,6 +258,7 @@ generate
            .wdata(write_dirt[i]),
            .waddr(index),
            .we(write_dirt_we[i]),// 1'b0 is read, 1'b1 is write
+           .ce(1'b1),
 
            .rdata(dirt[i]) 
         );
@@ -269,6 +273,7 @@ Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) lru_way (
     .wdata(write_lru),
     .waddr(index),
     .we(write_lru_we),// 1'b0 is read, 1'b1 is write
+    .ce(1'b1),
 
     .rdata(lru) 
 );
@@ -623,6 +628,7 @@ generate
            .wdata(write_tag[i]),
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .ce(1'b1),
 
            .rdata(tag[i]) 
         );
@@ -639,6 +645,7 @@ generate
            .wdata(write_cache_data[i]),
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .ce(1'b1),
 
            .rdata(cache_data[i]) 
         );
@@ -656,6 +663,7 @@ generate
            .wdata(1'b1),
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .ce(1'b1),
 
            .rdata(valid[i]) 
         );
@@ -670,6 +678,7 @@ Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) lru_way (
     .wdata(write_lru),
     .waddr(index),
     .we(write_lru_we),// 1'b0 is read, 1'b1 is write
+    .ce(1'b1),
 
     .rdata(lru) 
 );
