@@ -406,12 +406,12 @@ wire data_excp_adem;
 wire data_excp_ale;
 wire data_excp_tlbr;
 
-assign data_excp_pil = data_tlb_trans & !s1_v & mem_load & data_addr_valid & data_valid_temp & !data_cacop;// load page fault 
-assign data_excp_pis = data_tlb_trans & !s1_v & mem_store & data_addr_valid & data_valid_temp & !data_cacop;// store page fault 
-assign data_excp_ppi = data_tlb_trans & (plv > s1_plv) & data_addr_valid & s1_v & data_valid_temp & !data_cacop;// page privilege not allow 
-assign data_excp_pme = data_tlb_trans & data_addr_valid & mem_store & !s1_d & s1_v &  (s1_plv >= plv) & data_valid_temp & !data_cacop;// store page but dirt is not 1,syscall to fix 
-assign data_excp_adem = ((plv == 2'b11) & data_vaddr_temp[31] & data_tlb_trans) & data_addr_valid & data_valid_temp & !data_cacop;
-assign data_excp_tlbr = data_tlb_trans & !s1_found & data_addr_valid & data_valid_temp & !data_cacop; //refill page
+assign data_excp_pil = data_tlb_trans & !s1_v & mem_load & data_addr_valid & data_valid_temp;// load page fault 
+assign data_excp_pis = data_tlb_trans & !s1_v & mem_store & data_addr_valid & data_valid_temp;// store page fault 
+assign data_excp_ppi = data_tlb_trans & (plv > s1_plv) & data_addr_valid & s1_v & data_valid_temp;// page privilege not allow 
+assign data_excp_pme = data_tlb_trans & data_addr_valid & mem_store & !s1_d & s1_v &  (s1_plv >= plv) & data_valid_temp;// store page but dirt is not 1,syscall to fix 
+assign data_excp_adem = ((plv == 2'b11) & data_vaddr_temp[31] & data_tlb_trans) & data_addr_valid & data_valid_temp;
+assign data_excp_tlbr = data_tlb_trans & !s1_found & data_addr_valid & data_valid_temp; //refill page
 assign data_excp_ale = data_addr_valid & ((mem_halfword & data_vaddr_temp[0]) | (mem_word & (data_vaddr_temp[1] | data_vaddr_temp[0]))) & data_valid_temp & !data_cacop;
 
 assign data_excp_num = {data_excp_pil, data_excp_pis, data_excp_ppi, data_excp_pme, data_excp_tlbr,data_excp_adem,data_excp_ale};

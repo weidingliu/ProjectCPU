@@ -184,7 +184,7 @@ assign mem_halfword = op_mem[0] & op_mem[4];
 assign mem_word = op_mem[0] & op_mem[3];
 
 //for sram
-assign en = op_mem[0] & inst_valid & left_valid & !excp_flush & !stall;
+assign en = (op_mem[0] | ((inst_cacop_en | data_cacop_en) & !cacop_finish)) & inst_valid & left_valid & !excp_flush & !stall;
 assign we = op_mem[2];
 assign addr = alu_result;
 assign wdata = op_mem[3] ? src2:

@@ -447,6 +447,7 @@ addr_trans addr_translate(
     .inst_addr_valid(pc_valid),
     .inst_addr_ready(addr_trans_ready),
 
+    .inst_cacop(inst_cacop_en),
     .inst_uncached_en(inst_uncached_en),
     .inst_paddr(inst_paddr),
     .inst_vaddr_o(inst_vaddr_o),
@@ -475,13 +476,14 @@ addr_trans addr_translate(
     .data_tlbfound(data_tlbfound),
     .serch_tlb_finish(serch_finish),
 
+    .data_cacop(data_cacop_en),
     .data_uncached_en(data_uncached_en),
     .data_paddr(data_paddr),
     .data_vaddr_o(),
     .data_tlb_found(data_tlb_found),
     .data_valid(data_valid),
     .data_ready(!rdata_valid & !write_finish),
-    .data_fire(rdata_valid | write_finish),
+    .data_fire(mem_is_fire),
 
         //tlbinv 
     .tlbinv_en(tlbinv_en),

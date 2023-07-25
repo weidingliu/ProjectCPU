@@ -352,7 +352,7 @@ always @(posedge clk) begin
                     state <= idle;
                 end
                 else if(cacop_mod1) begin 
-                    if(dirt[cacop_va[Cache_way-1:0]]) state <= write_data;
+                    if(dirt[cacop_va[$clog2(Cache_way)-1:0]]) state <= write_data;
                     else state <= idle;
                 end
                 else if(cacop_mod2) begin 
@@ -406,7 +406,7 @@ always @(posedge clk) begin
         write_back_data <= 0;
     end
     else if(state == scanf & cacop_mod1) begin 
-        write_back_data <= (dirt[0] & (cacop_va[Cache_way-1:0] == 2'b0))? cache_data[0]:cache_data[1];
+        write_back_data <= (dirt[0] & (cacop_va[$clog2(Cache_way)-1:0] == 1'b0))? cache_data[0]:cache_data[1];
     end
     else if(state == scanf & cacop_mod2) begin 
         write_back_data <= (hit_way0)? cache_data[0]:cache_data[1];
@@ -425,7 +425,7 @@ always @(posedge clk) begin
         write_back_addr <= 0;
     end
     else if(state == scanf & cacop_mod1) begin 
-        write_back_addr <= (dirt[0] & (cacop_va[Cache_way-1:0] == 2'b0))? {tag[0],index,{Offset_size{1'b0}}}:{tag[1],index,{Offset_size{1'b0}}};
+        write_back_addr <= (dirt[0] & (cacop_va[$clog2(Cache_way)-1:0] == 1'b0))? {tag[0],index,{Offset_size{1'b0}}}:{tag[1],index,{Offset_size{1'b0}}};
     end
     else if(state == scanf & cacop_mod2) begin 
         write_back_addr <= (hit_way0)? {tag[0],index,{Offset_size{1'b0}}}:{tag[1],index,{Offset_size{1'b0}}};
@@ -521,10 +521,10 @@ assign write_lru = (state == miss)? ~lru:
 assign write_lru_we = ((state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready)) & !uncached_buffer & !cacop_en;
 //generate dirt data and enable
 assign write_dirt_we[0] = ((state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)) & !uncached_buffer | 
-                            (state == scanf & (cacop_va[Cache_way-1:0] == 2'h0) & (cacop_mod1)) | 
+                            (state == scanf & (cacop_va[$clog2(Cache_way)-1:0] == 1'h0) & (cacop_mod1)) | 
                             (state == scanf & cacop_mod2 & hit_way0);
 assign write_dirt_we[1] = ((state == miss & we & lru)    | (state == scanf & hit_way1 & we)) & !uncached_buffer | 
-                            (state == scanf & (cacop_va[Cache_way-1:0] == 2'h1) & (cacop_mod1))|
+                            (state == scanf & (cacop_va[$clog2(Cache_way)-1:0] == 1'h1) & (cacop_mod1))|
                             (state == scanf & cacop_mod2 & hit_way1);
                             
 assign write_dirt[0] = (state == scanf & (cacop_mod1 | cacop_mod2)) ? 1'b0:
@@ -533,10 +533,10 @@ assign write_dirt[1] = (state == scanf & (cacop_mod1 | cacop_mod2)) ? 1'b0:
                         (state == miss & we & lru)    | (state == scanf & hit_way1 & we)? 1'b1:1'b0;
 //generate cache meta data and cache data write enable
 assign cache_we[0] = (state == miss & (~lru) & read_count_ready | state == scanf & hit_way0 & we) & rdata_ready & !uncached_buffer | 
-                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h0) & (cacop_mod0 | cacop_mod1)) |
+                    (state == scanf & (cacop_va[$clog2(Cache_way)-1:0] == 1'h0) & (cacop_mod0 | cacop_mod1)) |
                     (state == scanf & cacop_mod2 & hit_way0);
 assign cache_we[1] = (state == miss & lru & read_count_ready | state == scanf & hit_way1 & we) & rdata_ready & !uncached_buffer | 
-                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h1) & (cacop_mod0 | cacop_mod1)) | 
+                    (state == scanf & (cacop_va[$clog2(Cache_way)-1:0] == 1'h1) & (cacop_mod0 | cacop_mod1)) | 
                     (state == scanf & cacop_mod2 & hit_way1);
 
 generate
@@ -564,7 +564,7 @@ assign rdata_valid = ((state == scanf & hit ) | (state == miss & read_count_read
 assign write_respone = ((state == scanf & hit) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_write_respone)) & !cacop_en; 
 assign data_transform_type = uncached_buffer ? 3'b001:3'b100;
 
-assign cacop_finish = (cacop_mod0 | cacop_mod1 & !dirt[cacop_va[Cache_way-1:0]]) & (state == scanf) | 
+assign cacop_finish = (cacop_mod0 | cacop_mod1 & !dirt[cacop_va[$clog2(Cache_way)-1:0]]) & (state == scanf) | 
                         cacop_mod1 & (state == write_data) & mem_write_respone | 
                         cacop_mod2 & !hit & (state == scanf)| 
                         cacop_mod2 & (state == write_data) & mem_write_respone;
@@ -904,10 +904,10 @@ assign write_lru = (state == miss)? ~lru:
                     (state == scanf & hit_way1)? 1'b0: 1'b1;
 assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready) & !uncached_buffer & !cacop_en;
 assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready & !uncached_buffer| 
-                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h0) & (cacop_mod0 | cacop_mod1)) | 
+                    (state == scanf & (cacop_va[$clog2(Cache_way)-1:0] == 1'h0) & (cacop_mod0 | cacop_mod1)) | 
                     (state == scanf & cacop_mod2 & hit_way0);
 assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready & !uncached_buffer | 
-                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h1) & (cacop_mod0 | cacop_mod1)) | 
+                    (state == scanf & (cacop_va[$clog2(Cache_way)-1:0] == 1'h1) & (cacop_mod0 | cacop_mod1)) | 
                     (state == scanf & cacop_mod2 & hit_way1);
 
 generate
