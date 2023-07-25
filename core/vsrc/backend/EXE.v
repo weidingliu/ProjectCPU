@@ -113,6 +113,7 @@ wire [9:0]tlbinv_asid;
 wire [18:0]tlbinv_vpn;
 
 wire branch_flag;
+wire is_cacop;
 //mem_bypass 
 // assign bypass_en1 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index1) & (mem_bypass[5:1] != 5'h0); 
 // assign bypass_en2 = (mem_bypass[0] == 1'b1) & (mem_bypass[5:1] == reg_index2) & (mem_bypass[5:1] != 5'h0); 
@@ -147,6 +148,7 @@ assign tlbinv_vpn = reg2[31:13];
 
 //bus
 assign {
+    is_cacop,//285:285
     tlb_op,//280:284
     timer_inst,// 279:279
     timer64,// 215:278
@@ -308,6 +310,7 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             ctrl_temp_bus <= {
+                    is_cacop,//325:325
                     tlb_op,//320:324
                     tlbinv_en,//319:319
                     tlbinv_op,//314:318

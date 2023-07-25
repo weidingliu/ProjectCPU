@@ -26,6 +26,10 @@ module CSR_CPU (
     input wire excp_tlbrefill,// tlb refile excption
     input wire excp_tlb,// tlb excp such as PPI 
 
+    //llbit 
+    input wire llbit_set_en,
+    input wire llbit_in,
+
     //for if 
     output wire [31:0]eentry_out,
     output wire [31:0]era_out,
@@ -430,6 +434,19 @@ always @(posedge clk) begin
         llbit <= 1'b0;
     end
     else begin 
+        if(ertn_flush & llbctl[`KLO]) begin 
+            llbit <= 1'b0;
+            llbctl[`KLO] <= 1'b0;
+        end
+        else if (llbctl_wen) begin 
+            llbctl[  `KLO] <= csr_wdata[  `KLO];
+            if (csr_wdata[`WCLLB] == 1'b1) begin
+                llbit <= 1'b0;
+            end
+        end
+        else if(llbit_set_en) begin 
+            llbit <= llbit_in;
+        end
 
     end
 end
@@ -581,7 +598,7 @@ always @(posedge clk) begin
     end
 end
 
-//
+// cnt
 
  always @(posedge clk) begin
      if(reset) begin 
@@ -731,7 +748,7 @@ assign csr_tid_diff         = tid;
 assign csr_tcfg_diff        = tcfg;
 assign csr_tval_diff        = tval;
 assign csr_ticlr_diff       = ticlr;
-// assign csr_llbctl_diff      = {llbctl[31:1], llbit};
+assign csr_llbctl_diff      = {llbctl[31:1], llbit};
 assign csr_tlbrentry_diff   = tlbrentry;
 assign csr_dmw0_diff        = dmw0;
 assign csr_dmw1_diff        = dmw1;
@@ -763,7 +780,7 @@ assign csr_rdata = ((csr_waddr == csr_raddr) && csr_wr_en) ? csr_wdata:
                     {32{csr_raddr == TCFG  }}  & tcfg    |
                     {32{csr_raddr == CNTC  }}  & cntc    |
                     {32{csr_raddr == TICLR }}  & ticlr   |
-                    // {32{csr_raddr == LLBCTL}}  & {csr_llbctl[31:1], llbit} |
+                    {32{csr_raddr == LLBCTL}}  & {llbctl[31:1], llbit} |
                     {32{csr_raddr == TVAL  }}  & tval    |
                     {32{csr_raddr == TLBRENTRY}} & tlbrentry   |
                     {32{csr_raddr == DMW0}}    & dmw0    |

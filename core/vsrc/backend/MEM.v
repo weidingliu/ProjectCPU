@@ -18,6 +18,12 @@ module MEM (
     // is tlb rd
     output wire is_tlbhazard,
 
+    //cacop 
+    output wire inst_cacop_en,
+    output wire data_cacop_en,
+    output wire [1:0]cacop_mod,
+    input wire cacop_finish,
+
     //mem interface
     output wire [31:0]addr,//read/write address
     output wire en,//mem enable
@@ -84,6 +90,8 @@ wire is_break;
 wire timer_inst;
 wire [63:0]timer64;
 
+wire is_cacop;
+
 // tlb 
 wire [4:0]tlb_op;
 wire tlbinv_en;
@@ -101,6 +109,7 @@ wire [3:0] byte_wmask;
 wire [3:0] half_wmask;
 
 assign {
+    is_cacop,//325:325
     tlb_op,//320:324
     tlbinv_en,//319:319
     tlbinv_op,//314:318
@@ -191,6 +200,11 @@ assign mem_result=(op_mem[0] & !op_mem[2])?
                   (op_mem[5])? byte_load:half_load
                   :alu_result;
 
+// cacop
+assign inst_cacop_en = is_cacop & (wreg_index[2:0] == 3'd0) & left_valid;
+assign data_cacop_en = is_cacop & (wreg_index[2:0] == 3'd1) & left_valid;
+assign cacop_mod = wreg_index[4:3];
+
 // assign right_fire=right_ready & right_valid;//data submit finish
 wire valid_temp;
 assign valid_temp = (fire? 1'b0:valid) | logic_valid & right_ready;
@@ -253,8 +267,10 @@ end
 assign data_tlbserch_en = tlb_op[4] & left_valid;
 // output logic
 assign right_valid=valid;
-assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid | (data_tlbserch_en & ! serch_finish) ? 1'b0:1'b1;// memory must not exceptions 
-assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | (data_tlbserch_en & ! serch_finish) ? 1'b0:1'b1;
+assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid | (data_tlbserch_en & ! serch_finish) | 
+                        (is_cacop & !cacop_finish & left_valid)? 1'b0:1'b1;// memory must not exceptions 
+assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | (data_tlbserch_en & ! serch_finish) |
+                        (is_cacop & !cacop_finish & left_valid) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
 assign mem_excp_bus = excp_temp;

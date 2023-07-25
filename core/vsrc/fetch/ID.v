@@ -189,6 +189,9 @@ wire inst_tlbrd;
 wire inst_tlbfill;
 wire inst_tlbsrch;
 
+wire inst_preld;//don't prefetch, is nop inst
+wire inst_cacop;
+
 wire logic_valid;
 wire is_sign_extend;
 
@@ -232,7 +235,7 @@ assign is_rj = inst_rdcntid;
 
 //aluop
 assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge | inst_st_b | inst_ld_bu
-                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu;
+                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_cacop;
 assign alu_op[1] = inst_lu12i;
 assign alu_op[2] = inst_ori | inst_or;
 assign alu_op[3] = inst_sub;
@@ -279,7 +282,7 @@ assign is_break = inst_break;
 
 //is signextend or zero extend
 assign is_sign_extend = inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bge | inst_st_b | inst_ld_bu | inst_beq | inst_sltui | inst_bgeu | inst_blt
-                        | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu;
+                        | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_cacop;
 
 //split inst
 assign op_31_26  = Inst[31:26];
@@ -309,7 +312,7 @@ assign Imm5 = ({27'h0,i5});
 //select Imm
 assign Imm20_en = inst_pcaddu12i | inst_lu12i;
 assign Imm12_en = inst_ori | inst_addi | inst_st_w | inst_ld_w | inst_st_b | inst_andi | inst_ld_bu | inst_xori | inst_sltui | inst_slti
-                  | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h;
+                  | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_cacop;
 assign Imm16_en = inst_jirl | inst_bge | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_bltu; 
 assign Imm26_en = inst_bl | inst_b;
 assign Imm5_en  = inst_srai | inst_slli | inst_srli;
@@ -401,6 +404,9 @@ assign inst_tlbwr      = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & deco
 assign inst_tlbfill    = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h10] & rk_d[5'h0d] & rj_d[5'h00] & rd_d[5'h00];
 assign inst_invtlb     = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h13];
 
+assign inst_cacop      = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h8];
+assign inst_preld      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'hb];
+
 
 // assign right_fire=right_ready & right_valid;//data submit finish
 // if alu is sign compute 
@@ -417,7 +423,7 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                                                                                     rd == 5'd2 | rd == 5'd3 | 
                                                                                     rd == 5'd4 | 
                                                                                     rd == 5'd5 | rd == 5'd6)) 
-                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch);
+                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_preld | inst_cacop);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
@@ -518,6 +524,7 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    inst_cacop,//285:285
                     tlb_op,//280:284
                     (inst_rdcntvl | inst_rdcntvh | inst_rdcntid),// 279:279
                     timer_in,// 215:278

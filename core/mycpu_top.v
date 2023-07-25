@@ -207,6 +207,12 @@ wire data_tlb_found;
 wire data_valid;
 wire data_ready;
 wire data_fire;
+// cacop 
+wire inst_cacop_en;
+wire data_cacop_en;
+wire [1:0]cacop_mod;
+wire inst_cacop_finish;
+wire data_cacop_finish;
 
 //WB stage signal
 wire [`mem_ctrl_width-1:0] wb_bus;
@@ -684,8 +690,8 @@ EXE exe_stage(
 
 MEM mem_stage(
     .clk(clk),//clock
-    .reset(reset),//global reset
-    //ctrl bus
+    .reset(reset),//global reset 
+    //ctrl bus 
     .mem_ctrl_bus(ex_bus),
     .wb_ctrl_bus(mem_bus),
     //csr bus 
@@ -696,7 +702,7 @@ MEM mem_stage(
     .mem_excp_bus(mem_excp_bus),
     .excp_flush(excp_flush),
     .ertn_flush(ertn_flush),
-    .stall(stall),// stall memory
+    .stall(stall),// stall memory 
 
     .mem_load(mem_load),
     .mem_store(mem_store),
@@ -706,6 +712,12 @@ MEM mem_stage(
     .excp_num_i(mem_excp_num_i),
 
     .is_tlbhazard(mem_is_tlbhazard),// tlb hazard
+
+    //cacop 
+    .inst_cacop_en(inst_cacop_en),
+    .data_cacop_en(data_cacop_en),
+    .cacop_mod(cacop_mod),
+    .cacop_finish((data_cacop_finish || inst_cacop_finish)),
 
     //mem interface
     .addr(addr),//read/write address
@@ -913,6 +925,11 @@ ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .rdata_valid(inst_ready),
     .rdata_ready(cache_inst_valid),
     .uncached_en(inst_uncached_en),
+    //cacop 
+    .cacop_en(inst_cacop_en),
+    .cacop_mod(cacop_mod),
+    .cacop_va(data_paddr),
+    .cacop_finish(inst_cacop_finish),
 
     //mem request
     .mem_addr(inst_mem_addr),
@@ -944,6 +961,11 @@ DCache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))DCache(
     .wmask(wmask),
     .write_respone(write_finish),
     .uncached_en(data_uncached_en),
+    //cacop 
+    .cacop_en(data_cacop_en),
+    .cacop_mod(cacop_mod),
+    .cacop_va(data_paddr),
+    .cacop_finish(data_cacop_finish),
     //mem request
     .mem_addr(data_mem_addr),
         //read data

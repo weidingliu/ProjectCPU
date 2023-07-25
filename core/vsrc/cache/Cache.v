@@ -119,6 +119,12 @@ module DCache #(
     input wire [3:0]wmask,
     output wire write_respone,
 
+        //cacop 
+    input wire cacop_en,
+    input wire [1:0]cacop_mod,
+    input wire [31:0]cacop_va,
+    output wire cacop_finish,
+
     input wire uncached_en,
     //mem request
     output wire [BUS_WIDTH-1 : 0]mem_addr,
@@ -152,9 +158,19 @@ wire valid[Cache_way-1:0];
 wire lru;
 wire dirt[Cache_way-1:0];
 
+wire write_valid[Cache_way-1:0];
+
 wire [Index_size-1:0]index;
 wire [Offset_size-1:0]offset;
 wire [Tag_size-1:0] Tag;
+
+wire [Index_size-1:0]cacop_index;
+wire [Offset_size-1:0]cacop_offset;
+wire [Tag_size-1:0] cacop_Tag;
+
+wire cacop_mod0;
+wire cacop_mod1;
+wire cacop_mod2;
 
 wire hit_way0;
 wire hit_way1;
@@ -188,11 +204,18 @@ wire [Cache_line_size-1:0] old_data;
 reg uncached_buffer;
 
 assign read_count_ready = read_count == Cache_line_wordnum;
-// assign write_count_ready = write_count == Cache_line_wordnum;
 
-assign offset = addr[Offset_size-1:0];
-assign index = addr[Index_size + Offset_size-1:Offset_size];
-assign Tag = addr[BUS_WIDTH-1:Index_size + Offset_size];
+assign offset = cacop_en ? cacop_offset:addr[Offset_size-1:0];
+assign index = cacop_en ? cacop_index:addr[Index_size + Offset_size-1:Offset_size];
+assign Tag = cacop_en ? cacop_Tag:addr[BUS_WIDTH-1:Index_size + Offset_size];
+
+assign cacop_index = cacop_va[Index_size + Offset_size-1:Offset_size];
+assign cacop_offset = cacop_va[Offset_size-1:0];
+assign cacop_Tag = cacop_va[BUS_WIDTH-1:Index_size + Offset_size];
+
+assign cacop_mod0 = cacop_en & (cacop_mod == 2'd0);
+assign cacop_mod1 = cacop_en & (cacop_mod == 2'd1);
+assign cacop_mod2 = cacop_en & (cacop_mod == 2'd2);
 
 genvar i;
 //tag 
@@ -205,7 +228,7 @@ generate
            .addr(index),
            .wdata(write_tag[i]),
            .waddr(index),
-           .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .we(cache_we[i] & !cacop_mod1 & !cacop_mod2),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
 
            .rdata(tag[i]) 
@@ -222,7 +245,7 @@ generate
            .addr(index),
            .wdata(write_cache_data[i]),
            .waddr(index),
-           .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .we(cache_we[i] & !cacop_en),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
 
            .rdata(cache_data[i]) 
@@ -238,9 +261,9 @@ generate
            .reset(reset),
 
            .addr(index),
-           .wdata(1'b1),
+           .wdata(write_valid[i]),
            .waddr(index),
-           .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
+           .we(cache_we[i] & !cacop_mod0),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
 
            .rdata(valid[i]) 
@@ -320,12 +343,27 @@ always @(posedge clk) begin
     else begin 
         case (state)
             idle: begin 
-                if(ce) begin 
+                if(ce | cacop_en) begin 
                     state <= scanf;
                 end
             end
             scanf: begin 
-                if(hit) begin 
+                if(cacop_mod0) begin 
+                    state <= idle;
+                end
+                else if(cacop_mod1) begin 
+                    if(dirt[cacop_va[Cache_way-1:0]]) state <= write_data;
+                    else state <= idle;
+                end
+                else if(cacop_mod2) begin 
+                    if(!hit) state <= idle;
+                    else begin 
+                        if(hit_way0 & dirt[0]) state <= write_data;
+                        else if(hit_way1 & dirt[1])state <= write_data;
+                        else state <= idle;
+                    end
+                end
+                else if(hit) begin 
                     if(rdata_ready) state <= idle;
                 end
                 else if(!uncached_en) begin 
@@ -343,7 +381,8 @@ always @(posedge clk) begin
                 else if(read_count_ready && rdata_ready) state <= idle;
             end
             write_data: begin 
-                if(mem_write_respone) state <= miss;
+                if(mem_write_respone & cacop_en) state <= idle;
+                else if(mem_write_respone) state <= miss;
             end 
             default: state <= idle;
         endcase
@@ -366,6 +405,12 @@ always @(posedge clk) begin
         // write_count <= 0;
         write_back_data <= 0;
     end
+    else if(state == scanf & cacop_mod1) begin 
+        write_back_data <= (dirt[0] & (cacop_va[Cache_way-1:0] == 2'b0))? cache_data[0]:cache_data[1];
+    end
+    else if(state == scanf & cacop_mod2) begin 
+        write_back_data <= (hit_way0)? cache_data[0]:cache_data[1];
+    end
     else if(state == scanf & !hit & dirt[lru]) begin 
         write_back_data <= (lru)? cache_data[1]:cache_data[0];
     end
@@ -378,6 +423,12 @@ end
 always @(posedge clk) begin 
     if(reset) begin 
         write_back_addr <= 0;
+    end
+    else if(state == scanf & cacop_mod1) begin 
+        write_back_addr <= (dirt[0] & (cacop_va[Cache_way-1:0] == 2'b0))? {tag[0],index,{Offset_size{1'b0}}}:{tag[1],index,{Offset_size{1'b0}}};
+    end
+    else if(state == scanf & cacop_mod2) begin 
+        write_back_addr <= (hit_way0)? {tag[0],index,{Offset_size{1'b0}}}:{tag[1],index,{Offset_size{1'b0}}};
     end
     else if(state == scanf & !hit & dirt[lru]) begin 
         write_back_addr <= {tag[lru],index,{Offset_size{1'b0}}};
@@ -467,20 +518,32 @@ assign wmask_en = we;
 assign write_lru = (state == miss)? ~lru: 
                     (state == scanf & hit_way0) ? 1'b1:
                     (state == scanf & hit_way1)? 1'b0: 1'b1;
-assign write_lru_we = ((state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready)) & !uncached_buffer;
+assign write_lru_we = ((state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready)) & !uncached_buffer & !cacop_en;
 //generate dirt data and enable
-assign write_dirt_we[0] = ((state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)) & !uncached_buffer;
-assign write_dirt_we[1] = ((state == miss & we & lru)    | (state == scanf & hit_way1 & we)) & !uncached_buffer;
-assign write_dirt[0] = (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)? 1'b1:1'b0;
-assign write_dirt[1] = (state == miss & we & lru)    | (state == scanf & hit_way1 & we)? 1'b1:1'b0;
+assign write_dirt_we[0] = ((state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)) & !uncached_buffer | 
+                            (state == scanf & (cacop_va[Cache_way-1:0] == 2'h0) & (cacop_mod1)) | 
+                            (state == scanf & cacop_mod2 & hit_way0);
+assign write_dirt_we[1] = ((state == miss & we & lru)    | (state == scanf & hit_way1 & we)) & !uncached_buffer | 
+                            (state == scanf & (cacop_va[Cache_way-1:0] == 2'h1) & (cacop_mod1))|
+                            (state == scanf & cacop_mod2 & hit_way1);
+                            
+assign write_dirt[0] = (state == scanf & (cacop_mod1 | cacop_mod2)) ? 1'b0:
+                        (state == miss & we & (~lru)) | (state == scanf & hit_way0 & we)? 1'b1:1'b0;
+assign write_dirt[1] = (state == scanf & (cacop_mod1 | cacop_mod2)) ? 1'b0:
+                        (state == miss & we & lru)    | (state == scanf & hit_way1 & we)? 1'b1:1'b0;
 //generate cache meta data and cache data write enable
-assign cache_we[0] = (state == miss & (~lru) & read_count_ready | state == scanf & hit_way0 & we) & rdata_ready & !uncached_buffer;
-assign cache_we[1] = (state == miss & lru & read_count_ready | state == scanf & hit_way1 & we) & rdata_ready & !uncached_buffer;
+assign cache_we[0] = (state == miss & (~lru) & read_count_ready | state == scanf & hit_way0 & we) & rdata_ready & !uncached_buffer | 
+                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h0) & (cacop_mod0 | cacop_mod1)) |
+                    (state == scanf & cacop_mod2 & hit_way0);
+assign cache_we[1] = (state == miss & lru & read_count_ready | state == scanf & hit_way1 & we) & rdata_ready & !uncached_buffer | 
+                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h1) & (cacop_mod0 | cacop_mod1)) | 
+                    (state == scanf & cacop_mod2 & hit_way1);
 
 generate
     for(i=0;i<Cache_way;i=i+1) begin 
         assign write_cache_data[i] = (old_data & (~mask) | new_data & (mask));
-        assign write_tag[i] = Tag;
+        assign write_tag[i] = cacop_mod0? 20'h0:Tag;
+        assign write_valid[i] = (cacop_mod1 | cacop_mod2)? 1'b0:1'b1;
     end
 endgenerate
 
@@ -497,9 +560,14 @@ assign mem_we = uncached_buffer ? we:state == write_data;
 assign mem_wdata = uncached_buffer ? {{(Cache_line_size - DATA_WIDTH){1'b0}},wdata}:write_back_data;
 assign mem_wmask = uncached_buffer ? wmask:{(CPU_WIDTH/8){1'b1}};
 
-assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_rdata_valid);
-assign write_respone = (state == scanf & hit) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_write_respone); 
+assign rdata_valid = ((state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_rdata_valid)) & !cacop_en;
+assign write_respone = ((state == scanf & hit) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_write_respone)) & !cacop_en; 
 assign data_transform_type = uncached_buffer ? 3'b001:3'b100;
+
+assign cacop_finish = (cacop_mod0 | cacop_mod1 & !dirt[cacop_va[Cache_way-1:0]]) & (state == scanf) | 
+                        cacop_mod1 & (state == write_data) & mem_write_respone | 
+                        cacop_mod2 & !hit & (state == scanf)| 
+                        cacop_mod2 & (state == write_data) & mem_write_respone;
 
 `ifdef display_cache_missinfo
 always @(posedge clk) begin
@@ -555,6 +623,11 @@ module ICache #(
     input wire rdata_ready,
     input wire uncached_en,
     // input wire inst_uncached_en,
+    //cacop 
+    input wire cacop_en,
+    input wire [1:0]cacop_mod,
+    input wire [31:0]cacop_va,
+    output wire cacop_finish,
 
     //mem request
     output wire [BUS_WIDTH-1 : 0]mem_addr,
@@ -584,11 +657,19 @@ wire [Tag_size-1:0]tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]cache_data[Cache_way-1:0];
 wire valid[Cache_way-1:0];
 wire lru;
-wire dirt[Cache_way-1:0];
+wire write_valid[Cache_way-1:0];
 
 wire [Index_size-1:0]index;
 wire [Offset_size-1:0]offset;
 wire [Tag_size-1:0] Tag;
+
+wire [Index_size-1:0]cacop_index;
+wire [Offset_size-1:0]cacop_offset;
+wire [Tag_size-1:0] cacop_Tag;
+
+wire cacop_mod0;
+wire cacop_mod1;
+wire cacop_mod2;
 
 wire hit_way0;
 wire hit_way1;
@@ -612,9 +693,17 @@ wire write_lru_we;
 
 assign read_count_ready = read_count == Cache_line_wordnum;
 
-assign offset = addr[Offset_size-1:0];
-assign index = addr[Index_size + Offset_size-1:Offset_size];
-assign Tag = addr[BUS_WIDTH-1:Index_size + Offset_size];
+assign offset = cacop_en ? cacop_offset:addr[Offset_size-1:0];
+assign index = cacop_en ? cacop_index:addr[Index_size + Offset_size-1:Offset_size];
+assign Tag = cacop_en ? cacop_Tag:addr[BUS_WIDTH-1:Index_size + Offset_size];
+
+assign cacop_index = cacop_va[Index_size + Offset_size-1:Offset_size];
+assign cacop_offset = cacop_va[Offset_size-1:0];
+assign cacop_Tag = cacop_va[BUS_WIDTH-1:Index_size + Offset_size];
+
+assign cacop_mod0 = cacop_en & (cacop_mod == 2'd0);
+assign cacop_mod1 = cacop_en & (cacop_mod == 2'd1);
+assign cacop_mod2 = cacop_en & (cacop_mod == 2'd2);
 
 genvar i;
 //tag 
@@ -660,7 +749,7 @@ generate
            .reset(reset),
 
            .addr(index),
-           .wdata(1'b1),
+           .wdata(write_valid[i]),
            .waddr(index),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
@@ -722,12 +811,13 @@ always @(posedge clk) begin
     else begin 
         case (state)
             idle: begin 
-                if(ce) begin 
+                if(ce | cacop_en) begin 
                     state <= scanf;
                 end
             end
             scanf: begin 
-                if(hit) begin 
+                if(cacop_en) state <= idle;
+                else if(hit) begin 
                     if(rdata_ready) state <= idle;
                 end
                 else begin 
@@ -812,14 +902,19 @@ endgenerate
 assign write_lru = (state == miss)? ~lru: 
                     (state == scanf & hit_way0) ? 1'b1:
                     (state == scanf & hit_way1)? 1'b0: 1'b1;
-assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready) & !uncached_buffer;
-assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready & !uncached_buffer;
-assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready & !uncached_buffer;
+assign write_lru_we = (state == scanf & hit & rdata_ready) | (state == miss & read_count_ready & rdata_ready) & !uncached_buffer & !cacop_en;
+assign cache_we[0] = (state == miss & (~lru) & read_count_ready) & rdata_ready & !uncached_buffer| 
+                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h0) & (cacop_mod0 | cacop_mod1)) | 
+                    (state == scanf & cacop_mod2 & hit_way0);
+assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready & !uncached_buffer | 
+                    (state == scanf & (cacop_va[Cache_way-1:0] == 2'h1) & (cacop_mod0 | cacop_mod1)) | 
+                    (state == scanf & cacop_mod2 & hit_way1);
 
 generate
     for(i=0;i<Cache_way;i=i+1) begin 
         assign write_cache_data[i] = miss_data;
-        assign write_tag[i] = Tag;
+        assign write_tag[i] = cacop_mod0? 20'h0:Tag;
+        assign write_valid[i] = (cacop_mod1 | cacop_mod2)? 1'b0:1'b1;
         // assign write_dirt = 1'b1;
     end
 endgenerate
@@ -838,9 +933,11 @@ assign mem_we = uncached_buffer ? we:state == write_data;
 // assign mem_wmask = 
 assign data_transform_type = uncached_buffer ? 3'b001:3'b100;
 
-assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_rdata_valid);
+assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_rdata_valid) & !cacop_en;
 
 assign icache_busy = !(state == idle);
+
+assign cacop_finish = (cacop_mod0 | cacop_mod1 | cacop_mod2) & (state == scanf);
 `ifdef display_cache_missinfo
 always @(posedge clk) begin
     if(state == scanf && (~hit))begin 
