@@ -667,6 +667,10 @@ wire [Index_size-1:0]cacop_index;
 wire [Offset_size-1:0]cacop_offset;
 wire [Tag_size-1:0] cacop_Tag;
 
+reg [Index_size-1:0]index_buffer;
+reg [Offset_size-1:0]offset_buffer;
+reg [Tag_size-1:0] Tag_buffer;
+
 wire cacop_mod0;
 wire cacop_mod1;
 wire cacop_mod2;
@@ -682,7 +686,7 @@ wire [DATA_WIDTH-1:0]miss_rdata;
 
 reg [Cache_line_size-1:0]miss_data;
 reg [BUS_WIDTH-1:0]miss_addr;
-
+reg cacop_en_buffer;
 
 wire [Tag_size-1:0]write_tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]write_cache_data[Cache_way-1:0];
@@ -701,9 +705,9 @@ assign cacop_index = cacop_va[Index_size + Offset_size-1:Offset_size];
 assign cacop_offset = cacop_va[Offset_size-1:0];
 assign cacop_Tag = cacop_va[BUS_WIDTH-1:Index_size + Offset_size];
 
-assign cacop_mod0 = cacop_en & (cacop_mod == 2'd0);
-assign cacop_mod1 = cacop_en & (cacop_mod == 2'd1);
-assign cacop_mod2 = cacop_en & (cacop_mod == 2'd2);
+assign cacop_mod0 = cacop_en_buffer & (cacop_mod == 2'd0);
+assign cacop_mod1 = cacop_en_buffer & (cacop_mod == 2'd1);
+assign cacop_mod2 = cacop_en_buffer & (cacop_mod == 2'd2);
 
 genvar i;
 //tag 
@@ -715,7 +719,7 @@ generate
 
            .addr(index),
            .wdata(write_tag[i]),
-           .waddr(index),
+           .waddr(index_buffer),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
 
@@ -732,7 +736,7 @@ generate
 
            .addr(index),
            .wdata(write_cache_data[i]),
-           .waddr(index),
+           .waddr(index_buffer),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
 
@@ -750,7 +754,7 @@ generate
 
            .addr(index),
            .wdata(write_valid[i]),
-           .waddr(index),
+           .waddr(index_buffer),
            .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
 
@@ -765,7 +769,7 @@ Sramlike#(.DATA_WIDTH(1),.Addr_len(Index_size)) lru_way (
 
     .addr(index),
     .wdata(write_lru),
-    .waddr(index),
+    .waddr(index_buffer),
     .we(write_lru_we),// 1'b0 is read, 1'b1 is write
     .ce(1'b1),
 
@@ -801,7 +805,7 @@ Scanf_Cache Scanf_Cache(
     .hit_way1(hit_way1)
 );
 // check if have hit way
-assign hit = (hit_way0 || hit_way1) & !uncached_en & !uncached_buffer;
+assign hit = (hit_way0 || hit_way1) & !uncached_en & !uncached_buffer & !cacop_en_buffer;
 
 //FSM
 always @(posedge clk) begin
@@ -816,7 +820,7 @@ always @(posedge clk) begin
                 end
             end
             scanf: begin 
-                if(cacop_en) state <= idle;
+                if(cacop_en_buffer) state <= idle;
                 else if(hit) begin 
                     if(rdata_ready) state <= idle;
                 end
@@ -840,6 +844,10 @@ end
 always @(posedge clk) begin 
     if(state == idle) begin 
         uncached_buffer <= uncached_en;
+        cacop_en_buffer <= cacop_en;
+        index_buffer <= index;
+        offset_buffer <= offset;
+        Tag_buffer <= Tag;
     end 
 end
 
@@ -913,7 +921,7 @@ assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready & !u
 generate
     for(i=0;i<Cache_way;i=i+1) begin 
         assign write_cache_data[i] = miss_data;
-        assign write_tag[i] = cacop_mod0? 20'h0:Tag;
+        assign write_tag[i] = cacop_mod0? 20'h0:Tag_buffer;
         assign write_valid[i] = (cacop_mod1 | cacop_mod2)? 1'b0:1'b1;
         // assign write_dirt = 1'b1;
     end
@@ -933,7 +941,7 @@ assign mem_we = uncached_buffer ? we:state == write_data;
 // assign mem_wmask = 
 assign data_transform_type = uncached_buffer ? 3'b001:3'b100;
 
-assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_rdata_valid) & !cacop_en;
+assign rdata_valid = (state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_rdata_valid) & !cacop_en_buffer;
 
 assign icache_busy = !(state == idle);
 
