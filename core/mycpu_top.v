@@ -188,6 +188,10 @@ wire write_finish;
 wire [`ex_csr_ctrl_width-1:0] mem_csr_bus;
 wire [`ex_csr_ctrl_width-1:0]mem_csr_bypass;
 wire mem_is_tlbhazard;
+
+wire llbit_set_en;
+wire llbit_in;
+wire llbit_out;
 //for tlb serch
 wire data_tlbserch_en;
 wire [4:0]data_tlbindex;
@@ -720,6 +724,10 @@ MEM mem_stage(
     .data_cacop_en(data_cacop_en),
     .cacop_mod(cacop_mod),
     .cacop_finish((data_cacop_finish || inst_cacop_finish)),
+    // llbit
+    .llbit_set_en(llbit_set_en),
+    .llbit_in(llbit_in),
+    .llbit_out(llbit_out),
 
     //mem interface
     .addr(addr),//read/write address
@@ -847,6 +855,10 @@ CSR_CPU CSR(
     .csr_tlbelo0(csr_tlbelo0),
     .csr_tlbelo1(csr_tlbelo1),
     .encode_in(encode_in),
+    // for llbit
+    .llbit_set_en(llbit_set_en),
+    .llbit_in(llbit_out),
+    .llbit_out(llbit_in),
 
     // tlb serch
     .data_tlbindex(wb_tlbindex),

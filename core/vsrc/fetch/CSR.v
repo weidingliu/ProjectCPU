@@ -29,6 +29,7 @@ module CSR_CPU (
     //llbit 
     input wire llbit_set_en,
     input wire llbit_in,
+    output wire llbit_out,
 
     //for if 
     output wire [31:0]eentry_out,
@@ -235,6 +236,8 @@ assign tlbelo0_in = {4'b0, r_ppn0, 1'b0, r_g, r_mat0, r_plv0, r_d0, r_v0};
 assign tlbelo1_in = {4'b0, r_ppn1, 1'b0, r_g, r_mat1, r_plv1, r_d1, r_v1};
 assign tlbidx_in = {!r_e, 1'b0, r_ps, 24'b0}; 
 assign asid_in = r_asid;
+
+assign llbit_out = llbit;
 
 assign tlbrd_valid = tlb_wden & !tlbidx_in[`NE];
 assign tlbrd_invalid = tlb_wden & tlbidx_in[`NE];

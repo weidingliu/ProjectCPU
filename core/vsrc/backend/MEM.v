@@ -45,6 +45,10 @@ module MEM (
     input wire [4:0]data_tlbindex,
     input wire data_tlbfound,
     input wire serch_finish,
+    //for csr llbit
+    output wire llbit_out,
+    output wire llbit_set_en,
+    input wire llbit_in,
 
     //bypass
     output wire [`bypass_width-1:0]mem_bypass,
@@ -86,6 +90,7 @@ wire [31:0]src2;
 wire [31:0]alu_result;
 wire [5:0] op_mem;
 wire is_break;
+wire is_llbit;
 // wire Inst_valid;
 wire timer_inst;
 wire [63:0]timer64;
@@ -109,6 +114,7 @@ wire [3:0] byte_wmask;
 wire [3:0] half_wmask;
 
 assign {
+    is_llbit,//326:326
     is_cacop,//325:325
     tlb_op,//320:324
     tlbinv_en,//319:319
@@ -182,10 +188,13 @@ assign mem_load = op_mem[0] & !op_mem[2];
 assign mem_store = op_mem[0] & op_mem[2];
 assign mem_halfword = op_mem[0] & op_mem[4];
 assign mem_word = op_mem[0] & op_mem[3];
+//for llbit
+assign llbit_out = op_mem[0] & !op_mem[2] & is_llbit;
+assign llbit_set_en = op_mem[0] & !op_mem[2] & is_llbit & left_valid & !excp_flush & !stall;
 
 //for sram
-assign en = (op_mem[0] | ((inst_cacop_en | data_cacop_en) & !cacop_finish)) & inst_valid & left_valid & !excp_flush & !stall;
-assign we = op_mem[2];
+assign en = ((op_mem[0]) | ((inst_cacop_en | data_cacop_en) & !cacop_finish)) & left_valid & !excp_flush & !stall & !(op_mem[0] & op_mem[2] & is_llbit & !llbit_in);
+assign we = op_mem[2] & !is_llbit | op_mem[2] & is_llbit & llbit_in;
 assign addr = alu_result;
 assign wdata = op_mem[3] ? src2:
                op_mem[5] ? byte_temp:half_temp;
@@ -195,7 +204,8 @@ assign wmask = op_mem[3] ? 4'b1111:
 //     $display("%h-------%h-\n",addr,en);
 // end
 //mux mem result
-assign mem_result=(op_mem[0] & !op_mem[2])? 
+assign mem_result=(op_mem[0] & op_mem[2] & is_llbit)? {31'h0,llbit_in}:
+                  (op_mem[0] & !op_mem[2])? 
                   (op_mem[3])? rdata:
                   (op_mem[5])? byte_load:half_load
                   :alu_result;

@@ -73,6 +73,7 @@ wire [5:0] op_mem;
 wire [4:0] reg_index1;
 wire [4:0] reg_index2;
 wire is_break;
+wire is_llbit;
 
 wire [31:0]mem_reg;
 wire [31:0]mul_div_result;
@@ -148,6 +149,7 @@ assign tlbinv_vpn = reg2[31:13];
 
 //bus
 assign {
+    is_llbit,//286:286
     is_cacop,//285:285
     tlb_op,//280:284
     timer_inst,// 279:279
@@ -310,6 +312,7 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             ctrl_temp_bus <= {
+                    is_llbit,//325:325
                     is_cacop,//325:325
                     tlb_op,//320:324
                     tlbinv_en,//319:319

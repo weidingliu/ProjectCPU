@@ -107,6 +107,7 @@ wire Imm12_en;
 wire Imm16_en;
 wire Imm26_en;
 wire Imm5_en;
+wire Imm14_en;
 //select src form reg , Imm, PC
 wire [1:0]select_src1;//select src1
 wire [1:0]select_src2;//select src2
@@ -189,6 +190,9 @@ wire inst_tlbrd;
 wire inst_tlbfill;
 wire inst_tlbsrch;
 
+wire inst_ll;
+wire inst_sc;
+
 wire inst_preld;//don't prefetch, is nop inst
 wire inst_cacop;
 
@@ -211,6 +215,8 @@ wire excp_ipe;
 wire is_kernel_inst;
 wire refetch;
 assign is_fire = logic_valid & right_ready;
+
+wire is_llbit;
 /*
 *    op_mem[0] is mem inst
 *    op_mem[1] is usignal extend
@@ -221,13 +227,14 @@ assign is_fire = logic_valid & right_ready;
 */
 
 //op_mem
-assign op_mem[0] = inst_st_w | inst_ld_w | inst_st_b | inst_ld_bu | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h;
+assign op_mem[0] = inst_st_w | inst_ld_w | inst_st_b | inst_ld_bu | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_ll | inst_sc;
 assign op_mem[1] = inst_ld_bu | inst_ld_hu;
-assign op_mem[2] = inst_st_w | inst_st_b | inst_st_h;
-assign op_mem[3] = inst_st_w | inst_ld_w;
+assign op_mem[2] = inst_st_w | inst_st_b | inst_st_h | inst_sc;
+assign op_mem[3] = inst_st_w | inst_ld_w | inst_ll | inst_sc;
 assign op_mem[4] = inst_ld_hu | inst_ld_h | inst_st_h;
-assign op_mem[5] = inst_st_b | inst_ld_bu | inst_ld_b ;
+assign op_mem[5] = inst_st_b | inst_ld_bu | inst_ld_b;
 
+assign is_llbit = inst_ll | inst_sc;
 //select rd as second source reg
 assign is_rd = inst_st_w | inst_bge | inst_st_b | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_st_h | inst_bltu | inst_csrwr | inst_csrxchg; 
 assign is_r1 = inst_bl;
@@ -235,7 +242,7 @@ assign is_rj = inst_rdcntid;
 
 //aluop
 assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge | inst_st_b | inst_ld_bu
-                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_cacop;
+                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_cacop | inst_ll | inst_sc;
 assign alu_op[1] = inst_lu12i;
 assign alu_op[2] = inst_ori | inst_or;
 assign alu_op[3] = inst_sub;
@@ -308,6 +315,7 @@ assign Imm12 = ({20'h0,i12} & {32{~is_sign_extend}})|
 assign Imm16 = ({{14{i16[15]}},i16,2'b00} & {32{is_sign_extend}});
 assign Imm26 = ({{4{i26[25]}},i26,2'b00});
 assign Imm5 = ({27'h0,i5});
+assign Imm14 = {{16{i14[13]}}, i14, 2'b0};
 
 //select Imm
 assign Imm20_en = inst_pcaddu12i | inst_lu12i;
@@ -316,6 +324,7 @@ assign Imm12_en = inst_ori | inst_addi | inst_st_w | inst_ld_w | inst_st_b | ins
 assign Imm16_en = inst_jirl | inst_bge | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_bltu; 
 assign Imm26_en = inst_bl | inst_b;
 assign Imm5_en  = inst_srai | inst_slli | inst_srli;
+assign Imm14_en = inst_ll | inst_sc;
 
 //decoder split inst
 decoder_2_4 decoder_2_4(.in(op_21_20),.out(decoder_op_21_20));
@@ -333,7 +342,7 @@ assign select_src1[1] = inst_bl | inst_b | inst_bge | inst_beq | inst_bgeu | ins
 
 assign select_src2[0] = inst_ori | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge
                         | inst_st_b | inst_srai | inst_andi | inst_ld_bu | inst_slli | inst_srli | inst_xori | inst_beq | inst_sltui
-                        | inst_bgeu | inst_blt | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu; 
+                        | inst_bgeu | inst_blt | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_ll | inst_sc; 
 assign select_src2[1] = inst_pcaddu12i;
 
 //produce inst decoder result
@@ -386,8 +395,8 @@ assign inst_blt       = decoder_op_31_26[6'h18];
 assign inst_bge       = decoder_op_31_26[6'h19];
 assign inst_bltu      = decoder_op_31_26[6'h1a];
 assign inst_bgeu      = decoder_op_31_26[6'h1b];
-// assign inst_ll_w       = op_31_26_d[6'h08] & ~ds_inst[25] & ~ds_inst[24];
-// assign inst_sc_w       = op_31_26_d[6'h08] & ~ds_inst[25] &  ds_inst[24];
+assign inst_ll        = decoder_op_31_26[6'h08] & ~Inst[25] & ~Inst[24];
+assign inst_sc        = decoder_op_31_26[6'h08] & ~Inst[25] &  Inst[24];
 assign inst_csrrd     = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5'h00];
 assign inst_csrwr     = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & rj_d[5'h01];
 assign inst_csrxchg   = decoder_op_31_26[6'h01] & ~Inst[25] & ~Inst[24] & (~rj_d[5'h00] & ~rj_d[5'h01]);  //rj != 0,1
@@ -423,7 +432,7 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                                                                                     rd == 5'd2 | rd == 5'd3 | 
                                                                                     rd == 5'd4 | 
                                                                                     rd == 5'd5 | rd == 5'd6)) 
-                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_preld | inst_cacop);
+                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_preld | inst_cacop | inst_ll | inst_sc);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
@@ -435,12 +444,14 @@ assign wreg_index=(is_r1)? 5'h1: (is_rj)? rj:rd;
 assign wreg_en = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_ori | inst_or | inst_sub | inst_jirl | inst_xor | inst_addi | inst_addi | inst_bl |
                  inst_ld_w | inst_srai | inst_andi | inst_sll | inst_ld_bu | inst_slli | inst_srli | inst_and | inst_sltu | inst_xori | inst_nor |
                  inst_sltui | inst_mul | inst_mod_w | inst_srl | inst_sra | inst_slti | inst_slt | inst_ld_hu | inst_ld_b | inst_ld_h | inst_mulh |
-                 inst_mulh_u | inst_div | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntid | inst_rdcntvl | inst_rdcntvh);
+                 inst_mulh_u | inst_div | inst_div_wu | inst_mod_wu | inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntid | inst_rdcntvl | inst_rdcntvh |
+                 inst_ll | inst_sc);
 assign Imm = ({32{Imm20_en}} & Imm20) |
              ({32{Imm12_en}} & Imm12) |
              ({32{Imm16_en}} & Imm16) |
              ({32{Imm26_en}} & Imm26) |
-             ({32{Imm5_en}}  & Imm5 );
+             ({32{Imm5_en}}  & Imm5 ) |
+             ({32{Imm14_en}} & Imm14);
 // for csr ,decoder contrl sign 
 assign csr_we = inst_csrwr | inst_csrxchg;
 assign csr_idx = inst_rdcntid? 14'h40:Inst[23:10];
@@ -524,6 +535,7 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    is_llbit,//286:286
                     inst_cacop,//285:285
                     tlb_op,//280:284
                     (inst_rdcntvl | inst_rdcntvh | inst_rdcntid),// 279:279
