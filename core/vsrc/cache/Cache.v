@@ -189,7 +189,6 @@ reg [BUS_WIDTH-1:0]write_back_addr;
 
 wire [Tag_size-1:0]write_tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]write_cache_data[Cache_way-1:0];
-wire write_valid[Cache_way-1:0];
 wire write_lru;
 wire write_dirt[Cache_way-1:0];
 wire cache_we[Cache_way-1:0];
@@ -657,7 +656,6 @@ wire [Tag_size-1:0]tag[Cache_way-1:0];
 wire [Cache_line_size-1:0]cache_data[Cache_way-1:0];
 wire valid[Cache_way-1:0];
 wire lru;
-wire write_valid[Cache_way-1:0];
 
 wire [Index_size-1:0]index;
 wire [Offset_size-1:0]offset;

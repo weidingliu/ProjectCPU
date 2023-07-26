@@ -1,1 +1,1 @@
-// `define soc_sim 1
+ `define soc_sim 1
