@@ -825,8 +825,6 @@ always @(posedge clk) begin
                     if(rdata_ready) state <= idle;
                 end
                 else begin 
-                    // if(dirt[lru]) state <= write_data;
-                    // else state <= miss;
                     state <= miss;
                 end
             end
@@ -923,7 +921,6 @@ generate
         assign write_cache_data[i] = miss_data;
         assign write_tag[i] = cacop_mod0? 20'h0:Tag_buffer;
         assign write_valid[i] = (cacop_mod1 | cacop_mod2)? 1'b0:1'b1;
-        // assign write_dirt = 1'b1;
     end
 endgenerate
 
