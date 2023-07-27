@@ -569,7 +569,7 @@ always @(posedge clk) begin
             excp_bus_temp <= {
                 // ertn,//11:11
                 inst_ertn,//10:10
-                excp_num,//9:2
+                excp_num,//9:1
                 excp//0:0
             };
         end

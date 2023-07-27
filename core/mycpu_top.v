@@ -758,7 +758,7 @@ MEM mem_stage(
     .fire(wb_is_fire)
 );
 
-WB wb_syage(
+WB wb_stage(
     .clk(clk),//clock
     .reset(reset),//global reset
     .icache_busy(icache_busy),

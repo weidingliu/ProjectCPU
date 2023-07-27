@@ -14,5 +14,4 @@
 `define ex_excp_width 11
 `define mem_excp_width 18
 
-// for difftest, next instruction after set soft interrupt
-`define NEXT_SOFT_INT
+
