@@ -1,4 +1,5 @@
 `include "defines.sv"
+`include "soc_defines.v"
 module EXE (
     input wire clk,//clock
     input wire reset,//global reset

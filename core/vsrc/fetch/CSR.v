@@ -1,5 +1,6 @@
 `include "defines.sv"
 `include "csr_defines.v"
+`include "soc_defines.v"
 
 module CSR_CPU (
     input wire clk,
