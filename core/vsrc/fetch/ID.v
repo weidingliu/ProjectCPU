@@ -242,7 +242,8 @@ assign is_rj = inst_rdcntid;
 
 //aluop
 assign alu_op[0] = inst_add | inst_pcaddu12i | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge | inst_st_b | inst_ld_bu
-                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_cacop | inst_ll | inst_sc;
+                   | inst_beq | inst_bgeu | inst_blt | inst_bne | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_cacop |
+                    inst_ll | inst_sc;
 assign alu_op[1] = inst_lu12i;
 assign alu_op[2] = inst_ori | inst_or;
 assign alu_op[3] = inst_sub;

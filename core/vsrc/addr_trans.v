@@ -389,10 +389,10 @@ wire inst_excp_pif;
 wire inst_excp_ppi;
 wire inst_excp_tlbr;
 
-assign inst_excp_adef = (inst_paddr[1] | inst_paddr[0]) | ((plv == 2'b11) & inst_vaddr_o[31] & inst_tlb_trans);//addr not aligned
-assign inst_excp_pif = inst_tlb_trans & !s0_v;// page fault
-assign inst_excp_ppi = inst_tlb_trans & (plv > s0_plv) & s0_v;//page privilege not allow 
-assign inst_excp_tlbr = inst_tlb_trans & !s0_found;//refill page
+assign inst_excp_adef = (inst_paddr[1] | inst_paddr[0]) | ((plv == 2'b11) & inst_vaddr_o[31] & inst_tlb_trans) & inst_valid_temp;//addr not aligned
+assign inst_excp_pif = inst_tlb_trans & !s0_v & inst_valid_temp;// page fault
+assign inst_excp_ppi = inst_tlb_trans & (plv > s0_plv) & s0_v & inst_valid_temp;//page privilege not allow 
+assign inst_excp_tlbr = inst_tlb_trans & !s0_found & inst_valid_temp;//refill page
 
 assign inst_excp = inst_excp_adef | inst_excp_pif | inst_excp_ppi | inst_excp_tlbr;
 assign inst_excp_num = {inst_excp_ppi,inst_excp_pif,inst_excp_tlbr,inst_excp_adef};
