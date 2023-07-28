@@ -211,7 +211,7 @@ reg [`id_csr_ctrl_width-1:0]csr_ctrl_temp;
 // excp and interrupt
 wire excp;
 wire [8:0]excp_num;
-reg [`id_excp_width-1:0]excp_bus_temp;
+(*MAX_FANOUT = 200*)reg [`id_excp_width-1:0]excp_bus_temp;
 wire excp_ine;
 wire excp_ipe;
 wire is_kernel_inst;

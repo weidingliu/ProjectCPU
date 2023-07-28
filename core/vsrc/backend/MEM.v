@@ -285,7 +285,7 @@ assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
 assign mem_excp_bus = excp_temp;
 assign mem_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
-assign mem_bypass = {mem_result,wreg_index,wreg_en & left_valid};
+assign mem_bypass = {mem_result,wreg_index,wreg_en & logic_valid & !excp_i};
 assign is_fire = logic_valid & right_ready;
 
 endmodule //MEM

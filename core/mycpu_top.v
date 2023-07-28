@@ -641,7 +641,7 @@ Regfile Regfile(
     .reg_index2(reg_index2),//reg addr2
     .data1(reg_data1),//data out
     .data2(reg_data2),//data out
-    .wreg_en(wb_bus[96:96] & wb_valid),//write enable
+    .wreg_en(wb_bus[96:96] & wb_valid & !excp_flush),//write enable
     .wdata(wb_bus[31:0]),//write data
     .wreg_index(wb_bus[101:97])
     `ifndef soc_sim
