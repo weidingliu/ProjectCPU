@@ -711,6 +711,8 @@ MEM mem_stage(
     .ertn_flush(ertn_flush),
     .stall(stall),// stall memory 
 
+    .paddr(data_paddr),//for difftest
+
     .mem_load(mem_load),
     .mem_store(mem_store),
     .mem_halfword(mem_halfword),
@@ -726,9 +728,8 @@ MEM mem_stage(
     .cacop_mod(cacop_mod),
     .cacop_finish((data_cacop_finish || inst_cacop_finish)),
     // llbit
-    .llbit_set_en(llbit_set_en),
     .llbit_in(llbit_in),
-    .llbit_out(llbit_out),
+    // 
 
     //mem interface
     .addr(addr),//read/write address
@@ -769,6 +770,9 @@ WB wb_stage(
     //csr bus 
     .mem_csr_bus(mem_csr_bus),
     .wb_csr_bus(wb_csr_bus),
+    // llbit
+    .llbit_out(llbit_out),
+    .llbit_set_en(llbit_set_en),
     //excp
     .mem_excp_bus(mem_excp_bus),
     .excp_flush(excp_flush),
@@ -1216,6 +1220,11 @@ reg difftest_excp_flush;
 reg difftest_ertn_flush;
 reg [5:0]difftest_ecode;
 
+wire [7:0]inst_st_en_diff;
+wire [31:0]inst_st_vaddr_diff;
+wire [31:0]inst_st_paddr_diff;
+wire [31:0]inst_st_data_diff;
+wire [7:0]inst_ld_en_diff;
 
 //delay one cycle for difftest
 always @(posedge clk) begin
@@ -1253,6 +1262,15 @@ assign {
     .reset(reset),
     .is_break(diifftest_is_break)
 );*/
+assign {
+    inst_ld_en_diff,
+    inst_st_en_diff,
+    inst_st_vaddr_diff,
+    inst_st_paddr_diff,
+    inst_st_data_diff
+
+} = difftest_bus[358:247];
+
 
 DifftestInstrCommit DifftestInstrCommit(
     .clock(clk),
@@ -1293,6 +1311,25 @@ DifftestExcpEvent DifftestExcpEvent(
 //     .cycleCnt           (cycleCnt       ),
 //     .instrCnt           (instrCnt       )
 // );
+
+DifftestStoreEvent DifftestStoreEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (0              ),
+    .valid              (inst_st_en_diff ),
+    .storePAddr         (inst_st_paddr_diff   ),
+    .storeVAddr         (inst_st_vaddr_diff   ),
+    .storeData          (inst_st_data_diff    )
+);
+
+DifftestLoadEvent DifftestLoadEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (0              ),
+    .valid              (inst_ld_en_diff ),
+    .paddr              (inst_st_paddr_diff   ),
+    .vaddr              (inst_st_vaddr_diff   )
+);
 
 DifftestCSRRegState DifftestCSRRegState(
     .clock              (clk               ),

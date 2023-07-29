@@ -12,6 +12,9 @@ module WB (
     //csr
     input wire [`ex_csr_ctrl_width-1:0] mem_csr_bus,
     output wire [`ex_csr_ctrl_width-1:0] wb_csr_bus,
+    //for llbit
+    output wire llbit_set_en,
+    output wire llbit_out,
     //exception
     input wire [`mem_excp_width-1:0]mem_excp_bus,
     output wire excp_flush,
@@ -76,11 +79,24 @@ wire [31:0]mem_addr;
 wire timer_inst;
 wire [63:0]timer64;
 
+wire [7:0]inst_st_en;
+wire [31:0]inst_st_vaddr;
+wire [31:0]inst_st_paddr;
+wire [31:0]inst_st_data;
+wire [7:0]inst_ld_en;
+
 //tlb 
 wire [4:0]tlb_op;
 assign is_fire = logic_valid & right_ready;
 //bus
 assign {
+        llbit_out,// 360:360
+        llbit_set_en,//359:359
+        inst_ld_en,
+        inst_st_en,//for difftest
+        inst_st_vaddr,//for difftest
+        inst_st_paddr,//for difftest
+        inst_st_data,//for difftest
         data_tlbindex,//242:246
         data_tlbfound,//241:241
         tlb_op,//236:240

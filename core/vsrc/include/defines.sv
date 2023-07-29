@@ -5,7 +5,7 @@
 `define bypass_width 38
 `define ctrl_width 287
 `define ex_ctrl_width 327
-`define mem_ctrl_width 247
+`define mem_ctrl_width 361
 // for csr read and write bus
 `define id_csr_ctrl_width 49
 `define ex_csr_ctrl_width 47

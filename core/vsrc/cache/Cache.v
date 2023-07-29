@@ -695,9 +695,9 @@ wire write_lru_we;
 
 assign read_count_ready = read_count == Cache_line_wordnum;
 
-assign offset = cacop_en ? cacop_offset:addr[Offset_size-1:0];
-assign index = cacop_en ? cacop_index:addr[Index_size + Offset_size-1:Offset_size];
-assign Tag = cacop_en ? cacop_Tag:addr[BUS_WIDTH-1:Index_size + Offset_size];
+assign offset = (state == idle) & cacop_en | cacop_en_buffer ? cacop_offset:addr[Offset_size-1:0];
+assign index = (state == idle) & cacop_en | cacop_en_buffer? cacop_index:addr[Index_size + Offset_size-1:Offset_size];
+assign Tag = (state == idle) & cacop_en | cacop_en_buffer ? cacop_Tag:addr[BUS_WIDTH-1:Index_size + Offset_size];
 
 assign cacop_index = cacop_va[Index_size + Offset_size-1:Offset_size];
 assign cacop_offset = cacop_va[Offset_size-1:0];
@@ -918,7 +918,7 @@ generate
     for(i=0;i<Cache_way;i=i+1) begin 
         assign write_cache_data[i] = miss_data;
         assign write_tag[i] = cacop_mod0? 20'h0:Tag_buffer;
-        assign write_valid[i] = (cacop_mod1 | cacop_mod2)? 1'b0:1'b1;
+        assign write_valid[i] = (cacop_mod1 | cacop_mod2 | cacop_mod0)? 1'b0:1'b1;
     end
 endgenerate
 

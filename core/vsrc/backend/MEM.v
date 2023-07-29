@@ -23,6 +23,8 @@ module MEM (
     output wire data_cacop_en,
     output wire [1:0]cacop_mod,
     input wire cacop_finish,
+    //for difftest
+    input wire [31:0]paddr,
 
     //mem interface
     output wire [31:0]addr,//read/write address
@@ -46,8 +48,8 @@ module MEM (
     input wire data_tlbfound,
     input wire serch_finish,
     //for csr llbit
-    output wire llbit_out,
-    output wire llbit_set_en,
+    // output wire llbit_out,
+    // output wire llbit_set_en,
     input wire llbit_in,
 
     //bypass
@@ -95,6 +97,8 @@ wire is_llbit;
 wire timer_inst;
 wire [63:0]timer64;
 
+wire llbit_out;
+wire llbit_set_en;
 wire is_cacop;
 
 // tlb 
@@ -112,6 +116,19 @@ wire [31:0]half_load;
 
 wire [3:0] byte_wmask;
 wire [3:0] half_wmask;
+
+// difftest 
+wire [7:0]inst_st_en;
+wire [31:0]inst_st_vaddr;
+wire [31:0]inst_st_paddr;
+wire [31:0]inst_st_data;
+wire [7:0]inst_ld_en;
+assign inst_st_en = {4'b0,(op_mem[2] & is_llbit & llbit_in),op_mem[2] & op_mem[3],op_mem[2] & op_mem[4],op_mem[2] & op_mem[5]} ;
+assign inst_st_vaddr = addr;
+assign inst_st_paddr = paddr;
+assign inst_st_data = {{8{wmask[3]}},{8{wmask[2]}},{8{wmask[1]}},{8{wmask[0]}}} & wdata;
+assign inst_ld_en = {2'b0,op_mem[0] & !op_mem[2] & is_llbit,op_mem[0] & !op_mem[2] & op_mem[3],op_mem[0] & !op_mem[2] & op_mem[4] & op_mem[1],
+op_mem[0] & !op_mem[2] & op_mem[4] & !op_mem[1],op_mem[0] & !op_mem[2] & op_mem[5] & op_mem[1],op_mem[0] & !op_mem[2] & op_mem[5] & !op_mem[1]};
 
 assign {
     is_llbit,//326:326
@@ -246,6 +263,13 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    llbit_out,// 360:360
+                    llbit_set_en,//359:359
+                    inst_ld_en,// 351:358 for difftest
+                    inst_st_en,//343:350 for difftest
+                    inst_st_vaddr,//311:342 for difftest
+                    inst_st_paddr,//279:310 for difftest
+                    inst_st_data,// 247:278 for difftest
                     data_tlbindex,//242:246
                     data_tlbfound,//241:241
                     tlb_op,//236:240
