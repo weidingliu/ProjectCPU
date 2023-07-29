@@ -438,9 +438,9 @@ always @(posedge clk) begin
         llbit <= 1'b0;
     end
     else begin 
-        if(ertn_flush & llbctl[`KLO]) begin 
-            llbit <= 1'b0;
-            llbctl[`KLO] <= 1'b0;
+        if(ertn_flush) begin 
+            if(llbctl[`KLO])  llbctl[`KLO] <= 1'b0;
+            else llbit <= 1'b0;
         end
         else if (llbctl_wen) begin 
             llbctl[  `KLO] <= csr_wdata[  `KLO];

@@ -420,7 +420,7 @@ assign inst_cacop      = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h8];
 assign inst_preld      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'hb];
 
 assign inst_dbar       = decoder_op_31_26[6'h0e] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h3] & decoder_op_19_15[5'h04];
-// assign inst_ibar       = op_31_26_d[6'h0e] & op_25_22_d[4'h1] & op_21_20_d[2'h3] & op_19_15_d[5'h05];
+assign inst_ibar       = decoder_op_31_26[6'h0e] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h3] & decoder_op_19_15[5'h05];
 
 
 // assign right_fire=right_ready & right_valid;//data submit finish
@@ -438,7 +438,7 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                                                                                     rd == 5'd2 | rd == 5'd3 | 
                                                                                     rd == 5'd4 | 
                                                                                     rd == 5'd5 | rd == 5'd6)) 
-                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_preld | inst_cacop | inst_ll | inst_sc | inst_dbar);
+                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_preld | inst_cacop | inst_ll | inst_sc | inst_dbar | inst_ibar);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
@@ -541,6 +541,7 @@ always @(posedge clk) begin
     else begin 
         if(logic_valid & right_ready) begin 
             bus_temp <= {
+                    inst_ibar,//287:287
                     is_llbit,//286:286
                     inst_cacop,//285:285
                     tlb_op,//280:284

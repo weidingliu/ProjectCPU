@@ -103,6 +103,8 @@ wire rd_from_csr;// rd result is from csr_data
 wire [31:0]wr_csr_data;
 wire [31:0]wr_csr_mask;
 
+wire is_ibar;
+
 reg [`ex_csr_ctrl_width-1:0]csr_bus_temp;
 //excp
 reg [`ex_excp_width-1:0] excp_temp;
@@ -150,6 +152,7 @@ assign tlbinv_vpn = reg2[31:13];
 
 //bus
 assign {
+    inst_ibar,//287:287
     is_llbit,//286:286
     is_cacop,//285:285
     tlb_op,//280:284
@@ -195,7 +198,7 @@ assign ex_mem_hazard = {op_mem[0] & !op_mem[2],wreg_en & left_valid,wreg_index};
 //     $display("%h   %h   %h",PC,src1,src2);
 // end
 //branch
-assign branch_flag = left_valid & inst_valid & (
+assign branch_flag = left_valid & inst_valid & ((
     branch_op[0] | branch_op[1] | 
     (branch_op[2] & ($signed(reg1) >= $signed(reg2))) |
     (branch_op[3] & (reg1 == reg2)) |
@@ -203,7 +206,7 @@ assign branch_flag = left_valid & inst_valid & (
     (branch_op[5] & ($signed(reg1) < $signed(reg2))) | 
     (branch_op[6] & (reg1 != reg2)) |
     (branch_op[7] & (reg1 < reg2))
-    );
+    ) || is_ibar);
 //alu 
 alu alu(
     .alu_op(alu_op),
@@ -361,7 +364,7 @@ assign ex_bypass = {write_data,wreg_index,wreg_en & left_valid};
 
 assign is_branch = (branch_flag) & left_valid & (icache_busy | !right_ready); // wait icache
 assign flush = branch_flag & left_valid & right_ready & !icache_busy;
-assign dnpc = alu_result;
+assign dnpc = is_ibar? PC+32'h4:alu_result;
 
 assign write_data = (branch_op[0] | branch_op[1]) ? PC+32'h4 : (is_mul_div) ? mul_div_result:
                     rd_from_csr ? real_csr_data:alu_result;

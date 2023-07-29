@@ -297,7 +297,7 @@ tlb_entry tlb(
     .tlbinv_asid(tlbinv_asid),
     .tlbinv_vpn(tlbinv_vpn)
 );
-assign cacop_trans = (cacop_mod == 2'b00 | cacop_mod == 2'b01) & data_cacop;
+assign cacop_trans = (cacop_mod == 2'b00 | cacop_mod == 2'b01) & (data_cacop | inst_cacop);
 //
 assign inst_tlb_trans = !inst_dmw0_en & !inst_dmw1_en & inst_trans_en;
 assign data_tlb_trans = !data_dmw0_en & !data_dmw1_en & data_trans_en & !cacop_trans;
@@ -307,7 +307,7 @@ assign inst_paddr = inst_trans_en? (inst_dmw0_en? {DMW0[27:25],inst_vaddr_temp[2
                                 :(inst_dmw1_en? {DMW1[27:25],inst_vaddr_temp[28:0]}: 
                                 (s0_ps == 6'd21)? {s0_ppn[19:10],inst_vaddr_temp[21:0]}:{s0_ppn,inst_vaddr_temp[11:0]})) 
                                 :inst_vaddr_temp;
-assign data_paddr =(data_trans_en & !cacop_trans)? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
+assign data_paddr =(data_trans_en & ~cacop_trans & ~data_excp)? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
                                 :(data_dmw1_en? {DMW1[27:25],data_vaddr_temp[28:0]}: 
                                 (s1_ps == 6'd21)? {s1_ppn[19:10],data_vaddr_temp[21:0]}:{s1_ppn,data_vaddr_temp[11:0]})) 
                                 :data_vaddr_temp;

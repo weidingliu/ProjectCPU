@@ -79,6 +79,9 @@ wire [31:0]mem_addr;
 wire timer_inst;
 wire [63:0]timer64;
 
+// wire mem_llbit_out;
+wire mem_llbit_set_en;
+
 wire [7:0]inst_st_en;
 wire [31:0]inst_st_vaddr;
 wire [31:0]inst_st_paddr;
@@ -91,7 +94,7 @@ assign is_fire = logic_valid & right_ready;
 //bus
 assign {
         llbit_out,// 360:360
-        llbit_set_en,//359:359
+        mem_llbit_set_en,//359:359
         inst_ld_en,
         inst_st_en,//for difftest
         inst_st_vaddr,//for difftest
@@ -115,6 +118,8 @@ assign {
         PC,// 32:63
         mem_result// 0:31
 } = mem_ctrl_bus;
+assign llbit_set_en = mem_llbit_set_en & left_valid & !ms_excp;
+
 //tlb 
 /*
 tlbop[0] tlbinv

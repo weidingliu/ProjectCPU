@@ -127,7 +127,7 @@ assign inst_st_en = {4'b0,(op_mem[2] & is_llbit & llbit_in),op_mem[2] & op_mem[3
 assign inst_st_vaddr = addr;
 assign inst_st_paddr = paddr;
 assign inst_st_data = {{8{wmask[3]}},{8{wmask[2]}},{8{wmask[1]}},{8{wmask[0]}}} & wdata;
-assign inst_ld_en = {2'b0,op_mem[0] & !op_mem[2] & is_llbit,op_mem[0] & !op_mem[2] & op_mem[3],op_mem[0] & !op_mem[2] & op_mem[4] & op_mem[1],
+assign inst_ld_en = {2'b0,op_mem[0] & !op_mem[2] & is_llbit, op_mem[0] & !op_mem[2] & op_mem[3] & !is_llbit,op_mem[0] & !op_mem[2] & op_mem[4] & op_mem[1],
 op_mem[0] & !op_mem[2] & op_mem[4] & !op_mem[1],op_mem[0] & !op_mem[2] & op_mem[5] & op_mem[1],op_mem[0] & !op_mem[2] & op_mem[5] & !op_mem[1]};
 
 assign {
