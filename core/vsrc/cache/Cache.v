@@ -244,7 +244,7 @@ generate
            .addr(index),
            .wdata(write_cache_data[i]),
            .waddr(index),
-           .we(cache_we[i] & !cacop_en),// 1'b0 is read, 1'b1 is write
+           .we(cache_we[i]),// 1'b0 is read, 1'b1 is write
            .ce(1'b1),
 
            .rdata(cache_data[i]) 
@@ -559,8 +559,8 @@ assign mem_we = uncached_buffer ? we:state == write_data;
 assign mem_wdata = uncached_buffer ? {{(Cache_line_size - DATA_WIDTH){1'b0}},wdata}:write_back_data;
 assign mem_wmask = uncached_buffer ? wmask:{(CPU_WIDTH/8){1'b1}};
 
-assign rdata_valid = ((state == scanf & hit ) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_rdata_valid)) & !cacop_en;
-assign write_respone = ((state == scanf & hit) | (state == miss & read_count_ready) | (state == miss & uncached_buffer & mem_write_respone)) & !cacop_en; 
+assign rdata_valid = ((state == scanf & hit  & !we) | (state == miss & read_count_ready & !we) | (state == miss & uncached_buffer & mem_rdata_valid)) & !cacop_en;
+assign write_respone = ((state == scanf & hit & we) | (state == miss & read_count_ready & we) | (state == miss & uncached_buffer & mem_write_respone)) & !cacop_en; 
 assign data_transform_type = uncached_buffer ? 3'b001:3'b100;
 
 assign cacop_finish = (cacop_mod0 | cacop_mod1 & !dirt[cacop_va[$clog2(Cache_way)-1:0]]) & (state == scanf) | 

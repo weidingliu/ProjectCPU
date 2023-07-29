@@ -47,6 +47,7 @@ module addr_trans #(
     input wire data_addr_valid,
     output wire data_addr_ready,
     input wire data_cacop,
+    input wire [1:0]cacop_mod,
 
     input wire mem_load,// is load 
     input wire mem_store,// is store
@@ -160,6 +161,7 @@ wire [ 1:0] w_mat1;
 wire [ 1:0] w_plv1;
 wire [19:0] w_ppn1;
 
+wire cacop_trans;
 // read port
 wire [$clog2(TLBNUM)-1:0] r_index; 
 // //read ort
@@ -295,16 +297,17 @@ tlb_entry tlb(
     .tlbinv_asid(tlbinv_asid),
     .tlbinv_vpn(tlbinv_vpn)
 );
+assign cacop_trans = (cacop_mod == 2'b00 | cacop_mod == 2'b01) & data_cacop;
 //
 assign inst_tlb_trans = !inst_dmw0_en & !inst_dmw1_en & inst_trans_en;
-assign data_tlb_trans = !data_dmw0_en & !data_dmw1_en & data_trans_en;
+assign data_tlb_trans = !data_dmw0_en & !data_dmw1_en & data_trans_en & !cacop_trans;
 
 // paddr
 assign inst_paddr = inst_trans_en? (inst_dmw0_en? {DMW0[27:25],inst_vaddr_temp[28:0]}
                                 :(inst_dmw1_en? {DMW1[27:25],inst_vaddr_temp[28:0]}: 
                                 (s0_ps == 6'd21)? {s0_ppn[19:10],inst_vaddr_temp[21:0]}:{s0_ppn,inst_vaddr_temp[11:0]})) 
                                 :inst_vaddr_temp;
-assign data_paddr = data_trans_en? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
+assign data_paddr =(data_trans_en & !cacop_trans)? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
                                 :(data_dmw1_en? {DMW1[27:25],data_vaddr_temp[28:0]}: 
                                 (s1_ps == 6'd21)? {s1_ppn[19:10],data_vaddr_temp[21:0]}:{s1_ppn,data_vaddr_temp[11:0]})) 
                                 :data_vaddr_temp;

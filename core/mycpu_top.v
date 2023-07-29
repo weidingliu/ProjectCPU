@@ -481,6 +481,7 @@ addr_trans addr_translate(
     .serch_tlb_finish(serch_finish),
 
     .data_cacop(data_cacop_en),
+    .cacop_mod(cacop_mod),
     .data_uncached_en(data_uncached_en),
     .data_paddr(data_paddr),
     .data_vaddr_o(),
