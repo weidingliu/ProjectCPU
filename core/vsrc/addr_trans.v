@@ -25,11 +25,14 @@ module addr_trans #(
     input wire [31:0] csr_tlbelo0,
     input wire [31:0] csr_tlbelo1,
     input wire [5:0]encode_in,
+
+    input wire cacop_finish,
     // inst interface
     input wire [31:0]inst_vaddr,
     input wire inst_addr_valid,
     output wire inst_addr_ready,
     input wire inst_cacop,
+    output reg inst_cacop_en_o,
 
     output wire inst_uncached_en,
     output wire [31:0]inst_paddr,
@@ -48,6 +51,7 @@ module addr_trans #(
     output wire data_addr_ready,
     input wire data_cacop,
     input wire [1:0]cacop_mod,
+    output reg data_cacop_en_o,
 
     input wire mem_load,// is load 
     input wire mem_store,// is store
@@ -333,7 +337,7 @@ assign inst_tlb_found = s0_found;
 assign data_tlb_found = s1_found;
 
 assign inst_valid = inst_valid_temp;
-assign data_valid = inst_cacop? 1'b0:data_valid_temp  & !data_excp;
+assign data_valid = !inst_cacop & data_valid_temp  & !data_excp;
 
 assign inst_vaddr_o = inst_vaddr_temp;
 assign data_vaddr_o = data_vaddr_temp;
@@ -377,6 +381,24 @@ always @(posedge clk) begin
         end
     end 
 end
+always @(posedge clk) begin
+   if(reset) begin 
+        inst_cacop_en_o <= 1'b0;
+        data_cacop_en_o <= 1'b0;
+   end
+   else begin 
+    if((inst_cacop | data_cacop) & ! cacop_finish) begin 
+        inst_cacop_en_o <= inst_cacop;
+        data_cacop_en_o <= data_cacop;
+   end
+   else begin 
+        inst_cacop_en_o <= 1'b0;
+        data_cacop_en_o <= 1'b0;
+   end
+   end
+   
+end
+
 assign serch_tlb_finish = trans_state;
 // data pipline
 always @(posedge clk) begin

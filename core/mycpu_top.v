@@ -206,6 +206,9 @@ wire mem_halfword;
 wire mem_word;
 wire mem_excp_i;
 wire [6:0]mem_excp_num_i;
+
+wire data_cacop_en_buffer;
+wire inst_cacop_en_buffer;
 // wire [31:0]data_vaddr_o;
 wire data_tlb_found;
 wire data_valid;
@@ -446,12 +449,15 @@ addr_trans addr_translate(
     .csr_tlbelo0(csr_tlbelo0),
     .csr_tlbelo1(csr_tlbelo1),
     .encode_in(encode_in),
+    .cacop_finish((data_cacop_finish || inst_cacop_finish)),
     // inst interface
     .inst_vaddr(PC),
     .inst_addr_valid(pc_valid),
     .inst_addr_ready(addr_trans_ready),
 
     .inst_cacop(inst_cacop_en),
+    .inst_cacop_en_o(inst_cacop_en_buffer),
+
     .inst_uncached_en(inst_uncached_en),
     .inst_paddr(inst_paddr),
     .inst_vaddr_o(inst_vaddr_o),
@@ -480,6 +486,7 @@ addr_trans addr_translate(
     .data_tlbfound(data_tlbfound),
     .serch_tlb_finish(serch_finish),
 
+    .data_cacop_en_o(data_cacop_en_buffer),
     .data_cacop(data_cacop_en),
     .cacop_mod(cacop_mod),
     .data_uncached_en(data_uncached_en),
@@ -945,7 +952,7 @@ ICache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))ICache(
     .rdata_ready(cache_inst_valid),
     .uncached_en(inst_uncached_en),
     //cacop 
-    .cacop_en(inst_cacop_en),
+    .cacop_en(inst_cacop_en_buffer),
     .cacop_mod(cacop_mod),
     .cacop_va(data_paddr),
     .cacop_finish(inst_cacop_finish),
@@ -981,7 +988,7 @@ DCache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))DCache(
     .write_respone(write_finish),
     .uncached_en(data_uncached_en),
     //cacop 
-    .cacop_en(data_cacop_en),
+    .cacop_en(data_cacop_en_buffer),
     .cacop_mod(cacop_mod),
     .cacop_va(data_paddr),
     .cacop_finish(data_cacop_finish),

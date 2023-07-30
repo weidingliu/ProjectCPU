@@ -119,6 +119,8 @@ module DCache #(
     input wire [3:0]wmask,
     output wire write_respone,
 
+    // output wire cache_busy,
+
         //cacop 
     input wire cacop_en,
     input wire [1:0]cacop_mod,
