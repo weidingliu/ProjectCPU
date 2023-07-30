@@ -555,15 +555,15 @@ assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) |
                ({DATA_WIDTH{read_count_ready & !uncached_buffer}} & miss_rdata)| 
                ({DATA_WIDTH{uncached_buffer}} & mem_rdata);
 
-assign mem_addr = uncached_buffer ? addr:(state == miss)?  miss_addr : (state == write_data)? write_back_addr: 'h0;
-assign mem_ce = uncached_buffer ? (state == miss):((state == miss && read_count != Cache_line_wordnum) || state == write_data);
-assign mem_we = uncached_buffer ? we:state == write_data;
-assign mem_wdata = uncached_buffer ? {{(Cache_line_size - DATA_WIDTH){1'b0}},wdata}:write_back_data;
-assign mem_wmask = uncached_buffer ? wmask:{(CPU_WIDTH/8){1'b1}};
+assign mem_addr = uncached_buffer & !cacop_en ? addr:(state == miss)?  miss_addr : (state == write_data)? write_back_addr: 'h0;
+assign mem_ce = uncached_buffer & !cacop_en? (state == miss):((state == miss && read_count != Cache_line_wordnum) || state == write_data);
+assign mem_we = uncached_buffer & !cacop_en? we:state == write_data;
+assign mem_wdata = uncached_buffer & !cacop_en? {{(Cache_line_size - DATA_WIDTH){1'b0}},wdata}:write_back_data;
+assign mem_wmask = uncached_buffer & !cacop_en? wmask:{(CPU_WIDTH/8){1'b1}};
 
 assign rdata_valid = ((state == scanf & hit  & !we) | (state == miss & read_count_ready & !we) | (state == miss & uncached_buffer & mem_rdata_valid)) & !cacop_en;
 assign write_respone = ((state == scanf & hit & we) | (state == miss & read_count_ready & we) | (state == miss & uncached_buffer & mem_write_respone)) & !cacop_en; 
-assign data_transform_type = uncached_buffer ? 3'b001:3'b100;
+assign data_transform_type = uncached_buffer & !cacop_en ? 3'b001:3'b100;
 
 assign cacop_finish = (cacop_mod0 | cacop_mod1 & !dirt[cacop_va[$clog2(Cache_way)-1:0]]) & (state == scanf) | 
                         cacop_mod1 & (state == write_data) & mem_write_respone | 
@@ -931,9 +931,9 @@ assign rdata = ({DATA_WIDTH{hit_way0}} & hit_rdata[0]) |
                ({DATA_WIDTH{read_count_ready & !uncached_buffer}} & miss_rdata)| 
                ({DATA_WIDTH{uncached_buffer}} & mem_rdata);
 
-assign mem_addr = uncached_buffer ? addr:(state == miss)?  miss_addr : {DATA_WIDTH{1'b0}};
-assign mem_ce = uncached_buffer ? (state == miss):((state == miss && read_count != Cache_line_wordnum) || state == write_data);
-assign mem_we = uncached_buffer ? we:state == write_data;
+assign mem_addr = uncached_buffer & !cacop_en_buffer? addr:(state == miss)?  miss_addr : {DATA_WIDTH{1'b0}};
+assign mem_ce = uncached_buffer & !cacop_en_buffer? (state == miss):((state == miss && read_count != Cache_line_wordnum) || state == write_data);
+assign mem_we = uncached_buffer & !cacop_en_buffer? we:state == write_data;
 // assign mem_wdata = write_back_data[DATA_WIDTH-1:0];
 // assign mem_wmask = 
 assign data_transform_type = uncached_buffer ? 3'b001:3'b100;

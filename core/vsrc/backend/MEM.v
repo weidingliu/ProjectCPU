@@ -228,8 +228,8 @@ assign mem_result=(op_mem[0] & op_mem[2] & is_llbit)? {31'h0,llbit_in}:
                   :alu_result;
 
 // cacop
-assign inst_cacop_en = is_cacop & (wreg_index[2:0] == 3'd0) & left_valid;
-assign data_cacop_en = is_cacop & (wreg_index[2:0] == 3'd1) & left_valid;
+assign inst_cacop_en = is_cacop & (wreg_index[2:0] == 3'd0) & left_valid & !stall;
+assign data_cacop_en = is_cacop & (wreg_index[2:0] == 3'd1) & left_valid & !stall;
 assign cacop_mod = wreg_index[4:3];
 
 // assign right_fire=right_ready & right_valid;//data submit finish

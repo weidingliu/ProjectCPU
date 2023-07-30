@@ -729,6 +729,7 @@ MEM mem_stage(
 
     .is_tlbhazard(mem_is_tlbhazard),// tlb hazard
 
+
     //cacop 
     .inst_cacop_en(inst_cacop_en),
     .data_cacop_en(data_cacop_en),
