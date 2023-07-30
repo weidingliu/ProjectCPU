@@ -191,6 +191,9 @@ reg [31:0]inst_vaddr_temp;
 reg data_valid_temp;
 reg [31:0]data_vaddr_temp;
 
+reg inst_trans_en_buffer;
+reg data_trans_en_buffer;
+
 //tlb write port
 assign we = tlb_wen | tlb_fill_en;
 assign w_index = ({5{tlb_wen}} & csr_tlbidx[`INDEX]) | ({5{tlb_fill_en}} & rand_index);
@@ -299,15 +302,15 @@ tlb_entry tlb(
 );
 assign cacop_trans = (cacop_mod == 2'b00 | cacop_mod == 2'b01) & (data_cacop | inst_cacop);
 //
-assign inst_tlb_trans = !inst_dmw0_en & !inst_dmw1_en & inst_trans_en;
-assign data_tlb_trans = !data_dmw0_en & !data_dmw1_en & data_trans_en & !cacop_trans;
+assign inst_tlb_trans = !inst_dmw0_en & !inst_dmw1_en & inst_trans_en_buffer;
+assign data_tlb_trans = !data_dmw0_en & !data_dmw1_en & data_trans_en_buffer & !cacop_trans;
 
 // paddr
-assign inst_paddr = inst_trans_en? (inst_dmw0_en? {DMW0[27:25],inst_vaddr_temp[28:0]}
+assign inst_paddr = inst_trans_en_buffer? (inst_dmw0_en? {DMW0[27:25],inst_vaddr_temp[28:0]}
                                 :(inst_dmw1_en? {DMW1[27:25],inst_vaddr_temp[28:0]}: 
                                 (s0_ps == 6'd21)? {s0_ppn[19:10],inst_vaddr_temp[21:0]}:{s0_ppn,inst_vaddr_temp[11:0]})) 
                                 :inst_vaddr_temp;
-assign data_paddr =(data_trans_en & ~cacop_trans & ~data_excp)? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
+assign data_paddr =(data_trans_en_buffer & ~cacop_trans & ~data_excp)? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
                                 :(data_dmw1_en? {DMW1[27:25],data_vaddr_temp[28:0]}: 
                                 (s1_ps == 6'd21)? {s1_ppn[19:10],data_vaddr_temp[21:0]}:{s1_ppn,data_vaddr_temp[11:0]})) 
                                 :data_vaddr_temp;
@@ -316,17 +319,17 @@ assign data_paddr =(data_trans_en & ~cacop_trans & ~data_excp)? (data_dmw0_en? {
 assign inst_uncached_en = ((DAPG == 2'b10) && (DATF == 2'b00) ||
                            (inst_dmw0_en & DMW0[`MAT] == 2'b00) || 
                            (inst_dmw1_en & DMW1[`MAT] == 2'b00) ||
-                           (inst_trans_en & !inst_dmw0_en & !inst_dmw1_en & s0_mat == 2'b00));
+                           (inst_trans_en_buffer & !inst_dmw0_en & !inst_dmw1_en & s0_mat == 2'b00));
 assign data_uncached_en = ((DAPG == 2'b10) && (DATM == 2'b00) ||
                            (data_dmw0_en & DMW0[`MAT] == 2'b00) || 
                            (data_dmw1_en & DMW1[`MAT] == 2'b00) ||
-                           (data_trans_en & !data_dmw0_en & !data_dmw1_en & s1_mat == 2'b00));
+                           (data_trans_en_buffer & !data_dmw0_en & !data_dmw1_en & s1_mat == 2'b00));
 // output logic
 assign inst_tlb_found = s0_found;
 assign data_tlb_found = s1_found;
 
 assign inst_valid = inst_valid_temp;
-assign data_valid = data_valid_temp  & !data_excp;
+assign data_valid = inst_cacop? 1'b0:data_valid_temp  & !data_excp;
 
 assign inst_vaddr_o = inst_vaddr_temp;
 assign data_vaddr_o = data_vaddr_temp;
@@ -348,6 +351,7 @@ always @(posedge clk) begin
         if(inst_addr_valid && inst_ready) begin 
             inst_valid_temp <= `true;
             inst_vaddr_temp <= inst_vaddr;
+            inst_trans_en_buffer <= inst_trans_en;
         end
     end
 end
@@ -379,6 +383,7 @@ always @(posedge clk) begin
         if((data_addr_valid) && data_ready) begin 
            data_valid_temp <= `true;
            data_vaddr_temp <= data_vaddr;
+           data_trans_en_buffer <= data_trans_en;
         end
     end
 end

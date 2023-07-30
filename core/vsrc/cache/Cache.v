@@ -695,9 +695,9 @@ wire write_lru_we;
 
 assign read_count_ready = read_count == Cache_line_wordnum;
 
-assign offset = (state == idle) & cacop_en | cacop_en_buffer ? cacop_offset:addr[Offset_size-1:0];
-assign index = (state == idle) & cacop_en | cacop_en_buffer? cacop_index:addr[Index_size + Offset_size-1:Offset_size];
-assign Tag = (state == idle) & cacop_en | cacop_en_buffer ? cacop_Tag:addr[BUS_WIDTH-1:Index_size + Offset_size];
+assign offset = (state == idle) & cacop_en | !(state == idle) & cacop_en_buffer ? cacop_offset:addr[Offset_size-1:0];
+assign index = (state == idle) & cacop_en | !(state == idle) & cacop_en_buffer? cacop_index:addr[Index_size + Offset_size-1:Offset_size];
+assign Tag = (state == idle) & cacop_en | !(state == idle) & cacop_en_buffer ? cacop_Tag:addr[BUS_WIDTH-1:Index_size + Offset_size];
 
 assign cacop_index = cacop_va[Index_size + Offset_size-1:Offset_size];
 assign cacop_offset = cacop_va[Offset_size-1:0];
@@ -871,7 +871,7 @@ always @(posedge clk) begin
       miss_addr <= 0;
    end
    else if(state == scanf) begin 
-      miss_addr <= {addr[BUS_WIDTH-1:Offset_size],{Offset_size{1'b0}}};
+      miss_addr <= {Tag_buffer,index_buffer,{Offset_size{1'b0}}};
    end
 //    else if(state == miss) begin 
 //         if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;

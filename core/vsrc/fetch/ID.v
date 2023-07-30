@@ -345,7 +345,8 @@ assign select_src1[1] = inst_bl | inst_b | inst_bge | inst_beq | inst_bgeu | ins
 
 assign select_src2[0] = inst_ori | inst_jirl | inst_addi | inst_st_w | inst_ld_w | inst_bl | inst_b | inst_bge
                         | inst_st_b | inst_srai | inst_andi | inst_ld_bu | inst_slli | inst_srli | inst_xori | inst_beq | inst_sltui
-                        | inst_bgeu | inst_blt | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_ll | inst_sc; 
+                        | inst_bgeu | inst_blt | inst_bne | inst_slti | inst_ld_hu | inst_ld_b | inst_ld_h | inst_st_h | inst_bltu | inst_ll 
+                        | inst_sc | inst_cacop; 
 assign select_src2[1] = inst_pcaddu12i;
 
 //produce inst decoder result
