@@ -151,7 +151,7 @@ assign stall = (ertn | ms_excp | soft_int) & left_valid & icache_busy;
 assign excp_flush = ms_excp & left_valid & !icache_busy;
 assign stall = (ertn | ms_excp) & left_valid & icache_busy;
 `endif
-assign ertn_flush = ertn & left_valid & !icache_busy;
+assign ertn_flush = ertn & left_valid & !icache_busy & !ms_excp;
 
 // assign pc = PC;
 /*
