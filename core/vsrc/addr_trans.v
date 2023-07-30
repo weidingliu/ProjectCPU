@@ -194,6 +194,10 @@ reg [31:0]data_vaddr_temp;
 reg inst_trans_en_buffer;
 reg data_trans_en_buffer;
 
+reg s0_v_buffer;
+reg s0_found_buffer;
+reg [1:0]s0_plv_buffer;
+
 //tlb write port
 assign we = tlb_wen | tlb_fill_en;
 assign w_index = ({5{tlb_wen}} & csr_tlbidx[`INDEX]) | ({5{tlb_fill_en}} & rand_index);
@@ -229,7 +233,7 @@ tlb_entry tlb(
     .clk(clk),
 
     // s0
-    .s0_valid(inst_addr_valid),
+    .s0_valid(inst_addr_valid & inst_ready),
     .s0_vppn(inst_vaddr[31:13]),
     .s0_asid(ASID[`ASID]),
     .s0_odd_page(inst_vaddr[12]),
@@ -352,6 +356,9 @@ always @(posedge clk) begin
             inst_valid_temp <= `true;
             inst_vaddr_temp <= inst_vaddr;
             inst_trans_en_buffer <= inst_trans_en;
+            // s0_v_buffer <= s0_v;
+            // s0_found_buffer <= s0_found;
+            // s0_plv_buffer <= s0_plv;
         end
     end
 end
@@ -384,6 +391,7 @@ always @(posedge clk) begin
            data_valid_temp <= `true;
            data_vaddr_temp <= data_vaddr;
            data_trans_en_buffer <= data_trans_en;
+           
         end
     end
 end

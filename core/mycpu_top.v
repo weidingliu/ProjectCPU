@@ -418,7 +418,7 @@ IF if_stage0(
     .dnpc(dnpc),
     //shark hand
     .pc_valid(pc_valid),//IF stage's data is ready
-    .addr_trans_ready(inst_addr_trans_ready),
+    .addr_trans_ready(addr_trans_ready),
 
     .fire(inst_is_fire)
     // .inst_ready(inst_ready),//ID stage is allowin

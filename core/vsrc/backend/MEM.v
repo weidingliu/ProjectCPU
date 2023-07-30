@@ -302,9 +302,9 @@ assign data_tlbserch_en = tlb_op[4] & left_valid;
 // output logic
 assign right_valid=valid;
 assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid | (data_tlbserch_en & ! serch_finish) | 
-                        (is_cacop & !cacop_finish & left_valid)? 1'b0:1'b1;// memory must not exceptions 
+                        ((inst_cacop_en | data_cacop_en) & !cacop_finish & left_valid)? 1'b0:1'b1;// memory must not exceptions 
 assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | (data_tlbserch_en & ! serch_finish) |
-                        (is_cacop & !cacop_finish & left_valid) ? 1'b0:1'b1;
+                        ((inst_cacop_en | data_cacop_en) & !cacop_finish & left_valid) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
 assign mem_excp_bus = excp_temp;

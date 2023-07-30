@@ -267,7 +267,7 @@ assign left_ready = (icache_busy & (ms_excp | ertn) & left_valid) ? 1'b0: right_
 // assign wb_ctrl_bus=bus_temp;
 // assign wb_csr_bus = csr_bus_temp;
 assign wb_ctrl_bus={mem_ctrl_bus[`mem_ctrl_width-1:103],(mem_ctrl_bus[102] & ~excp_flush),mem_ctrl_bus[101:0]};
-assign wb_csr_bus = {mem_csr_bus[46] & left_valid  & ~excp_flush,mem_csr_bus[45:0]};
+assign wb_csr_bus = {mem_csr_bus[46] & left_valid  & ~ms_excp,mem_csr_bus[45:0]};
 assign wb_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
 assign wb_bypass = {mem_ctrl_bus[31:0],mem_ctrl_bus[101:97],mem_ctrl_bus[96:96] & left_valid };
 
