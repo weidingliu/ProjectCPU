@@ -51,10 +51,35 @@ module ID (
     output wire is_fire,
     input wire fire//next stage's data was consumed
 );
+localparam CRMD  = 14'h0;
+localparam PRMD  = 14'h1;
+localparam ECTL  = 14'h4;
+localparam ESTAT = 14'h5;
+localparam ERA   = 14'h6;
+localparam BADV  = 14'h7;
+localparam EENTRY = 14'hc;
 localparam TLBIDX= 14'h10;
 localparam TLBEHI= 14'h11;
 localparam TLBELO0=14'h12;
 localparam TLBELO1=14'h13;
+localparam ASID  = 14'h18;
+localparam PGDL  = 14'h19;
+localparam PGDH  = 14'h1a;
+localparam PGD   = 14'h1b;
+localparam CPUID = 14'h20;
+localparam SAVE0 = 14'h30;
+localparam SAVE1 = 14'h31;
+localparam SAVE2 = 14'h32;
+localparam SAVE3 = 14'h33;
+localparam TID   = 14'h40;
+localparam TCFG  = 14'h41;
+localparam TVAL  = 14'h42;
+localparam CNTC  = 14'h43;
+localparam TICLR = 14'h44;
+localparam LLBCTL= 14'h60;
+localparam TLBRENTRY = 14'h88;
+localparam DMW0  = 14'h180;
+localparam DMW1  = 14'h181;
 
 // wire right_fire;
 reg valid;
@@ -460,7 +485,11 @@ assign Imm = ({32{Imm20_en}} & Imm20) |
              ({32{Imm5_en}}  & Imm5 ) |
              ({32{Imm14_en}} & Imm14);
 // for csr ,decoder contrl sign 
-assign csr_we = inst_csrwr | inst_csrxchg;
+assign csr_we = (inst_csrwr | inst_csrxchg) & (csr_idx == CRMD | csr_idx == PRMD | csr_idx == ECTL | csr_idx == ESTAT | csr_idx == ERA | 
+                csr_idx == BADV | csr_idx == EENTRY | csr_idx == TLBIDX | csr_idx == TLBEHI | csr_idx == TLBELO0 | csr_idx == TLBELO1 | csr_idx == ASID | 
+                csr_idx == PGDL | csr_idx == PGDH | csr_idx == PGD | csr_idx == CPUID | csr_idx == SAVE0 | csr_idx == SAVE1 | csr_idx == SAVE2 | csr_idx == SAVE3| 
+                csr_idx == TID | csr_idx == TCFG | csr_idx == TVAL | csr_idx == CNTC | csr_idx == TICLR | csr_idx == LLBCTL | csr_idx == TLBRENTRY | 
+                csr_idx == DMW0 | csr_idx == DMW1);
 assign csr_idx = inst_rdcntid? 14'h40:Inst[23:10];
 assign csr_mask_en = inst_csrxchg;
 assign csr_data = (inst_rdcntvh)? timer_in[63:32]:
@@ -470,7 +499,7 @@ assign rd_csr_addr = csr_idx;
 assign rd_from_csr = inst_csrrd | inst_csrwr | inst_csrxchg | inst_rdcntvl | inst_rdcntvh | inst_rdcntid;
 
 // for excp 
-assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn | inst_invtlb | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch;
+assign is_kernel_inst = inst_csrrd | inst_csrwr | inst_csrxchg | inst_ertn | inst_invtlb | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_cacop;
 assign excp_ine = ~inst_valid & left_valid;// inst is invalid
 assign excp_ipe = is_kernel_inst & (plv == 2'b11); // privilege level is falut
 assign excp = excp_ine | excp_ipe | inst_syscall | inst_break | has_int | ib_excp_bus[0];
