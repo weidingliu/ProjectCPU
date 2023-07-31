@@ -308,7 +308,7 @@ tlb_entry tlb(
     .tlbinv_asid(tlbinv_asid),
     .tlbinv_vpn(tlbinv_vpn)
 );
-assign cacop_trans = (cacop_mod == 2'b00 | cacop_mod == 2'b01) & (data_cacop | inst_cacop);
+assign cacop_trans = (cacop_mod == 2'b00 | cacop_mod == 2'b01 | cacop_mod == 2'b11) & (data_cacop | inst_cacop);
 //
 assign inst_tlb_trans = !inst_dmw0_en & !inst_dmw1_en & inst_trans_en_buffer;
 assign data_tlb_trans = !data_dmw0_en & !data_dmw1_en & data_trans_en_buffer & !cacop_trans;

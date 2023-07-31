@@ -215,7 +215,7 @@ assign cacop_offset = cacop_va[Offset_size-1:0];
 assign cacop_Tag = cacop_va[BUS_WIDTH-1:Index_size + Offset_size];
 
 assign cacop_mod0 = cacop_en & (cacop_mod == 2'd0);
-assign cacop_mod1 = cacop_en & (cacop_mod == 2'd1);
+assign cacop_mod1 = cacop_en & (cacop_mod == 2'd1 | cacop_mod == 2'b11);
 assign cacop_mod2 = cacop_en & (cacop_mod == 2'd2);
 
 genvar i;
@@ -706,7 +706,7 @@ assign cacop_offset = cacop_va[Offset_size-1:0];
 assign cacop_Tag = cacop_va[BUS_WIDTH-1:Index_size + Offset_size];
 
 assign cacop_mod0 = cacop_en_buffer & (cacop_mod == 2'd0);
-assign cacop_mod1 = cacop_en_buffer & (cacop_mod == 2'd1);
+assign cacop_mod1 = cacop_en_buffer & (cacop_mod == 2'd1 | cacop_mod == 2'b11);
 assign cacop_mod2 = cacop_en_buffer & (cacop_mod == 2'd2);
 
 genvar i;

@@ -128,11 +128,11 @@ tlbop[2] inst_tlbrd
 tlbop[3] inst_tlbfill
 tlbop[4]
 */ 
-assign tlb_wren = tlb_op[1] & left_valid;
+assign tlb_wren = tlb_op[1] & left_valid & !ms_excp;
 assign tlb_rden = tlb_op[2] & left_valid;
-assign tlb_fill_en = tlb_op[3] & left_valid;
+assign tlb_fill_en = tlb_op[3] & left_valid & !ms_excp;
 assign tlb_serch_en = tlb_op[4] & left_valid;
-assign is_tlbhazard = (tlb_op[4] | tlb_op[2]) & left_valid;
+assign is_tlbhazard = (tlb_op[4] | tlb_op[2]) & left_valid  & !ms_excp;
 //excp
 wire ms_excp;
 wire [15:0]excp_num;
