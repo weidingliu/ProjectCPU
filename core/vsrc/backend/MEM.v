@@ -210,7 +210,7 @@ assign llbit_out = op_mem[0] & !op_mem[2] & is_llbit;
 assign llbit_set_en = op_mem[0] & !op_mem[2] & is_llbit & left_valid & !excp_flush & !stall;
 
 //for sram
-assign en = ((op_mem[0]) | ((inst_cacop_en | data_cacop_en) & !cacop_finish)) & left_valid & !excp_flush & !stall & !(op_mem[0] & op_mem[2] & is_llbit & !llbit_in);
+assign en = ((op_mem[0]) | ((inst_cacop_en | data_cacop_en) & !cacop_finish)) & left_valid & !excp_flush & !stall & !(op_mem[0] & op_mem[2] & is_llbit & !llbit_in) & !ex_excp_bus[0];
 assign we = op_mem[2] & !is_llbit | op_mem[2] & is_llbit & llbit_in;
 assign addr = alu_result;
 assign wdata = op_mem[3] ? src2:
@@ -283,7 +283,7 @@ always @(posedge clk) begin
                     is_break,//103:103
                     (left_valid & inst_valid ),//102:102
                     wreg_index,//97:101
-                    wreg_en & !excp_i,//96:96 when exception ,should not write back data
+                    wreg_en & !excp_i & !ex_excp_bus[0],//96:96 when exception ,should not write back data
                     Inst,// 64:95
                     PC,// 32:63
                     mem_result// 0:31
@@ -301,15 +301,15 @@ end
 assign data_tlbserch_en = tlb_op[4] & left_valid;
 // output logic
 assign right_valid=valid;
-assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | !left_valid | (data_tlbserch_en & ! serch_finish) | 
+assign logic_valid = (en && (we && !write_finish || !we && !rdata_valid) & !excp_i & !ex_excp_bus[0]) | !left_valid | (data_tlbserch_en & ! serch_finish) | 
                         ((inst_cacop_en | data_cacop_en) & !cacop_finish & left_valid)? 1'b0:1'b1;// memory must not exceptions 
-assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i) | (data_tlbserch_en & ! serch_finish) |
+assign left_ready= (en && (we && !write_finish || !we && !rdata_valid) & !excp_i & !ex_excp_bus[0]) | (data_tlbserch_en & ! serch_finish) |
                         ((inst_cacop_en | data_cacop_en) & !cacop_finish & left_valid) ? 1'b0:1'b1;
 assign wb_ctrl_bus=bus_temp;
 assign wb_csr_bus = csr_bus_temp;
 assign mem_excp_bus = excp_temp;
 assign mem_csr_bypass = {mem_csr_bus[46] & left_valid,mem_csr_bus[45:0]};
-assign mem_bypass = {mem_result,wreg_index,wreg_en & logic_valid & !excp_i};
+assign mem_bypass = {mem_result,wreg_index,wreg_en & logic_valid & !excp_i & !ex_excp_bus[0]};
 assign is_fire = logic_valid & right_ready;
 
 endmodule //MEM
