@@ -88,9 +88,13 @@ wire [31:0]inst_st_paddr;
 wire [31:0]inst_st_data;
 wire [7:0]inst_ld_en;
 
+wire mem_tlbinv_en;
+
 //tlb 
 wire [4:0]tlb_op;
 assign is_fire = logic_valid & right_ready;
+
+assign tlbinv_en = mem_tlbinv_en & !ms_excp & left_valid;
 //bus
 assign {
         llbit_out,// 360:360
@@ -103,7 +107,7 @@ assign {
         data_tlbindex,//242:246
         data_tlbfound,//241:241
         tlb_op,//236:240
-        tlbinv_en,//235:235
+        mem_tlbinv_en,//235:235
         tlbinv_op,//230:234
         tlbinv_asid,//220:229
         tlbinv_vpn,//201:219
