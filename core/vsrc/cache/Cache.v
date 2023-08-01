@@ -331,7 +331,7 @@ Scanf_Cache Scanf_Cache(
     .hit_way1(hit_way1)
 );
 // check if have hit way
-assign hit = (hit_way0 || hit_way1) & !uncached_en & !uncached_buffer;
+assign hit = (hit_way0 || hit_way1) & !uncached_en & !uncached_buffer || (hit_way0 || hit_way1) & cacop_en;
 
 //FSM
 always @(posedge clk) begin
