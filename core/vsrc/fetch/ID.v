@@ -90,7 +90,7 @@ wire [3:0]mul_div_op;
 
 wire [4:0]tlb_op;
 
-reg [`ctrl_width-1:0] bus_temp;//reg for ctrl flower
+(*MAX_FANOUT = 100*)reg [`ctrl_width-1:0] bus_temp;//reg for ctrl flower
 wire [31:0]Imm;//bus [0:31]
 wire [31:0]src1;//bus [32:63]
 wire [31:0]src2;//bus [64:95]
@@ -236,7 +236,7 @@ reg [`id_csr_ctrl_width-1:0]csr_ctrl_temp;
 // excp and interrupt
 wire excp;
 wire [8:0]excp_num;
-(*MAX_FANOUT = 200*)reg [`id_excp_width-1:0]excp_bus_temp;
+(*MAX_FANOUT = 100*)reg [`id_excp_width-1:0]excp_bus_temp;
 wire excp_ine;
 wire excp_ipe;
 wire is_kernel_inst;

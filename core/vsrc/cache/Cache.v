@@ -148,9 +148,9 @@ localparam scanf = 2'b01;
 localparam miss = 2'b10;
 localparam write_data = 2'b11;
 
-reg [1:0]state;
-(*MAX_FANOUT = 200*)reg [31:0]read_count;
-reg [31:0]write_count;
+(*MAX_FANOUT = 50*)reg [1:0]state;
+(*MAX_FANOUT = 50*)reg [31:0]read_count;
+(*MAX_FANOUT = 50*)reg [31:0]write_count;
 wire read_count_ready;
 // wire write_count_ready;
 
@@ -184,7 +184,7 @@ wire [DATA_WIDTH-1:0]hit_rdata[Cache_way-1:0];
 wire [DATA_WIDTH-1:0]miss_rdata;
 
 (*MAX_FANOUT = 200*)reg [Cache_line_size-1:0]miss_data;
-reg [BUS_WIDTH-1:0]miss_addr;
+(*MAX_FANOUT = 100*)reg [BUS_WIDTH-1:0]miss_addr;
 
 reg [Cache_line_size-1:0]write_back_data;
 reg [BUS_WIDTH-1:0]write_back_addr;
@@ -202,7 +202,7 @@ wire wmask_en;
 wire [Cache_line_size-1:0] new_data;
 wire [Cache_line_size-1:0] old_data;
 
-reg uncached_buffer;
+(*MAX_FANOUT = 50*)reg uncached_buffer;
 
 assign read_count_ready = read_count == Cache_line_wordnum;
 
@@ -649,9 +649,9 @@ localparam scanf = 3'b001;
 localparam miss = 3'b010;
 localparam write_data = 3'b011;
 
-reg [2:0]state;
+(*MAX_FANOUT = 50*)reg [2:0]state;
 (*MAX_FANOUT = 200*)reg [31:0]read_count;
-reg uncached_buffer;
+(*MAX_FANOUT = 50*)reg uncached_buffer;
 wire read_count_ready;
 
 wire [Tag_size-1:0]tag[Cache_way-1:0];
@@ -684,8 +684,8 @@ wire [DATA_WIDTH-1:0]hit_rdata[Cache_way-1:0];
 
 wire [DATA_WIDTH-1:0]miss_rdata;
 
-(*MAX_FANOUT = 200*)reg [Cache_line_size-1:0]miss_data;
-reg [BUS_WIDTH-1:0]miss_addr;
+(*MAX_FANOUT = 100*)reg [Cache_line_size-1:0]miss_data;
+(*MAX_FANOUT = 50*)reg [BUS_WIDTH-1:0]miss_addr;
 reg cacop_en_buffer;
 
 wire [Tag_size-1:0]write_tag[Cache_way-1:0];
@@ -845,7 +845,7 @@ always @(posedge clk) begin
         cacop_en_buffer <= cacop_en;
         index_buffer <= index;
         offset_buffer <= offset;
-        Tag_buffer <= Tag;
+//        Tag_buffer <= Tag;
     end 
 end
 
@@ -873,7 +873,7 @@ always @(posedge clk) begin
       miss_addr <= 0;
    end
    else if(state == scanf) begin 
-      miss_addr <= {Tag_buffer,index_buffer,{Offset_size{1'b0}}};
+      miss_addr <= {Tag,index_buffer,{Offset_size{1'b0}}};
    end
 //    else if(state == miss) begin 
 //         if(mem_rdata_valid) miss_addr <= miss_addr + 'h4;
@@ -919,7 +919,7 @@ assign cache_we[1] = (state == miss & lru & read_count_ready) & rdata_ready & !u
 generate
     for(i=0;i<Cache_way;i=i+1) begin 
         assign write_cache_data[i] = miss_data;
-        assign write_tag[i] = cacop_mod0? 20'h0:Tag_buffer;
+        assign write_tag[i] = cacop_mod0? 20'h0:Tag;
         assign write_valid[i] = (cacop_mod1 | cacop_mod2 | cacop_mod0)? 1'b0:1'b1;
     end
 endgenerate

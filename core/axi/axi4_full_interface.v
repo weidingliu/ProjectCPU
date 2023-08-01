@@ -123,8 +123,8 @@ reg [2:0]write_request_state;
 reg [1:0]read_respone_state;
 reg write_respone_state;
 // brust transform
-reg [31:0]write_data_count;
-reg [CPU_WIDTH-1:0]write_data_buffer;
+(*MAX_FANOUT = 100*)reg [31:0]write_data_count;
+(*MAX_FANOUT = 100*)reg [CPU_WIDTH-1:0]write_data_buffer;
 // reg [CPU_WIDTH-1:0]read_data_buffer;
 reg [CPU_WIDTH/8-1:0] write_mask_buffer;
 wire write_data_last;//if is last write data

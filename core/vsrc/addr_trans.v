@@ -188,6 +188,9 @@ wire [$clog2(TLBNUM)-1:0] r_index;
 // output wire [ 1:0] r_plv1,
 // output wire [19:0] r_ppn1
 
+wire [31:0] data_paddr_wire;
+wire data_valid_wire;
+
 // inner pipline
 reg inst_valid_temp;
 reg [31:0]inst_vaddr_temp;
@@ -201,6 +204,9 @@ reg data_trans_en_buffer;
 reg s0_v_buffer;
 reg s0_found_buffer;
 reg [1:0]s0_plv_buffer;
+
+reg [31:0]paddr_temp;
+reg paddr_valid_temp;
 
 //tlb write port
 assign we = tlb_wen | tlb_fill_en;
@@ -318,10 +324,8 @@ assign inst_paddr = inst_trans_en_buffer? (inst_dmw0_en? {DMW0[27:25],inst_vaddr
                                 :(inst_dmw1_en? {DMW1[27:25],inst_vaddr_temp[28:0]}: 
                                 (s0_ps == 6'd21)? {s0_ppn[19:10],inst_vaddr_temp[21:0]}:{s0_ppn,inst_vaddr_temp[11:0]})) 
                                 :inst_vaddr_temp;
-assign data_paddr =(data_trans_en_buffer & ~cacop_trans & ~data_excp)? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
-                                :(data_dmw1_en? {DMW1[27:25],data_vaddr_temp[28:0]}: 
-                                (s1_ps == 6'd21)? {s1_ppn[19:10],data_vaddr_temp[21:0]}:{s1_ppn,data_vaddr_temp[11:0]})) 
-                                :data_vaddr_temp;
+assign data_paddr = paddr_temp;
+
 
 // uncache 
 assign inst_uncached_en = ((DAPG == 2'b10) && (DATF == 2'b00) ||
@@ -332,12 +336,23 @@ assign data_uncached_en = ((DAPG == 2'b10) && (DATM == 2'b00) ||
                            (data_dmw0_en & DMW0[`MAT] == 2'b00) || 
                            (data_dmw1_en & DMW1[`MAT] == 2'b00) ||
                            (data_trans_en_buffer & !data_dmw0_en & !data_dmw1_en & s1_mat == 2'b00));
+// reg 
+assign data_valid_wire = !inst_cacop & data_valid_temp  & !data_excp;
+assign data_paddr_wire =(data_trans_en_buffer & ~cacop_trans & ~data_excp)? (data_dmw0_en? {DMW0[27:25],data_vaddr_temp[28:0]}
+                                :(data_dmw1_en? {DMW1[27:25],data_vaddr_temp[28:0]}: 
+                                (s1_ps == 6'd21)? {s1_ppn[19:10],data_vaddr_temp[21:0]}:{s1_ppn,data_vaddr_temp[11:0]})) 
+                                :data_vaddr_temp;
+always @(posedge clk) begin 
+   paddr_temp <= data_paddr_wire;
+   paddr_valid_temp <= data_valid_wire;
+end
+
 // output logic
 assign inst_tlb_found = s0_found;
 assign data_tlb_found = s1_found;
 
 assign inst_valid = inst_valid_temp;
-assign data_valid = !inst_cacop & data_valid_temp  & !data_excp;
+assign data_valid = paddr_valid_temp;
 
 assign inst_vaddr_o = inst_vaddr_temp;
 assign data_vaddr_o = data_vaddr_temp;

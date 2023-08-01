@@ -50,7 +50,7 @@ module EXE (
 // wire right_fire;
 
 reg valid;
-reg [`ex_ctrl_width-1:0] ctrl_temp_bus;//exe ctrl bus
+(*MAX_FANOUT = 50*)reg [`ex_ctrl_width-1:0] ctrl_temp_bus;//exe ctrl bus
 wire [31:0]alu_result;
 
 wire [3:0] mul_div_op;
