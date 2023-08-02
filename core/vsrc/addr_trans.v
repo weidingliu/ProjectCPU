@@ -358,21 +358,12 @@ assign data_paddr_wire =(data_trans_en_buffer & ~cacop_trans & ~data_excp)? (dat
                                 (s1_ps == 6'd21)? {s1_ppn[19:10],data_vaddr_temp[21:0]}:{s1_ppn,data_vaddr_temp[11:0]})) 
                                 :data_vaddr_temp;
 always @(posedge clk) begin 
-   if(reset | excp_flush | ertn_flush) begin 
+   if(reset | excp_flush | ertn_flush | data_fire | data_excp) begin 
         paddr_valid_temp <= `false;
    end
    else begin 
-        if(data_fire | data_excp) begin 
-            paddr_valid_temp <= `false;
-        end
-        if(data_valid_wire & data_ready) begin 
-            paddr_temp <= data_paddr_wire;
-            paddr_valid_temp <= data_valid_wire;
-        //    data_valid_temp <= `true;
-        //    data_vaddr_temp <= data_vaddr;
-        //    data_trans_en_buffer <= data_trans_en;
-           
-        end
+        paddr_temp <= data_paddr_wire;
+        paddr_valid_temp <= data_valid_wire;
    end
 
 end

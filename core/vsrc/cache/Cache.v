@@ -822,7 +822,7 @@ always @(posedge clk) begin
             scanf: begin 
                 if(cacop_en_buffer) state <= idle;
                 else if(hit) begin 
-                    if(rdata_ready) state <= idle;
+                    if(rdata_ready | !rdata_ready & cacop_en) state <= idle;
                 end
                 else begin 
                     state <= miss;
@@ -832,7 +832,7 @@ always @(posedge clk) begin
                 if(uncached_buffer) begin 
                     if(mem_write_respone || mem_rdata_valid) state <= idle;
                 end
-                else if(read_count_ready && rdata_ready) state <= idle;
+                else if(read_count_ready && rdata_ready | read_count_ready & !rdata_ready & cacop_en) state <= idle;
             end
             default: state <= idle;
         endcase
