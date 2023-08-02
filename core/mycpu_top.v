@@ -1,8 +1,8 @@
 `include "defines.sv"
 `include "soc_defines.v"
 module core_top #(
-    localparam DATA_WIDTH = 32,
-    localparam CPU_WIDTH = DATA_WIDTH * 16
+    parameter DATA_WIDTH = 32,
+    parameter CPU_WIDTH = DATA_WIDTH * 16
 )(
     input           aclk,
     input           aresetn,

@@ -9,12 +9,12 @@ module Cache_Data #(
    parameter Cache_line_wordnum = 16,
    parameter Max_size = 4096,//4kB
 
-   localparam Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
-   localparam Cache_way = 2,
-   localparam Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
-   localparam Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
-   localparam Index_size =  $clog2(Cache_line_num),
-   localparam Offset_size = $clog2(Cache_line_size/8)
+   parameter Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
+   parameter Cache_way = 2,
+   parameter Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
+   parameter Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
+   parameter Index_size =  $clog2(Cache_line_num),
+   parameter Offset_size = $clog2(Cache_line_size/8)
 ) (
     input wire clk,
     input wire reset,
@@ -47,12 +47,12 @@ module Scanf_Cache #(
    parameter Cache_line_wordnum = 16,
    parameter Max_size = 4096,//4kB
 
-   localparam Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
-   localparam Cache_way = 2,
-   localparam Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
-   localparam Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
-   localparam Index_size =  $clog2(Cache_line_num),
-   localparam Offset_size = $clog2(Cache_line_size/8)
+   parameter Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
+   parameter Cache_way = 2,
+   parameter Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
+   parameter Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
+   parameter Index_size =  $clog2(Cache_line_num),
+   parameter Offset_size = $clog2(Cache_line_size/8)
 ) (
     input wire clk,
     input wire reset,
@@ -95,14 +95,14 @@ module DCache #(
    parameter Cache_line_wordnum = 16,
    parameter Max_size = 4096,//4kB
 
-   localparam CPU_WIDTH = DATA_WIDTH * Cache_line_wordnum,
-   localparam Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
-   localparam Word_offset = $clog2(DATA_WIDTH/8),
-   localparam Cache_way = 2,
-   localparam Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
-   localparam Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
-   localparam Index_size =  $clog2(Cache_line_num),
-   localparam Offset_size = $clog2(Cache_line_size/8)
+   parameter CPU_WIDTH = DATA_WIDTH * Cache_line_wordnum,
+   parameter Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
+   parameter Word_offset = $clog2(DATA_WIDTH/8),
+   parameter Cache_way = 2,
+   parameter Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
+   parameter Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
+   parameter Index_size =  $clog2(Cache_line_num),
+   parameter Offset_size = $clog2(Cache_line_size/8)
 )(
     input wire clk,
     input wire reset,
@@ -143,10 +143,10 @@ module DCache #(
     output wire mem_we// 1'b0 is read  1'b1 is write 
 
 );
-localparam idle = 2'b00;
-localparam scanf = 2'b01;
-localparam miss = 2'b10;
-localparam write_data = 2'b11;
+parameter idle = 2'b00;
+parameter scanf = 2'b01;
+parameter miss = 2'b10;
+parameter write_data = 2'b11;
 
 (*MAX_FANOUT = 50*)reg [1:0]state;
 (*MAX_FANOUT = 50*)reg [31:0]read_count;
@@ -603,13 +603,13 @@ module ICache #(
    parameter Cache_line_wordnum = 16,
    parameter Max_size = 4096,//4kB
    
-   localparam Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
-   localparam Word_offset = $clog2(DATA_WIDTH/8),
-   localparam Cache_way = 2,
-   localparam Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
-   localparam Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
-   localparam Index_size =  $clog2(Cache_line_num),
-   localparam Offset_size = $clog2(Cache_line_size/8)
+   parameter Cache_line_size = DATA_WIDTH * Cache_line_wordnum, //64B
+   parameter Word_offset = $clog2(DATA_WIDTH/8),
+   parameter Cache_way = 2,
+   parameter Cache_line_num = Max_size / Cache_way / Cache_line_size * 8, //4kB
+   parameter Tag_size = BUS_WIDTH - $clog2(Cache_line_size/8) - $clog2(Cache_line_num),
+   parameter Index_size =  $clog2(Cache_line_num),
+   parameter Offset_size = $clog2(Cache_line_size/8)
 )(
     input wire clk,
     input wire reset,
@@ -644,10 +644,10 @@ module ICache #(
     output wire mem_ce,//start a read/write transport 
     output wire mem_we// 1'b0 is read  1'b1 is write 
 );
-localparam idle = 3'b000;
-localparam scanf = 3'b001;
-localparam miss = 3'b010;
-localparam write_data = 3'b011;
+parameter idle = 3'b000;
+parameter scanf = 3'b001;
+parameter miss = 3'b010;
+parameter write_data = 3'b011;
 
 (*MAX_FANOUT = 50*)reg [2:0]state;
 (*MAX_FANOUT = 200*)reg [31:0]read_count;

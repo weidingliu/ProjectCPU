@@ -3,7 +3,7 @@
 `include "csr_defines.v"
 
 module addr_trans #(
-    localparam TLBNUM = 32
+    parameter TLBNUM = 32
 )(
     input wire clk,
     input wire reset,

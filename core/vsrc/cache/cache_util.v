@@ -7,7 +7,7 @@
 module Sramlike #(
     parameter DATA_WIDTH = 32,
     parameter Addr_len = 6,
-    localparam Sram_Depth = 2**Addr_len
+    parameter Sram_Depth = 2**Addr_len
     //parameter $pow(2,)
 )(
     input wire clk,
@@ -114,7 +114,7 @@ endmodule
 module Data_mask #(
     parameter DATA_WIDTH = 32,
     parameter Cache_line_size = 512,
-    localparam Addr_len = $clog2(Cache_line_size/DATA_WIDTH) 
+    parameter Addr_len = $clog2(Cache_line_size/DATA_WIDTH) 
 
 )(
     input wire [Addr_len-1:0] offset,
@@ -149,8 +149,8 @@ endmodule //cache_defines
 
 // extend mask to data width
 module mask_extend #(
-    localparam DATA_WIDTH = 32,
-    localparam Mask_WIDTH = DATA_WIDTH/8
+    parameter DATA_WIDTH = 32,
+    parameter Mask_WIDTH = DATA_WIDTH/8
 )(
     input wire [Mask_WIDTH-1:0] mask,
     output wire [DATA_WIDTH-1:0] ext_mask
@@ -164,8 +164,8 @@ endmodule
 module Cacheline_Mask #(
     parameter DATA_WIDTH = 32,
     parameter Cache_line_size = 512,
-    localparam Addr_len = $clog2(Cache_line_size/DATA_WIDTH), 
-    localparam Mask_len = $clog2(Cache_line_size/DATA_WIDTH) 
+    parameter Addr_len = $clog2(Cache_line_size/DATA_WIDTH), 
+    parameter Mask_len = $clog2(Cache_line_size/DATA_WIDTH) 
 
 )(
     input wire [Addr_len-1:0] offset,
