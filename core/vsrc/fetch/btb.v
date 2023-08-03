@@ -14,8 +14,9 @@ module btb #(
 
     input wire pre_error,
     input wire pre_right,
-    input wire is_branch,
-    input wire [31:0]branch_target,
+    input wire [31:0]right_target,
+    input wire [31:0]operate_pc,
+    input wire target_error,
     input wire [4:0]operate_index
 );
 
@@ -44,10 +45,25 @@ generate
 endgenerate
 
 always @(posedge clk) begin 
-
+    if(reset) begin 
+        valid <= 32'h0;
+    end 
+    if(pre_error) begin 
+        if(counter[operate_index] != 2'b00) counter[operate_index] <= counter[operate_index] - 2'b1;
+        pc[operate_index] <= operate_pc[31:2];
+    end 
+    if(pre_right) begin 
+        if(counter[operate_index] != 2'b11) counter[operate_index] <= counter[operate_index] + 2'b1;
+    end
 end
 
 
 
 
 endmodule
+
+
+
+
+
+
