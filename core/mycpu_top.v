@@ -1279,6 +1279,19 @@ assign {
 
 } = difftest_bus[358:247];
 
+reg [63:0]ld_perf;
+reg [63:0]st_perf;
+
+always @(posedge clk) begin 
+    if(reset) begin 
+        ld_perf <= 0;
+        st_perf <= 0;
+    end
+    else begin 
+        if(inst_ld_en_diff != 0) ld_perf <= ld_perf+1'b1;
+        if(inst_st_en_diff != 0) st_perf <= st_perf+1'b1;
+    end
+end
 
 DifftestInstrCommit DifftestInstrCommit(
     .clock(clk),
