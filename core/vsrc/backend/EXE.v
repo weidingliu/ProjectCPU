@@ -152,7 +152,7 @@ assign tlbinv_vpn = reg2[31:13];
 
 //bus
 assign {
-    inst_ibar,//287:287
+    is_ibar,//287:287
     is_llbit,//286:286
     is_cacop,//285:285
     tlb_op,//280:284
