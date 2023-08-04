@@ -367,7 +367,7 @@ always @(posedge clk) begin
                 else if(hit) begin 
                     if(rdata_ready) state <= idle;
                 end
-                else if(!uncached_en) begin 
+                else if(!uncached_buffer) begin 
                     if(dirt[lru]) state <= write_data;
                     else state <= miss;
                 end
