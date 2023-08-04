@@ -223,6 +223,8 @@ wire inst_dbar;
 wire inst_preld;//don't prefetch, is nop inst
 wire inst_cacop;
 
+wire inst_idle;
+
 wire logic_valid;
 wire is_sign_extend;
 
@@ -388,8 +390,6 @@ assign inst_sltu      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decod
 assign inst_nor       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h08];
 assign inst_and       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h09];
 assign inst_xor       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0b];
-// assign inst_orn       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0c];
-// assign inst_andn      = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0d];
 assign inst_sll       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0e];
 assign inst_srl       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h0f];
 assign inst_sra       = decoder_op_31_26[6'h00] & decoder_op_25_22[4'h0] & decoder_op_21_20[2'h1] & decoder_op_19_15[5'h10];
@@ -448,6 +448,8 @@ assign inst_preld      = decoder_op_31_26[6'h0a] & decoder_op_25_22[4'hb];
 assign inst_dbar       = decoder_op_31_26[6'h0e] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h3] & decoder_op_19_15[5'h04];
 assign inst_ibar       = decoder_op_31_26[6'h0e] & decoder_op_25_22[4'h1] & decoder_op_21_20[2'h3] & decoder_op_19_15[5'h05];
 
+assign inst_idle       = decoder_op_31_26[6'h01] & decoder_op_25_22[4'h9] & decoder_op_21_20[2'h0] & decoder_op_19_15[5'h11];
+
 
 // assign right_fire=right_ready & right_valid;//data submit finish
 // if alu is sign compute 
@@ -464,7 +466,7 @@ assign inst_valid = left_valid & (inst_add | inst_pcaddu12i | inst_lu12i | inst_
                                                                                     rd == 5'd2 | rd == 5'd3 | 
                                                                                     rd == 5'd4 | 
                                                                                     rd == 5'd5 | rd == 5'd6)) 
-                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_preld | inst_cacop | inst_ll | inst_sc | inst_dbar | inst_ibar);
+                    | inst_tlbwr | inst_tlbrd | inst_tlbfill | inst_tlbsrch | inst_preld | inst_cacop | inst_ll | inst_sc | inst_dbar | inst_ibar | inst_idle);
 
 //output logic
 assign id_csr_ctrl = csr_ctrl_temp;
@@ -618,13 +620,13 @@ assign left_ready = is_mem_hazrd|
                     ((ex_is_tlbhazard | mem_is_tlbhazard | wb_is_tlbhazard) & rd_from_csr & (csr_idx == TLBIDX| 
                                                                                  csr_idx == TLBEHI|
                                                                                  csr_idx == TLBELO0|
-                                                                                 csr_idx == TLBELO1))? 1'b0
+                                                                                 csr_idx == TLBELO1)) | inst_idle & !has_int & !ib_excp_bus[0]? 1'b0
                     :right_ready;
 assign logic_valid = is_mem_hazrd | 
                     ((ex_is_tlbhazard | mem_is_tlbhazard | wb_is_tlbhazard) & rd_from_csr & (csr_idx == TLBIDX| 
                                                                                  csr_idx == TLBEHI|
                                                                                  csr_idx == TLBELO0|
-                                                                                 csr_idx == TLBELO1))? 1'b0
+                                                                                 csr_idx == TLBELO1)) | inst_idle & !has_int & !ib_excp_bus[0]? 1'b0
                     :left_valid; // have mem hazrd or have tlb csr hazard
 
 endmodule //ID
