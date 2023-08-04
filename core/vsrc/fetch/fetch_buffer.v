@@ -27,46 +27,46 @@ module fetch_buffer (
     output wire is_fire
 );
 
-reg [5:0] head_pointer;
-reg [5:0] tail_pointer;
+reg [4:0] head_pointer;
+reg [4:0] tail_pointer;
 
-reg [63:0] buffer[31:0];
-reg [4:0] excp_buffer[31:0];
+reg [63:0] buffer[16:0];
+reg [4:0] excp_buffer[16:0];
 
 wire empty;
 wire full;
 
 always @(posedge clk) begin
     if(reset | flush | excp_flush | ertn_flush) begin 
-        head_pointer <= 6'h0;
-        tail_pointer <= 6'h0;
+        head_pointer <= 5'h0;
+        tail_pointer <= 5'h0;
     end
     else begin 
         if(left_valid & left_ready) begin 
-            head_pointer <= head_pointer + 6'h1;
+            head_pointer <= head_pointer + 5'h1;
         end
         if(fire) begin 
-            tail_pointer <= tail_pointer + 6'h1;
+            tail_pointer <= tail_pointer + 5'h1;
         end
     end
 end
 
 always @(posedge clk) begin
     if(left_valid & left_ready) begin 
-        buffer[head_pointer[4:0]] <= bus_i;
-        excp_buffer[head_pointer[4:0]] <= {excp_num_i,excp_i};
+        buffer[head_pointer[3:0]] <= bus_i;
+        excp_buffer[head_pointer[3:0]] <= {excp_num_i,excp_i};
         // pc_buffer[head_pointer[4:0]] <= pc_in;
     end
 end
 
-assign empty = !(head_pointer[5] ^ tail_pointer[5]) & (head_pointer[4:0] == tail_pointer[4:0]);
-assign full  =  (head_pointer[5] ^ tail_pointer[5]) & (head_pointer[4:0] == tail_pointer[4:0]);
+assign empty = !(head_pointer[4] ^ tail_pointer[4]) & (head_pointer[3:0] == tail_pointer[3:0]);
+assign full  =  (head_pointer[4] ^ tail_pointer[4]) & (head_pointer[3:0] == tail_pointer[3:0]);
 
 assign left_ready = !full;
 assign right_valid = !empty;
 // assign inst_out = inst_buffer[tail_pointer[4:0]];
-assign bus_o = buffer[tail_pointer[4:0]];
-assign excp_bus = excp_buffer[tail_pointer[4:0]];
+assign bus_o = buffer[tail_pointer[3:0]];
+assign excp_bus = excp_buffer[tail_pointer[3:0]];
 // assign pc_out = pc_buffer[tail_pointer[4:0]];
 assign is_fire = left_valid & left_ready;
 
