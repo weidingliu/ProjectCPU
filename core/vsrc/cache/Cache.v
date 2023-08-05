@@ -143,10 +143,10 @@ module DCache #(
     output wire mem_we// 1'b0 is read  1'b1 is write 
 
 );
-parameter idle = 2'b00;
-parameter scanf = 2'b01;
-parameter miss = 2'b10;
-parameter write_data = 2'b11;
+localparam idle = 2'b00;
+localparam scanf = 2'b01;
+localparam miss = 2'b10;
+localparam write_data = 2'b11;
 
 (*MAX_FANOUT = 50*)reg [1:0]state;
 (*MAX_FANOUT = 50*)reg [31:0]read_count;
@@ -644,10 +644,10 @@ module ICache #(
     output wire mem_ce,//start a read/write transport 
     output wire mem_we// 1'b0 is read  1'b1 is write 
 );
-parameter idle = 3'b000;
-parameter scanf = 3'b001;
-parameter miss = 3'b010;
-parameter write_data = 3'b011;
+localparam idle = 3'b000;
+localparam scanf = 3'b001;
+localparam miss = 3'b010;
+localparam write_data = 3'b011;
 
 (*MAX_FANOUT = 50*)reg [2:0]state;
 (*MAX_FANOUT = 200*)reg [31:0]read_count;

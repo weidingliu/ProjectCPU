@@ -90,6 +90,11 @@ wire [7:0]inst_ld_en;
 
 wire mem_tlbinv_en;
 
+//excp
+wire ms_excp;
+wire [15:0]excp_num;
+wire ertn;
+
 //tlb 
 wire [4:0]tlb_op;
 assign is_fire = logic_valid & right_ready;
@@ -137,10 +142,7 @@ assign tlb_rden = tlb_op[2] & left_valid;
 assign tlb_fill_en = tlb_op[3] & left_valid & !ms_excp;
 assign tlb_serch_en = tlb_op[4] & left_valid;
 assign is_tlbhazard = (tlb_op[4] | tlb_op[2]) & left_valid  & !ms_excp;
-//excp
-wire ms_excp;
-wire [15:0]excp_num;
-wire ertn;
+
 
 assign {
     ertn,
