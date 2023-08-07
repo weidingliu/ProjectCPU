@@ -331,7 +331,7 @@ Scanf_Cache Scanf_Cache(
     .hit_way1(hit_way1)
 );
 // check if have hit way
-assign hit = (hit_way0 || hit_way1) & !uncached_en & !uncached_buffer || (hit_way0 || hit_way1) & cacop_en;
+assign hit = (hit_way0 || hit_way1) & !uncached_buffer || (hit_way0 || hit_way1) & cacop_en;
 
 //FSM
 always @(posedge clk) begin
@@ -367,7 +367,7 @@ always @(posedge clk) begin
                 else if(hit) begin 
                     if(rdata_ready) state <= idle;
                 end
-                else if(!uncached_en) begin 
+                else if(!uncached_buffer) begin 
                     if(dirt[lru]) state <= write_data;
                     else state <= miss;
                 end
@@ -805,7 +805,7 @@ Scanf_Cache Scanf_Cache(
     .hit_way1(hit_way1)
 );
 // check if have hit way
-assign hit = (hit_way0 || hit_way1) & !uncached_en & !uncached_buffer & !cacop_en_buffer;
+assign hit = (hit_way0 || hit_way1) & !uncached_buffer & !cacop_en_buffer;
 
 //FSM
 always @(posedge clk) begin
