@@ -350,7 +350,7 @@ assign inst_uncached_en = ((DAPG == 2'b10) && (DATF == 2'b00) ||
 assign data_uncached_en = ((DAPG == 2'b10) && (DATM == 2'b00) ||
                            (data_dmw0_en_buffer & DMW0[`MAT] == 2'b00) || 
                            (data_dmw1_en_buffer & DMW1[`MAT] == 2'b00) ||
-                           (data_trans_en_buffer & !data_dmw0_en_buffer & !data_dmw1_en_buffer & s1_mat == 2'b00));
+                           (data_trans_en_buffer & !data_dmw0_en_buffer & !data_dmw1_en_buffer & s1_mat == 2'b00))|1'b1;
 // reg 
 assign data_valid_wire = !inst_cacop & data_valid_temp  & !data_excp;
 assign data_paddr_wire =(data_trans_en_buffer & ~cacop_trans & ~data_excp)? (data_dmw0_en_buffer? {DMW0[27:25],data_vaddr_temp[28:0]}
