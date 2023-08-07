@@ -350,6 +350,7 @@ always @(posedge clk) begin
         timer_en <= 1'b0;
     end
     else begin 
+        estat[`IS2] <= interrupt;
         if (ticlr_wen && csr_wdata[`CLR]) begin
             estat[11] <= 1'b0;
         end
@@ -361,7 +362,6 @@ always @(posedge clk) begin
             timer_en      <= tcfg[`PERIODIC];
         end
 
-        estat[`IS2] <= interrupt;
         if (excp_flush) begin
             estat[   `Ecode] <= ecode_in;
             estat[`EsubCode] <= esubcode_in;
