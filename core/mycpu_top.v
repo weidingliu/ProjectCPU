@@ -6,7 +6,7 @@ module core_top #(
 )(
     input           aclk,
     input           aresetn,
-    input    [ 7:0] intrpt, 
+    input    [ 7:0] ext_int, 
     //AXI interface 
     //read reqest
     output   [ 3:0] arid,
@@ -21,7 +21,7 @@ module core_top #(
     input           arready,
     //read back
     input    [ 3:0] rid,
-    input    [31:0] rddata,
+    input    [31:0] rdata,
     input    [ 1:0] rresp,
     input           rlast,
     input           rvalid,
@@ -39,7 +39,7 @@ module core_top #(
     input           awready,
     //write data
     output   [ 3:0] wid,
-    output   [31:0] wddata,
+    output   [31:0] wdata,
     output   [ 3:0] wstrb,
     output          wlast,
     output          wvalid,
@@ -57,11 +57,11 @@ module core_top #(
     output          ws_valid,
     output [31:0]   rf_rdata,
 
-    output [31:0] debug0_wb_pc,
-    output [ 3:0] debug0_wb_rf_wen,
-    output [ 4:0] debug0_wb_rf_wnum,
-    output [31:0] debug0_wb_rf_wdata,
-    output [31:0] debug0_wb_inst
+    output [31:0] debug_wb_pc,
+    output [ 3:0] debug_wb_rf_we,
+    output [ 4:0] debug_wb_rf_wnum,
+    output [31:0] debug_wb_rf_wdata,
+    output [31:0] debug_wb_inst
 );
 
 wire clk;
@@ -102,9 +102,9 @@ wire [31:0]PC;
 wire pc_valid;
 wire inst_ready;
     //data interface
-wire [31:0]rdata;
+wire [31:0]rddata;
 wire [31:0]addr;
-wire [DATA_WIDTH-1:0]wdata;
+wire [DATA_WIDTH-1:0]wddata;
 wire [DATA_WIDTH/8-1:0]wmask;
 wire en;
 wire we;
@@ -743,8 +743,8 @@ MEM mem_stage(
     .addr(addr),//read/write address
     .en(en),//read/write enable
     .wmask(wmask),
-    .rdata(rdata),
-    .wdata(wdata),
+    .rdata(rddata),
+    .wdata(wddata),
     .we(we),
     .rdata_valid(rdata_valid),
     .write_finish(write_finish),
@@ -904,7 +904,7 @@ CSR_CPU CSR(
     .plv_out(plv_out),
 
     //interrupt
-    .interrupt(intrpt),
+    .interrupt(ext_int),
     .has_int(has_int),
     `ifdef NEXT_SOFT_INT
     .soft_int(soft_int),
@@ -981,10 +981,10 @@ DCache #(.Cache_line_wordnum(CPU_WIDTH/DATA_WIDTH))DCache(
     .ce(en & data_valid),
     .we(we),
     .addr(data_paddr),
-    .rdata(rdata),
+    .rdata(rddata),
     .rdata_valid(rdata_valid),
     .rdata_ready(1'b1),
-    .wdata(wdata),
+    .wdata(wddata),
     .wmask(wmask),
     .write_respone(write_finish),
     .uncached_en(data_uncached_en),
@@ -1123,7 +1123,7 @@ axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(DATA_WIDTH),.CPU_WIDTH(CPU_WIDTH
     //read data channel 
     .rd_valid(rvalid),
     .rd_ready(rready),
-    .rd_data(rddata),
+    .rd_data(rdata),
     .rd_id(rid),
     .rd_resp(rresp),
     .rd_last(rlast),
@@ -1131,7 +1131,7 @@ axi4_full_interface#(.BUS_WIDTH(32),.DATA_WIDTH(DATA_WIDTH),.CPU_WIDTH(CPU_WIDTH
     //write data channel 
     .wd_valid(wvalid),
     .wd_ready(wready),
-    .wd_data(wddata),
+    .wd_data(wdata),
     .wstrb(wstrb),
     .wd_id(wid),
     .wd_last(wlast),
