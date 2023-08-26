@@ -37,7 +37,7 @@
 
 **时钟频率**在龙芯实验箱上使用龙芯杯性能测试SOC，CPU core时钟频率能够达到90MHz。
 
-## 关于更简单的仿真框架
+## 关于更简单的仿真框架（目前因为适配chiplab的仿真环境之后，暂时不能使用）
 事实上，我认为[chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)提供的仿真框架十分优秀，但是在我进行CPU设计与仿真的时候发现，
 
 在CPU搭建初期直接使用chiplab提供的仿真框架不符合一个CPU设计的流程：我们可能想要在实现完一条或者若干条指令之后立马对这些指令进行测试，但是因为chiplab的框架太集成，内部代码太复杂（文档中对于仿真框架的实现细节不是很清晰），当我的cpu只实现了一两条指令时，我无法使用chiplab的仿真框架进行流水线的初始验证，因此我参考[一生一芯](https://ysyx.oscc.cc)项目与[南京大学PA](https://ysyx.oscc.cc/docs/ics-pa/)
