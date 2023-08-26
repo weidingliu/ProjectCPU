@@ -1,0 +1,3 @@
+[submodule "chiplab"]
+	path = chiplab
+	url = https://gitee.com/loongson-edu/chiplab.git
