@@ -1,23 +1,21 @@
-# **八级流水线CPU基于LoongArch32r**
+# **七级流水线CPU基于LoongArch32r**
 ---------------------------------------------------------
 ## 目录结构
 ---------------
 ```
 ├── core
-│   ├── axi
-│   └── vsrc
+│   ├── axi  // axi 总线相关
+│   └── vsrc // CPU core 文件
 ├── cpu-tests
-│   ├── am
-│   ├── build
-│   └── tests
-├── doc
-└── testbench
-    ├── build
+│   ├── am  // 用于编译最小化测试用例
+│   └── tests // 测试用例
+├── doc // 文档
+└── testbench // 使用verilator搭建的测试平台
     └── include
 ```
 -----------------------------------
 ## 项目特征
-本项目中的CPU实现了Loongarch32R非特权架构中的全部整数指令（特权架构与总线正在紧张推进中），目前完成了整数指令的仿真与测试。
+本项目中的CPU实现了Loongarch32R非特权架构中的全部整数指令与全部特权指令与CSR寄存器，通过chiplab的func_lab15以及random_test。
 
 **流水线握手**采用流水级之间握手机制实现分布式的阻塞控制。
 
@@ -29,11 +27,15 @@
 
 **Cache**为基于状态机的阻塞式cache，在命中时读写只需要等待一个上升沿，在本项目提供的测试程序中：ICACHE命中率为98.61%，DCACHE命中率为97.89%。
 
-**AXI_Lite总线**：由于指令与数据访存接口存在一个仲裁电路，因此每次访存需要等待两个时钟上升沿。
+**简易的AXI_FULL总线**：在AXI_LITE的基础上改进为FULL接口，指令与数据访存接口经过仲裁之后，转为AXI_FULL接口，支持一递增的突发传输。
 
-**简易的AXI_FULL总线**：在AXI_LITE的基础上改进为FULL接口，指令与数据访存接口经过仲裁之后，转为AXI_FULL接口，支持突发传输。
+**TLB**为32项全相联结构。
+
+**异常与中断**支持Loongarch32R中定义的全部中断与异常。
 
 **更简单的仿真框架** 
+
+**时钟频率**在龙芯实验箱上使用龙芯杯性能测试SOC，CPU core时钟频率能够达到90MHz。
 
 ## 关于更简单的仿真框架
 事实上，我认为[chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)提供的仿真框架十分优秀，但是在我进行CPU设计与仿真的时候发现，
@@ -72,6 +74,20 @@ GCC -> [chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)中to
 NEMU -> [chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)中toolchain给出仓库中的realease最新版即可。
 
 除了上述工具之外，还需要搭建chiplab环境，具体步骤可见[chiplab](https://gitee.com/loongson-edu/chiplab?_from=gitee_search)仓库，其中请配置好NEMU以及GCC，具体的步骤在chiplab官方仓库中也有。
+
+## 本项目的不足
+1. 基于PIPT的cache与TLB结构带来了巨大的性能损失，在理想情况下，每一次取指都需要等待2个时钟周期，每次访存都需要3个时钟周期。（由于时间关系来不及改进）
+2. 深流水情况下，并没有实现的分支预测器，使得性能也存在巨大的损失。（理由同上）
+
+3. 各个模块之间的时序十分耦合，在某个地方进行打拍的改动就会导致其他模块出错，这个可以使用握手信号来解决，但是在最初设计时并没有考虑到。
+
+4. 软件预取指令并没有实现功能，只当做一条空指令。
+
+5. 在龙芯试验箱上启动pmon引导程序还存在问题，主要表现在进入pmon的主线程之前的初始化中，在某些函数的函数调用前导指令中可能会存在轮训nand flash进入死循环的情况。
+
+6. 并没有实现性能计数器，不能针对CPU架构进行针对性的改进。
+
+7. 内存栅障指令实现比较粗暴，对于ibar指令，在exe阶段当做一条无条件跳转指令处理，跳转地址为ibar指令的PC+4。
 
 ## 参考项目
 [一生一芯](https://ysyx.oscc.cc)项目
